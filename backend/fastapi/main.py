@@ -5,4 +5,4 @@ app = FastAPI()
 # get method
 @app.get("/")
 def root():
-    return {"message": "PipelineDoctor API running 🚀"}
+    return {"message": "PipelineDoctor API running updated🚀"}
