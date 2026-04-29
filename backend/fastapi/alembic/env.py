@@ -3,14 +3,14 @@ import os
 import sys
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import URL
-from sqlalchemy import pool
 from alembic import context
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.models.db_models import Base
+from app.models.base import Base
+import app.models
 
 load_dotenv()
 
