@@ -1,0 +1,15 @@
+  develop[m
+  feature/api-structure[m
+  feature/django-db-schema[m
+  feature/django-setup[m
+* [32mfeature/fastapi-db-runs[m
+  feature/fastapi-setup[m
+  feature/runs-api[m
+  main[m
+  [31mremotes/origin/HEAD[m -> origin/main
+  [31mremotes/origin/develop[m
+  [31mremotes/origin/feature/django-db-schema[m
+  [31mremotes/origin/feature/django-setup[m
+  [31mremotes/origin/feature/fastapi-setup[m
+  [31mremotes/origin/feature/runs-api[m
+  [31mremotes/origin/main[m
