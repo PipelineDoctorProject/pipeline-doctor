@@ -17,3 +17,5 @@ class PipelineRun(Base):
     model = relationship("MLModel", back_populates="runs")
     predictions = relationship("PredictionLog", back_populates="run")
     incidents = relationship("Incident", back_populates="run")
+    drift_findings = relationship("DriftFinding", back_populates="run")
+    data_quality_findings = relationship("DataQualityFinding", back_populates="run")

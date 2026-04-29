@@ -12,6 +12,8 @@ class Incident(Base):
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
     failure_type = Column(String, nullable=False)
+    finding_type = Column(String)  
+    finding_id = Column(Integer)
     severity = Column(String, nullable=False)
     status = Column(String, default="open")
     created_at = Column(DateTime, default=datetime.utcnow)
