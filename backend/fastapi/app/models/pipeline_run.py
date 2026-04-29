@@ -14,7 +14,7 @@ class PipelineRun(Base):
     ended_at = Column(DateTime, nullable=True)
 
     model = relationship("MLModel", back_populates="runs")
-    predictions = relationship("PredictionLog", back_populates="run")
-    incidents = relationship("Incident", back_populates="run")
-    drift_findings = relationship("DriftFinding", back_populates="run")
-    data_quality_findings = relationship("DataQualityFinding", back_populates="run")
+    predictions = relationship("PredictionLog", back_populates="run", cascade="all, delete")
+    incidents = relationship("Incident", back_populates="run", cascade="all, delete")
+    drift_findings = relationship("DriftFinding", back_populates="run", cascade="all, delete")
+    data_quality_findings = relationship("DataQualityFinding", back_populates="run", cascade="all, delete")
