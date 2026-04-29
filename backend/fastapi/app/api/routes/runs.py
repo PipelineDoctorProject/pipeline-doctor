@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.db_models import PipelineRun
+from app.models.pipeline_run import PipelineRun
 from app.schemas.run import RunCreate, RunResponse
 
 router = APIRouter(prefix="/runs", tags=["Runs"])
