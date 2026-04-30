@@ -13,7 +13,6 @@ from app.models.incident import Incident
 
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
-# model details
 MODEL_URI = "models:/PipelineDoctorDemoModel@champion"
 model = mlflow.pyfunc.load_model(MODEL_URI)
 
