@@ -1,84 +1,70 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 import numpy as np
+import mlflow
+import mlflow.pyfunc
 
 from app.models.pipeline_run import PipelineRun
 from app.models.prediction_log import PredictionLog
 from app.models.drift_finding import DriftFinding
 from app.models.data_quality import DataQualityFinding
 from app.models.incident import Incident
-# from app.models.ml_model import MLModel
 
-import mlflow.pyfunc
 
-MODEL_URI = "models:/PipelineDoctorDemoModel/1"
+mlflow.set_tracking_uri("http://127.0.0.1:5000")
+
+MODEL_URI = "models:/PipelineDoctorDemoModel@champion"
 model = mlflow.pyfunc.load_model(MODEL_URI)
 
-# -------------------------------
-# DATA GENERATION
-# -------------------------------
+
 def generate_data(mode: str = "bad"):
     if mode == "normal":
         return np.random.normal(0.5, 0.1, (100, 3))
 
-    elif mode == "drift":
+    if mode == "drift":
         return np.random.normal(0.9, 0.1, (100, 3))
 
-    elif mode == "bad":
+    if mode == "bad":
         X = np.random.normal(0.5, 0.1, (100, 3))
         X[0][0] = np.nan
         return X
 
-    else:
-        raise ValueError("Invalid mode")
+    raise ValueError("Invalid mode")
 
 
-# -------------------------------
-# PREDICTION (FAKE FOR NOW)
-# -------------------------------
 def predict(X):
     return model.predict(X)
 
 
-# -------------------------------
-# DATA QUALITY CHECKS
-# -------------------------------
 def run_data_quality_checks(db: Session, run: PipelineRun, X):
     if np.isnan(X).any():
-        finding = DataQualityFinding(
+        db.add(DataQualityFinding(
             run_id=run.id,
             issue_type="missing",
             column_name="unknown",
             description="NaN values detected"
-        )
-        db.add(finding)
+        ))
 
 
-# -------------------------------
-# DRIFT CHECKS
-# -------------------------------
 def run_drift_checks(db: Session, run: PipelineRun, X):
     baseline_mean = 0.5
-    current_mean = float(np.mean(X))
-
+    current_mean = float(np.nanmean(X))
     drift_score = abs(current_mean - baseline_mean)
 
     if drift_score > 0.2:
-        finding = DriftFinding(
+        db.add(DriftFinding(
             run_id=run.id,
             feature_name="global_mean",
             drift_score=drift_score,
             drift_detected=True
-        )
-        db.add(finding)
+        ))
 
 
-# -------------------------------
-# INCIDENT CREATION
-# -------------------------------
 def create_incidents(db: Session, run: PipelineRun):
-    # Drift-based incidents
-    for drift in run.drift_findings:
+    drift_findings = db.query(DriftFinding).filter_by(run_id=run.id).all()
+    data_quality_findings = db.query(DataQualityFinding).filter_by(run_id=run.id).all()
+
+    for drift in drift_findings:
         if drift.drift_detected:
             db.add(Incident(
                 run_id=run.id,
@@ -90,8 +76,7 @@ def create_incidents(db: Session, run: PipelineRun):
                 severity="high"
             ))
 
-    # Data quality incidents
-    for dq in run.data_quality_findings:
+    for dq in data_quality_findings:
         db.add(Incident(
             run_id=run.id,
             title="Data quality issue",
@@ -103,55 +88,55 @@ def create_incidents(db: Session, run: PipelineRun):
         ))
 
 
-# -------------------------------
-# MAIN PIPELINE FUNCTION
-# -------------------------------
-def run_pipeline(db: Session, model_id: int, mode: str = "bad"):
+def clean_value(v):
+    try:
+        v = float(v)
+        if np.isnan(v) or np.isinf(v):
+            return None
+        return v
+    except Exception:
+        return None
 
+
+def clean_array(arr):
+    return [clean_value(v) for v in arr]
+
+
+def run_pipeline(db: Session, model_id: int, mode: str = "bad"):
     run = PipelineRun(
         model_id=model_id,
         status="running",
         started_at=datetime.utcnow()
     )
+
     db.add(run)
     db.commit()
     db.refresh(run)
 
     try:
-        # 1. Generate Data
+        print("MODEL URI:", MODEL_URI)
+        print("MODEL RUN ID:", model.metadata.run_id)
         X = generate_data(mode)
 
-        # 2. Predict
-        preds = predict(X)
+        X_for_prediction = np.nan_to_num(X, nan=0.0)
+        preds = predict(X_for_prediction)
 
-        def clean_value(v):
-            if isinstance(v, float) and (np.isnan(v) or np.isinf(v)):
-                return None
-            return float(v)
-
-        def clean_array(arr):
-            return [clean_value(v) for v in arr]
-
-        # 3. Store predictions
         for i in range(len(X)):
             db.add(PredictionLog(
                 run_id=run.id,
-                input_data=clean_array(X[i]),
-                prediction=clean_value(preds[i])
+                input_data={"features": clean_array(X[i])},
+                prediction={"value": clean_value(preds[i])}
             ))
 
         db.commit()
 
-        # 4. Run Checks
         run_data_quality_checks(db, run, X)
         run_drift_checks(db, run, X)
         db.commit()
 
-        # 5. Create Incidents
         create_incidents(db, run)
         db.commit()
 
-        # 6. STATUS LOGIC (THIS WAS MISSING)
         drift_findings = db.query(DriftFinding).filter_by(run_id=run.id).all()
         data_findings = db.query(DataQualityFinding).filter_by(run_id=run.id).all()
 
