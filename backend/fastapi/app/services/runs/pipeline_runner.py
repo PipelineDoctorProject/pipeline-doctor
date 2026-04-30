@@ -9,6 +9,10 @@ from app.models.data_quality import DataQualityFinding
 from app.models.incident import Incident
 from app.models.ml_model import MLModel
 
+import mlflow.pyfunc
+
+MODEL_URI = "models:/PipelineDoctorDemoModel/1"
+model = mlflow.pyfunc.load_model(MODEL_URI)
 
 # -------------------------------
 # DATA GENERATION
@@ -33,7 +37,7 @@ def generate_data(mode: str = "bad"):
 # PREDICTION (FAKE FOR NOW)
 # -------------------------------
 def predict(X):
-    return X.mean(axis=1)
+    return model.predict(X)
 
 
 # -------------------------------
