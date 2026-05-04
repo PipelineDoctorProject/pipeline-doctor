@@ -27,10 +27,10 @@ def train_and_register_model():
     model = RandomForestClassifier(n_estimators=100, random_state=42)
 
     with mlflow.start_run():
-        model.fit(X_train, y_train) # Train
+        model.fit(X_train, y_train) 
 
-        preds = model.predict(X_test) # Predict
-        accuracy = accuracy_score(y_test, preds) # calculate accuracy
+        preds = model.predict(X_test) 
+        accuracy = accuracy_score(y_test, preds) 
 
         mlflow.log_param("model_type", "RandomForestClassifier")
         mlflow.log_param("n_estimators", 100)
