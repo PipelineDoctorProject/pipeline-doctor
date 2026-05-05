@@ -13,7 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # Load models
 from app.models.base import Base
 
-# IMPORTANT: ensure all models are imported
+#  ensure all models are imported
 from app.models import (
     MLModel,
     PipelineRun,
