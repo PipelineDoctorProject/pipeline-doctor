@@ -1,14 +1,12 @@
 import jwt
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
+from app.config.settings import SECRET_KEY, ALGORITHM
 
-SECRET_KEY = "supersecret"   # move to env later
-ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
 
 def create_access_token(data: dict) -> str:
-    
     to_encode = data.copy()
 
     expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
@@ -20,7 +18,6 @@ def create_access_token(data: dict) -> str:
 
 
 def decode_token(token: str) -> dict:
-   
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
