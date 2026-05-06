@@ -3,17 +3,14 @@ from datetime import datetime
 import mlflow
 import mlflow.pyfunc
 import numpy as np
-import pandas as pd
-import json
-from evidently import Report
-from evidently.presets import DataDriftPreset
 from sqlalchemy.orm import Session
 
 from app.models.pipeline_run import PipelineRun
 from app.models.prediction_log import PredictionLog
-from app.models.drift_finding import DriftFinding
 from app.models.data_quality import DataQualityFinding
+from app.models.drift_finding import DriftFinding
 from app.models.incident import Incident
+from app.services.drift.drift_service import run_drift_checks
 
 
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
@@ -51,69 +48,12 @@ def run_data_quality_checks(db: Session, run: PipelineRun, X):
         ))
 
 
-def run_drift_checks(db: Session, run: PipelineRun, X):
-    feature_names = ["feature_1", "feature_2", "feature_3"]
-
-    reference_data = pd.DataFrame(
-        np.random.normal(0.5, 0.1, (1000, 3)),
-        columns=feature_names
-    )
-
-    current_data = pd.DataFrame(
-        np.nan_to_num(X, nan=0.0),
-        columns=feature_names
-    )
-
-    report = Report([DataDriftPreset()])
-
-    snapshot = report.run(
-        current_data=current_data,
-        reference_data=reference_data
-    )
-
-    result_dict = snapshot.dict()
-    metrics = result_dict.get("metrics", [])
-
-    inserted = False
-
-    for metric in metrics:
-        if metric.get("metric") == "DataDriftTable":
-            drift_by_columns = metric["result"]["drift_by_columns"]
-
-            for feature_name, drift_info in drift_by_columns.items():
-                drift_score = drift_info.get("drift_score", 0.0)
-                drift_detected = drift_info.get("drift_detected", False)
-
-                db.add(DriftFinding(
-                    run_id=run.id,
-                    feature_name=feature_name,
-                    drift_score=float(drift_score) if drift_score is not None else 0.0,
-                    drift_detected=bool(drift_detected)
-                ))
-
-                inserted = True
-
-    # Fallback logic if Evidently output format is different
-    if not inserted:
-        baseline_mean = 0.5
-        current_mean = float(np.nanmean(X))
-        drift_score = abs(current_mean - baseline_mean)
-        drift_detected = drift_score > 0.2
-
-        db.add(DriftFinding(
-            run_id=run.id,
-            feature_name="dataset_level",
-            drift_score=drift_score,
-            drift_detected=drift_detected
-        ))
-
-
 def create_incidents(db: Session, run: PipelineRun):
     drift_findings = db.query(DriftFinding).filter_by(run_id=run.id).all()
     data_quality_findings = db.query(DataQualityFinding).filter_by(run_id=run.id).all()
 
     for drift in drift_findings:
-        if drift.drift_detected:
+        if bool(drift.drift_detected):
             db.add(Incident(
                 run_id=run.id,
                 title="Drift detected",
@@ -189,13 +129,10 @@ def run_pipeline(db: Session, model_id: int, mode: str = "bad"):
         drift_findings = db.query(DriftFinding).filter_by(run_id=run.id).all()
         data_findings = db.query(DataQualityFinding).filter_by(run_id=run.id).all()
 
-        has_drift = any(d.drift_detected for d in drift_findings)
+        has_drift = any(bool(d.drift_detected) for d in drift_findings)
         has_data_issues = len(data_findings) > 0
 
-        if has_drift or has_data_issues:
-            run.status = "completed_with_issues"
-        else:
-            run.status = "completed"
+        run.status = "completed_with_issues" if has_drift or has_data_issues else "completed"
 
     except Exception as e:
         print("[ERROR]", e)
