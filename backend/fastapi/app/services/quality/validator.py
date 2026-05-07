@@ -110,7 +110,7 @@ class DataValidator:
 
         # run checks on intersecting columns
         self.validate_nulls()
-        self.validate_numeric()
+        self.validate_numeric_ranges()
         self.validate_categorical()
 
         failed = sum(1 for c in self.checks if not c["success"])
