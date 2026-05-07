@@ -45,7 +45,8 @@ def signup_user(
         email=email,
         hashed_password=hash_password(password),
         otp_code=otp,
-        is_verified=False
+        is_verified=False,
+        role="admin"
     )
 
     db.add(user)
@@ -93,7 +94,8 @@ def verify_otp(
     access_token = create_access_token({
         "user_id": user.id,
         "email": user.email,
-        "schema_name": None
+        "schema_name": None,
+        "role": user.role
     })
 
     refresh_token = create_refresh_token({

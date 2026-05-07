@@ -63,20 +63,8 @@ def create_company(
 
     db.commit()
 
-    # NEW TOKENS WITH SCHEMA
-
-    access_token = create_access_token({
-        "user_id": user.id,
-        "email": user.email,
-        "schema_name": schema_name
-    })
-
-    refresh_token = create_refresh_token({
-        "user_id": user.id
-    })
-
     return {
-        "message": "Company created",
-        "access_token": access_token,
-        "refresh_token": refresh_token
+    "message": "Company created successfully",
+    "company_name": tenant.name,
+    "schema_name": tenant.schema_name
     }

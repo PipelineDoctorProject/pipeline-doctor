@@ -46,7 +46,79 @@ def send_otp_email(email: str, otp: str):
 
         server.quit()
 
-        print("✅ OTP email sent")
+        print("OTP email sent")
 
     except Exception as e:
-        print("❌ Email error:", e)
+        print("Email error:", e)
+
+
+# ==========================================
+# SEND INVITE EMAIL
+# ==========================================
+def send_invite_email(
+    email: str,
+    invite_link: str
+):
+
+    subject = "PipelineDoctor Workspace Invitation"
+
+    body = f"""
+    <h2>You are invited to PipelineDoctor</h2>
+
+    <p>
+        You have been invited to join a workspace.
+    </p>
+
+    <p>
+        Click below to accept invitation:
+    </p>
+
+    <a href="{invite_link}">
+        Accept Invitation
+    </a>
+
+    <br><br>
+
+    <p>
+        If you did not expect this email,
+        you can ignore it.
+    </p>
+    """
+
+    msg = MIMEMultipart()
+
+    msg["From"] = MAIL_FROM
+    msg["To"] = email
+    msg["Subject"] = subject
+
+    msg.attach(
+        MIMEText(body, "html")
+    )
+
+    try:
+
+        server = smtplib.SMTP(
+            "smtp.gmail.com",
+            587
+        )
+
+        server.starttls()
+
+        server.login(
+            MAIL_USERNAME,
+            MAIL_PASSWORD
+        )
+
+        server.sendmail(
+            MAIL_FROM,
+            email,
+            msg.as_string()
+        )
+
+        server.quit()
+
+        print("Invite email sent")
+
+    except Exception as e:
+
+        print("Email error:", e)

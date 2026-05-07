@@ -5,6 +5,8 @@ from fastapi import (
     HTTPException
 )
 
+from fastapi.security import HTTPBearer
+
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -22,8 +24,13 @@ router = APIRouter(
     tags=["Onboarding"]
 )
 
+security = HTTPBearer()
 
-@router.post("/company")
+
+@router.post(
+    "/company",
+    dependencies=[Depends(security)]
+)
 def create_company_route(
     data: CompanyOnboardingRequest,
     request: Request,
