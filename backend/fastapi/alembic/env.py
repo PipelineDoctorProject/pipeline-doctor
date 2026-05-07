@@ -13,7 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # Load models
 from app.models.base import Base
 
-# IMPORTANT: ensure all models are imported
+#  ensure all models are imported
 from app.models import (
     MLModel,
     PipelineRun,
@@ -21,6 +21,8 @@ from app.models import (
     Incident,
     DriftFinding,
     DataQualityFinding,
+    Tenant,
+    User
 )
 
 # Load environment variables
@@ -70,7 +72,11 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+
         include_object=include_object, 
+
+        include_object=include_object,
+
     )
 
     with context.begin_transaction():
@@ -93,7 +99,11 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+
             include_object=include_object,
+
+            include_object=include_object,  # 
+
         )
 
         with context.begin_transaction():
