@@ -75,7 +75,7 @@ def run_migrations_offline() -> None:
 
         include_object=include_object, 
 
-        include_object=include_object,
+        # include_object=include_object,
 
     )
 
@@ -102,7 +102,7 @@ def run_migrations_online() -> None:
 
             include_object=include_object,
 
-            include_object=include_object,  # 
+            # include_object=include_object,  # 
 
         )
 

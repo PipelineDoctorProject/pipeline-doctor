@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, JSON, DateTime
+from sqlalchemy import Column, Integer, JSON, DateTime, String, Boolean
 from datetime import datetime
 from app.db.base import Base
 
@@ -6,13 +6,15 @@ from app.db.base import Base
 class Baseline(Base):
     __tablename__ = "baselines"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
+    model_id = Column(Integer, nullable=False)
 
-    model_id = Column(String, index=True)  # ML model reference
+    version = Column(Integer, nullable=False)
 
-    file_path = Column(String)  # where CSV is stored
+    schema = Column(JSON, nullable=False)
+    profile = Column(JSON, nullable=False)
 
-    schema = Column(JSON)      # column types
-    profile = Column(JSON)     # validation rules
+    status = Column(String, default="draft")  # draft / approved
+    is_active = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)

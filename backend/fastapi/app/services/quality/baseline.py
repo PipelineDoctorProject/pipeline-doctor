@@ -7,7 +7,7 @@ def extract_schema(df: pd.DataFrame):
 
 def build_profile(df: pd.DataFrame):
     profile = {}
-
+    print(df)
     for col in df.columns:
 
         if pd.api.types.is_numeric_dtype(df[col]):
