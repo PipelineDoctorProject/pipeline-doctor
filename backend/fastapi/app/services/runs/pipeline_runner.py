@@ -105,34 +105,48 @@ def run_pipeline(db: Session, model_id: int, mode: str = "bad"):
         print("MODEL URI:", MODEL_URI)
         print("MODEL RUN ID:", model.metadata.run_id)
 
+        # 1. Generate incoming data
         X = generate_data(mode)
 
-        X_for_prediction = np.nan_to_num(X, nan=0.0)
-        preds = predict(X_for_prediction)
-
-        for i in range(len(X)):
-            db.add(PredictionLog(
-                run_id=run.id,
-                input_data={"features": clean_array(X[i])},
-                prediction={"value": clean_value(preds[i])}
-            ))
-
-        db.commit()
-
+        # 2. Run data quality check first
         run_data_quality_checks(db, run, X)
-        run_drift_checks(db, run, X)
         db.commit()
 
-        create_incidents(db, run)
-        db.commit()
-
-        drift_findings = db.query(DriftFinding).filter_by(run_id=run.id).all()
         data_findings = db.query(DataQualityFinding).filter_by(run_id=run.id).all()
-
-        has_drift = any(bool(d.drift_detected) for d in drift_findings)
         has_data_issues = len(data_findings) > 0
 
-        run.status = "completed_with_issues" if has_drift or has_data_issues else "completed"
+        # 3. If data quality failed, skip drift + prediction
+        if has_data_issues:
+            create_incidents(db, run)
+            db.commit()
+            run.status = "completed_with_issues"
+
+        else:
+            # 4. Run drift detection only on clean data
+            run_drift_checks(db, run, X)
+            db.commit()
+
+            drift_findings = db.query(DriftFinding).filter_by(run_id=run.id).all()
+            has_drift = any(bool(d.drift_detected) for d in drift_findings)
+
+            # 5. Predict only after data is validated
+            X_for_prediction = np.nan_to_num(X, nan=0.0)
+            preds = predict(X_for_prediction)
+
+            for i in range(len(X)):
+                db.add(PredictionLog(
+                    run_id=run.id,
+                    input_data={"features": clean_array(X[i])},
+                    prediction={"value": clean_value(preds[i])}
+                ))
+
+            db.commit()
+
+            # 6. Create drift incidents if needed
+            create_incidents(db, run)
+            db.commit()
+
+            run.status = "completed_with_issues" if has_drift else "completed"
 
     except Exception as e:
         print("[ERROR]", e)
