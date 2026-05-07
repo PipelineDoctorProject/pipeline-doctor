@@ -13,12 +13,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         request.state.user = None
         request.state.schema = None
+        request.state.db = None
 
         auth_header = request.headers.get("Authorization")
 
-        if auth_header:
+        # Validate Bearer token
+        if auth_header and auth_header.startswith("Bearer "):
 
             try:
+
                 token = auth_header.split(" ")[1]
 
                 payload = decode_token(token)
@@ -37,12 +40,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
                     request.state.db = db
 
-            except Exception:
-                pass
+            except Exception as e:
+
+                print("AUTH ERROR:", e)
 
         response = await call_next(request)
 
-        db = getattr(request.state, "db", None)
+        db = request.state.db
 
         if db:
             db.close()

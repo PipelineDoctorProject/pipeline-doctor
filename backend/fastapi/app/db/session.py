@@ -2,7 +2,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 from fastapi import Depends
-from app.core.deps import get_schema_name
 from app.utils.schema_utils import set_schema
 
 from app.config.settings import (
