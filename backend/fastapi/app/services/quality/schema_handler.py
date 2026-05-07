@@ -9,14 +9,14 @@ def handle_schema(df: pd.DataFrame, baseline_schema: Dict):
     extra_cols = list(incoming_cols - expected_cols)
     missing_cols = list(expected_cols - incoming_cols)
 
-    # 🔹 Drop extra columns (safe contract enforcement)
-    df_aligned = df.drop(columns=extra_cols, errors="ignore")
+    # Drop extra
+    df = df.drop(columns=extra_cols, errors="ignore")
 
-    # 🔹 Add missing columns as NULL
+    # Add missing
     for col in missing_cols:
-        df_aligned[col] = None
+        df[col] = None
 
-    # 🔹 Reorder columns
-    df_aligned = df_aligned[list(baseline_schema.keys())]
+    # Reorder
+    df = df[list(baseline_schema.keys())]
 
-    return df_aligned, extra_cols, missing_cols
+    return df, extra_cols, missing_cols

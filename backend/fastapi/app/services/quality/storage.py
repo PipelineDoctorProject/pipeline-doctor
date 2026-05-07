@@ -1,38 +1,27 @@
 from sqlalchemy.orm import Session
-from datetime import datetime
-
 from app.models.data_quality import DataQualityFinding
 
 
-def store_findings(
-    db: Session,
-    model_id: int,
-    pipeline_run_id: int,
-    result: dict,
-    extra_cols: list,
-    missing_cols: list
-):
-    findings = []
+def store_findings(db: Session, model_id: int, run_id: int, result, extra_cols, missing_cols):
+    records = []
 
-    # Column checks
     for check in result.get("checks", []):
-        findings.append(
+        records.append(
             DataQualityFinding(
                 model_id=model_id,
-                pipeline_run_id=pipeline_run_id,
-                column_name=check.get("column"),
-                check_type=check.get("check"),
-                success=check.get("success"),
-                details={"message": check.get("details")}
+                pipeline_run_id=run_id,
+                column_name=check["column"],
+                check_type=check["check"],
+                success=check["success"],
+                details={"info": check["details"]}
             )
         )
 
-    # Schema findings
     if extra_cols:
-        findings.append(
+        records.append(
             DataQualityFinding(
                 model_id=model_id,
-                pipeline_run_id=pipeline_run_id,
+                pipeline_run_id=run_id,
                 column_name=None,
                 check_type="extra_columns",
                 success=False,
@@ -41,10 +30,10 @@ def store_findings(
         )
 
     if missing_cols:
-        findings.append(
+        records.append(
             DataQualityFinding(
                 model_id=model_id,
-                pipeline_run_id=pipeline_run_id,
+                pipeline_run_id=run_id,
                 column_name=None,
                 check_type="missing_columns",
                 success=False,
@@ -52,5 +41,5 @@ def store_findings(
             )
         )
 
-    db.add_all(findings)
+    db.add_all(records)
     db.commit()
