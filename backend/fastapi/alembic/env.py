@@ -21,6 +21,8 @@ from app.models import (
     Incident,
     DriftFinding,
     DataQualityFinding,
+    Tenant,
+    User
 )
 
 # Load environment variables
