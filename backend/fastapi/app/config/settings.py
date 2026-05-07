@@ -4,6 +4,11 @@ from dotenv import load_dotenv
 # Load .env file
 load_dotenv()
 
+
+BASELINE_UPLOAD_DIR = "uploads/baselines"
+os.makedirs(BASELINE_UPLOAD_DIR, exist_ok=True)
+
+
 # JWT Config
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")

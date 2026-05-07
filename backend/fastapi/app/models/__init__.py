@@ -6,6 +6,7 @@ from .drift_finding import DriftFinding
 from .data_quality import DataQualityFinding
 from .tenant import Tenant
 from .user import User
+from app.models.baseline import Baseline
 __all__ = [
     "MLModel",
     "PipelineRun",
@@ -15,5 +16,5 @@ __all__ = [
     "DriftFinding",
     "Tenant",
     "User",
-
+    "Baseline",
 ]

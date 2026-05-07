@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+
 from fastapi.openapi.utils import get_openapi
 
 from app.api.routes import (
@@ -13,7 +14,19 @@ from app.api.routes import (
     invite
 )
 
+
+
+from app.api.routes import (health, 
+                            runs,
+                            incidents,
+                              predictions,
+                                drift_findings,
+                                  data_quality_findings,
+                                  auth,upload_baseline
+                                  )
+
 from app.middleware.auth_middleware import AuthMiddleware
+
 
 app = FastAPI()
 
@@ -25,6 +38,7 @@ app.include_router(predictions.router)
 app.include_router(data_quality_findings.router)
 app.include_router(drift_findings.router)
 app.include_router(auth.router)
+
 app.include_router(onboarding.router)
 app.include_router(invite.router)
 
@@ -67,3 +81,8 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
+
+app.add_middleware(AuthMiddleware)
+app.include_router(upload_baseline.router)
+
+
