@@ -1,6 +1,14 @@
 from sqlalchemy import Column, Integer, JSON, DateTime, String, Boolean
 from datetime import datetime
+
 from app.models.base import Base
+
+
+from app.models.base import Base
+
+from app.db.base import Base
+
+
 
 
 class Baseline(Base):
