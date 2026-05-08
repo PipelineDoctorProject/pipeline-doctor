@@ -8,7 +8,7 @@ from app.services.quality.pipeline import run_data_quality_pipeline
 
 router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = "uploads/incoming"
 
 
 @router.post("/validate")
