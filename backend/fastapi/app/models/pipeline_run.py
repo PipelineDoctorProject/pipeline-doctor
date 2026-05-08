@@ -13,7 +13,7 @@ class PipelineRun(Base):
 
     baseline_version = Column(Integer, nullable=False)
     file_path = Column(String, nullable=True)
-
+    predictions = relationship("PredictionLog", back_populates="run")
     status = Column(String, default="running")
     created_at = Column(DateTime, default=datetime.utcnow)
 
