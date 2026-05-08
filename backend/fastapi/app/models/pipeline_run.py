@@ -19,8 +19,6 @@ class PipelineRun(Base):
 
 
     model = relationship("MLModel", back_populates="runs")
-
     findings = relationship("DataQualityFinding", back_populates="run")
     incidents = relationship("Incident",back_populates='run')
 
-    
