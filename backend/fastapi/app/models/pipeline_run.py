@@ -8,9 +8,7 @@ class PipelineRun(Base):
     __tablename__ = "pipeline_runs"
 
     id = Column(Integer, primary_key=True, index=True)
-
     model_id = Column(Integer, ForeignKey("ml_models.id"), nullable=False)
-
     baseline_version = Column(Integer, nullable=False)
     file_path = Column(String, nullable=True)
 
@@ -18,6 +16,7 @@ class PipelineRun(Base):
 
     status = Column(String, default="running")
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
     cleaned_data_path = Column(String, nullable=True)
 
