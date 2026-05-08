@@ -6,7 +6,7 @@ import uuid
 
 from app.db.session import get_db
 from app.models.baseline import Baseline
-from app.services.quality.baseline import create_baseline,crea
+from app.services.quality.baseline import create_baseline
 from app.services.quality.baseline_service import create_baseline_version
 from app.config.settings import BASELINE_UPLOAD_DIR
 
