@@ -13,11 +13,18 @@ class PipelineRun(Base):
 
     baseline_version = Column(Integer, nullable=False)
     file_path = Column(String, nullable=True)
+
     predictions = relationship("PredictionLog", back_populates="run")
+
     status = Column(String, default="running")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    cleaned_data_path = Column(String, nullable=True)
 
     model = relationship("MLModel", back_populates="runs")
+
     findings = relationship("DataQualityFinding", back_populates="run")
-    incidents = relationship("Incident",back_populates='run')
+
+    drift_findings = relationship("DriftFinding", back_populates="run")  # ✅ ADD THIS
+
+    incidents = relationship("Incident", back_populates="run")
