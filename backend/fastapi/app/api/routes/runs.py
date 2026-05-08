@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.pipeline_run import PipelineRun
 from app.schemas.run import RunCreate, RunResponse,PipeLineCreate,PipeLineResponse
-from app.services.runs.pipeline_runner import run_pipeline
+# from app.services.runs.pipeline_runner import run_pipeline
 router = APIRouter(prefix="/runs", tags=["Runs"])
 
 
@@ -46,13 +46,13 @@ router = APIRouter(prefix="/runs", tags=["Runs"])
 #     ]
     
     
-@router.post('/start', response_model=PipeLineResponse)
-def fake_pipeline_create(data: PipeLineCreate, db: Session = Depends(get_db)):
-    run = run_pipeline(db, data.model_id, mode=data.mode)
+# @router.post('/start', response_model=PipeLineResponse)
+# def fake_pipeline_create(data: PipeLineCreate, db: Session = Depends(get_db)):
+#     run = run_pipeline(db, data.model_id, mode=data.mode)
 
-    return {
-        "id": run.id,
-        "model_id": run.model_id,
-        "status": run.status,
-        "started_at": run.started_at
-    }
+#     return {
+#         "id": run.id,
+#         "model_id": run.model_id,
+#         "status": run.status,
+#         "started_at": run.started_at
+#     }

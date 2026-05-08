@@ -15,5 +15,5 @@ class DataQualityFinding(Base):
 
     details = Column(JSON)
     created_at = Column(DateTime)
-    
+    run = relationship("PipelineRun", back_populates="findings")
     
