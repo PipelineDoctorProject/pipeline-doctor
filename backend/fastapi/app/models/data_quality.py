@@ -7,7 +7,7 @@ class DataQualityFinding(Base):
 
     id = Column(Integer, primary_key=True)
     model_id = Column(Integer)
-    pipeline_run_id = Column(Integer)
+    pipeline_run_id = Column(Integer, ForeignKey('pipeline_runs.id'))
 
     column_name = Column(String)
     check_type = Column(String)
@@ -15,3 +15,5 @@ class DataQualityFinding(Base):
 
     details = Column(JSON)
     created_at = Column(DateTime)
+    
+    

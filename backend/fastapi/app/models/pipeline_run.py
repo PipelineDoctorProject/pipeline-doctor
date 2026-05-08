@@ -17,4 +17,4 @@ class PipelineRun(Base):
     predictions = relationship("PredictionLog", back_populates="run", cascade="all, delete")
     incidents = relationship("Incident", back_populates="run", cascade="all, delete")
     drift_findings = relationship("DriftFinding", back_populates="run", cascade="all, delete")
-    data_quality_findings = relationship("DataQualityFinding", back_populates="run", cascade="all, delete")
+    data_quality_findings = relationship("DataQualityFinding", back_populates="run", cascade="all, delete"x9 )

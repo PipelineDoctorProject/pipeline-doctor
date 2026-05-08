@@ -13,10 +13,24 @@ def get_active_baseline(db: Session, model_id: int):
         .first()
     )
 
-    if not baseline:
-        raise Exception("No active baseline found")
+    if baseline:
+        return baseline
 
-    return baseline
+    # fallback
+    baseline = (
+        db.query(Baseline)
+        .filter(
+            Baseline.model_id == model_id,
+            Baseline.status == "approved"
+        )
+        .order_by(Baseline.version.desc())
+        .first()
+    )
+
+    if baseline:
+        return baseline
+
+    raise Exception("No approved baseline found")
 
 
 def create_baseline_version(db: Session, model_id: int, schema: dict, profile: dict):
@@ -46,14 +60,17 @@ def create_baseline_version(db: Session, model_id: int, schema: dict, profile: d
 
 
 def activate_baseline(db: Session, baseline_id: int):
-    baseline = db.query(Baseline).get(baseline_id)
+    baseline = db.get(Baseline, baseline_id)
+
+    if not baseline:
+        raise Exception("Baseline not found")
 
     if baseline.status != "approved":
         raise Exception("Baseline must be approved first")
 
-    # deactivate others
     db.query(Baseline).filter(
-        Baseline.model_id == baseline.model_id
+        Baseline.model_id == baseline.model_id,
+        Baseline.is_active == True
     ).update({"is_active": False})
 
     baseline.is_active = True
