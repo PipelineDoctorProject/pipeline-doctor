@@ -25,6 +25,7 @@ class PipelineRun(Base):
 
     findings = relationship("DataQualityFinding", back_populates="run")
 
-    drift_findings = relationship("DriftFinding", back_populates="run")  # ✅ ADD THIS
 
-    incidents = relationship("Incident", back_populates="run")
+    drift_findings = relationship("DriftFinding", back_populates="run")  # ✅ ADD THIS
+    incidents = relationship("Incident",back_populates='run')
+
