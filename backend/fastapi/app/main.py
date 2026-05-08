@@ -1,3 +1,4 @@
+from app.api.routes import data_quality
 from fastapi import FastAPI
 
 from fastapi.openapi.utils import get_openapi
@@ -8,7 +9,6 @@ from app.api.routes import (
     incidents,
     predictions,
     drift_findings,
-    data_quality_findings,
     auth,
     onboarding,
     invite
@@ -21,7 +21,6 @@ from app.api.routes import (health,
                             incidents,
                               predictions,
                                 drift_findings,
-                                  data_quality_findings,
                                   auth,upload_baseline
                                   )
 
@@ -35,7 +34,7 @@ app.include_router(health.router)
 app.include_router(runs.router)
 app.include_router(incidents.router)
 app.include_router(predictions.router)
-app.include_router(data_quality_findings.router)
+app.include_router(data_quality.router)
 app.include_router(drift_findings.router)
 app.include_router(auth.router)
 

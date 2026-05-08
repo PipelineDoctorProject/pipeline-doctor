@@ -20,11 +20,6 @@ def store_findings(db: Session, model_id: int, run_id: int, result, extra_cols, 
                 success=check["success"],
                 details={"info": check["details"]},
 
-                column_name=check.get("column"),
-                check_type=check.get("check"),
-                success=check.get("success"),
-                details={"message": check.get("details")}
-
             )
         )
 
