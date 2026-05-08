@@ -4,8 +4,6 @@ from datetime import datetime
 from app.models.base import Base
 
 
-
-
 class Baseline(Base):
     __tablename__ = "baselines"
 

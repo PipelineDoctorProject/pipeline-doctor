@@ -1,27 +1,43 @@
 import pandas as pd
 
 
+def normalize_dtype(dtype: str):
+    if "int" in dtype:
+        return "int"
+    elif "float" in dtype:
+        return "float"
+    else:
+        return "object"
+
+
 def extract_schema(df: pd.DataFrame):
-    return {col: str(df[col].dtype) for col in df.columns}
+    return {col: normalize_dtype(str(df[col].dtype)) for col in df.columns}
 
 
 def build_profile(df: pd.DataFrame):
     profile = {}
-    print(df)
+
     for col in df.columns:
 
         if pd.api.types.is_numeric_dtype(df[col]):
+            series = df[col].dropna()
+
+            if series.empty:
+                continue
+
             profile[col] = {
                 "type": "numeric",
-                "min": float(df[col].min()),
-                "max": float(df[col].max()),
-                "mean": float(df[col].mean())
+                "min": float(series.min()),
+                "max": float(series.max()),
+                "mean": float(series.mean())
             }
 
         else:
+            unique_vals = df[col].dropna().unique()
+
             profile[col] = {
                 "type": "categorical",
-                "unique_values": df[col].dropna().unique().tolist()
+                "unique_values": unique_vals[:50].tolist()  # limit size
             }
 
     return profile
@@ -32,7 +48,3 @@ def create_baseline(df: pd.DataFrame):
         "schema": extract_schema(df),
         "profile": build_profile(df)
     }
-
-
-# You convert raw CSV → validation rules
-# CSV → schema + profile → used for real-time checks
