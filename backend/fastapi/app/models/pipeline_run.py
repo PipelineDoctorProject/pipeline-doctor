@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, String, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, String, ForeignKey,Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.models.base import Base
@@ -24,7 +24,7 @@ class PipelineRun(Base):
 
     findings = relationship("DataQualityFinding", back_populates="run")
 
-
-    drift_findings = relationship("DriftFinding", back_populates="run")  # ✅ ADD THIS
+    schema_changed = Column(Boolean, default=False)
+    drift_findings = relationship("DriftFinding", back_populates="run")  # ADD THIS
     incidents = relationship("Incident",back_populates='run')
 

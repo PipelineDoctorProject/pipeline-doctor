@@ -7,6 +7,7 @@ from .data_quality import DataQualityFinding
 from .tenant import Tenant
 from .user import User
 from app.models.baseline import Baseline
+from app.models.schema_change_event import SchemaChangeEvent
 __all__ = [
     "MLModel",
     "PipelineRun",
@@ -17,4 +18,5 @@ __all__ = [
     "Tenant",
     "User",
     "Baseline",
+    "SchemaChangeEvent"
 ]
