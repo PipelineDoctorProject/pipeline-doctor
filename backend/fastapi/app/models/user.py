@@ -8,7 +8,7 @@ class User(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)
     tenant_id = Column(String)
     is_verified = Column(Boolean, default=False)
     otp_code = Column(String, nullable=True)
