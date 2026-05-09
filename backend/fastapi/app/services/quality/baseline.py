@@ -1,26 +1,34 @@
 import pandas as pd
+from app.services.quality.type_utils import normalize_dtype
 
-
-def normalize_dtype(dtype: str):
-    if "int" in dtype:
-        return "int"
-    elif "float" in dtype:
-        return "float"
-    else:
-        return "object"
-
+from app.services.quality.column_classifier import classify_column
 
 def extract_schema(df: pd.DataFrame):
-    return {col: normalize_dtype(str(df[col].dtype)) for col in df.columns}
 
+    schema = {}
+
+    for col in df.columns:
+        schema[col] = normalize_dtype(df[col].dtype)
+
+    return schema
 
 def build_profile(df: pd.DataFrame):
+
     profile = {}
 
     for col in df.columns:
 
-        if pd.api.types.is_numeric_dtype(df[col]):
-            series = df[col].dropna()
+        col_type = classify_column(df[col])
+
+        # -------------------------
+        # NUMERIC
+        # -------------------------
+        if col_type == "numeric":
+
+            series = pd.to_numeric(
+                df[col],
+                errors="coerce"
+            ).dropna()
 
             if series.empty:
                 continue
@@ -32,12 +40,21 @@ def build_profile(df: pd.DataFrame):
                 "mean": float(series.mean())
             }
 
+        # -------------------------
+        # CATEGORICAL
+        # -------------------------
         else:
-            unique_vals = df[col].dropna().unique()
+
+            unique_vals = (
+                df[col]
+                .dropna()
+                .astype(str)
+                .unique()
+            )
 
             profile[col] = {
                 "type": "categorical",
-                "unique_values": unique_vals[:50].tolist()  # limit size
+                "unique_values": unique_vals[:50].tolist()
             }
 
     return profile

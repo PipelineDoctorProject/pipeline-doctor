@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from sqlalchemy.orm import Session
-
+import numpy
 from app.services.quality.baseline_service import get_active_baseline
 from app.services.quality.schema_handler import handle_schema
 from app.services.quality.validator import DataValidator
@@ -10,9 +10,9 @@ from app.services.quality.pipeline_run_service import (
     update_pipeline_run_status
 )
 from app.services.quality.storage import store_findings
-
+from app.services.quality.transformer import DataTransformer
 from app.models.schema_change_event import SchemaChangeEvent
-
+from app.services.quality.data_loader import load_dataset
 
 # --------------------------------------------------
 # 🔥 GLOBAL SAFE CONVERTER (CRITICAL FIX)
@@ -52,7 +52,7 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         # --------------------------------------------------
         # 1. LOAD DATA
         # --------------------------------------------------
-        df = pd.read_csv(file_path)
+        df = load_dataset(file_path)
 
         # --------------------------------------------------
         # 2. SCHEMA DETECTION (BEFORE MUTATION)
@@ -112,6 +112,12 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         })
 
         result = validator.run()
+        transformer = DataTransformer(
+                df,
+                baseline.schema
+            )
+
+        df = transformer.run()
 
         if extra_cols:
             result["schema_errors"].append(f"Extra columns: {extra_cols}")

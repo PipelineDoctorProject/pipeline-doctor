@@ -33,9 +33,15 @@ def get_active_baseline(db: Session, model_id: int):
     raise Exception("No approved baseline found")
 
 
-def create_baseline_version(db: Session, model_id: int, schema: dict, profile: dict):
+def create_baseline_version(
+    db: Session,
+    model_id: int,
+    schema: dict,
+    profile: dict,
+    approved: bool = False
+):
 
-    # version logic (ALL baselines)
+    # latest version
     latest = (
         db.query(Baseline)
         .filter(Baseline.model_id == model_id)
@@ -45,7 +51,7 @@ def create_baseline_version(db: Session, model_id: int, schema: dict, profile: d
 
     version = 1 if not latest else latest.version + 1
 
-    # activation logic (ONLY approved active)
+    # active approved baseline
     active_baseline = (
         db.query(Baseline)
         .filter(
@@ -56,9 +62,17 @@ def create_baseline_version(db: Session, model_id: int, schema: dict, profile: d
         .first()
     )
 
+    # FIRST BASELINE
     if not active_baseline:
         status = "approved"
         is_active = True
+
+    # APPROVAL FLOW
+    elif approved:
+        status = "approved"
+        is_active = False
+
+    # NORMAL NEW UPLOAD
     else:
         status = "draft"
         is_active = False
@@ -82,6 +96,7 @@ def create_baseline_version(db: Session, model_id: int, schema: dict, profile: d
             Baseline.model_id == model_id,
             Baseline.id != baseline.id
         ).update({"is_active": False})
+
         db.commit()
 
     return baseline
