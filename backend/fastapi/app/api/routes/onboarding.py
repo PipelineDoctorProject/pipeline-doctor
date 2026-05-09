@@ -47,6 +47,6 @@ def create_company_route(
 
     return create_company(
         db=db,
-        user_id=user["user_id"],
+        user_id=user.id,
         company_name=data.company_name
     )
