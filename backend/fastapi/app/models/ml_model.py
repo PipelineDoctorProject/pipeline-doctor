@@ -15,5 +15,5 @@ class MLModel(Base):
     mlflow_alias = Column(String, nullable=True)
     mlflow_run_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    
     runs = relationship("PipelineRun", back_populates="model")
