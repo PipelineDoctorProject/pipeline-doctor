@@ -12,7 +12,7 @@ class DataValidator:
         self.checks: List[Dict[str, Any]] = []
 
     # -----------------------------
-    # TYPE VALIDATION ONLY
+    # TYPE VALIDATION
     # -----------------------------
     def validate_schema(self):
         for col, expected_type in self.schema.items():
@@ -32,12 +32,12 @@ class DataValidator:
             if col not in self.df.columns:
                 continue
 
-            ratio = self.df[col].isna().mean()
+            ratio = float(self.df[col].isna().mean())  # 🔥 FIX
 
             self.checks.append({
                 "column": col,
                 "check": "null_ratio",
-                "success": ratio <= threshold,
+                "success": bool(ratio <= threshold),  # 🔥 FIX
                 "details": f"{ratio:.2f} (threshold={threshold})"
             })
 
@@ -54,16 +54,19 @@ class DataValidator:
                 if series.empty:
                     continue
 
+                min_val = float(series.min())  # 🔥 FIX
+                max_val = float(series.max())  # 🔥 FIX
+
                 success = (
-                    series.min() >= rules["min"]
-                    and series.max() <= rules["max"]
+                    min_val >= rules["min"]
+                    and max_val <= rules["max"]
                 )
 
                 self.checks.append({
                     "column": col,
                     "check": "range",
-                    "success": success,
-                    "details": f"{series.min()}-{series.max()} vs {rules['min']}-{rules['max']}"
+                    "success": bool(success),  # 🔥 FIX
+                    "details": f"{min_val}-{max_val} vs {rules['min']}-{rules['max']}"
                 })
 
     # -----------------------------
@@ -75,15 +78,15 @@ class DataValidator:
                 continue
 
             if "unique_values" in rules:
-                observed = set(self.df[col].dropna().unique())
-                allowed = set(rules["unique_values"])
+                observed = set(self.df[col].dropna().astype(str).unique())
+                allowed = set(map(str, rules["unique_values"]))
 
                 unseen = observed - allowed
 
                 self.checks.append({
                     "column": col,
                     "check": "categorical",
-                    "success": len(unseen) == 0,
+                    "success": bool(len(unseen) == 0),  # 🔥 FIX
                     "details": f"unseen={list(unseen)}"
                 })
 
@@ -96,13 +99,13 @@ class DataValidator:
         self.validate_numeric_ranges()
         self.validate_categorical()
 
-        failed = sum(1 for c in self.checks if not c["success"])
+        failed = int(sum(1 for c in self.checks if not c["success"]))  # 🔥 FIX
 
         return {
             "schema_errors": self.schema_errors,
             "checks": self.checks,
             "summary": {
-                "total_checks": len(self.checks),
+                "total_checks": int(len(self.checks)),  # 🔥 FIX
                 "failed_checks": failed,
                 "status": "FAIL" if self.schema_errors or failed else "PASS"
             }

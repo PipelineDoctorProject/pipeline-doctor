@@ -7,7 +7,7 @@ import uuid
 from app.db.session import get_db
 from app.models.baseline import Baseline
 from app.services.quality.baseline import create_baseline
-from app.services.quality.baseline_service import create_baseline_version
+from app.services.quality.baseline_service import create_baseline_version,activate_baseline
 from app.config.settings import BASELINE_UPLOAD_DIR
 
 router = APIRouter(tags=["Data Quality Findings"])
@@ -41,8 +41,10 @@ async def upload_baseline(
         baseline_data["schema"],
         baseline_data["profile"]
     )
+    
 
     return {
-        "message": "Baseline created (draft)",
-        "version": baseline.version
-    }
+    "message": "Baseline created",
+    "version": baseline.version,
+    "status": baseline.status
+}

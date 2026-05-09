@@ -15,7 +15,7 @@ class Baseline(Base):
     schema = Column(JSON, nullable=False)
     profile = Column(JSON, nullable=False)
 
-    status = Column(String, default="draft")  # draft / approved
-    is_active = Column(Boolean, default=False)
+    status = Column(String, default="approved")  # draft / approved
+    is_active = Column(Boolean, default=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
