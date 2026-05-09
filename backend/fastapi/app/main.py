@@ -1,6 +1,5 @@
 from app.api.routes import data_quality
 from fastapi import FastAPI
-
 from fastapi.openapi.utils import get_openapi
 
 from app.api.routes import (
@@ -11,8 +10,10 @@ from app.api.routes import (
     drift_findings,
     auth,
     onboarding,
-    invite
+    invite,
+    upload_baseline
 )
+
 
 
 
@@ -25,12 +26,15 @@ from app.api.routes import (health,
                                   schema,
                                   )
 
-from app.middleware.auth_middleware import AuthMiddleware
 
+from app.middleware.auth_middleware import AuthMiddleware
 
 app = FastAPI()
 
-# Routers
+
+# ==========================================
+# ROUTERS
+# ==========================================
 app.include_router(health.router)
 app.include_router(runs.router)
 app.include_router(incidents.router)
@@ -38,16 +42,23 @@ app.include_router(predictions.router)
 app.include_router(data_quality.router)
 app.include_router(drift_findings.router)
 app.include_router(auth.router)
+
 app.include_router(schema.router)
+
+
 app.include_router(onboarding.router)
 app.include_router(invite.router)
+app.include_router(upload_baseline.router)
 
-# Middleware
+
+# ==========================================
+# MIDDLEWARE
+# ==========================================
 app.add_middleware(AuthMiddleware)
 
 
 # ==========================================
-# ADD AUTHORIZE BUTTON TO SWAGGER
+# SWAGGER JWT AUTH
 # ==========================================
 def custom_openapi():
 
@@ -61,7 +72,7 @@ def custom_openapi():
         routes=app.routes,
     )
 
-    # JWT Bearer Config
+    # JWT Auth config
     openapi_schema["components"]["securitySchemes"] = {
         "BearerAuth": {
             "type": "http",
@@ -70,10 +81,10 @@ def custom_openapi():
         }
     }
 
-    # Apply globally
-    openapi_schema["security"] = [
-        {"BearerAuth": []}
-    ]
+    # Apply auth globally
+    for path in openapi_schema["paths"].values():
+        for method in path.values():
+            method["security"] = [{"BearerAuth": []}]
 
     app.openapi_schema = openapi_schema
 
@@ -81,8 +92,3 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
-
-app.add_middleware(AuthMiddleware)
-app.include_router(upload_baseline.router)
-
-

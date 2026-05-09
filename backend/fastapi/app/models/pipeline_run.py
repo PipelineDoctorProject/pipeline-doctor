@@ -10,13 +10,18 @@ class PipelineRun(Base):
     id = Column(Integer, primary_key=True, index=True)
     model_id = Column(Integer, ForeignKey("ml_models.id"), nullable=False)
     baseline_version = Column(Integer, nullable=False)
+
     file_path = Column(String, nullable=True)
+
+
+    cleaned_data_path = Column(String, nullable=True)
+
 
     predictions = relationship("PredictionLog", back_populates="run")
 
     status = Column(String, default="running")
-    created_at = Column(DateTime, default=datetime.utcnow)
 
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     cleaned_data_path = Column(String, nullable=True)
 
@@ -24,7 +29,13 @@ class PipelineRun(Base):
 
     findings = relationship("DataQualityFinding", back_populates="run")
 
+
     schema_changed = Column(Boolean, default=False)
     drift_findings = relationship("DriftFinding", back_populates="run")  # ADD THIS
     incidents = relationship("Incident",back_populates='run')
+
+
+    drift_findings = relationship("DriftFinding", back_populates="run")
+
+    incidents = relationship("Incident", back_populates="run")
 
