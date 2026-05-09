@@ -1,6 +1,6 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, String, ForeignKey,Boolean
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.models.base import Base
 
 
@@ -9,13 +9,33 @@ class PipelineRun(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     model_id = Column(Integer, ForeignKey("ml_models.id"), nullable=False)
+    baseline_version = Column(Integer, nullable=False)
+
+    file_path = Column(String, nullable=True)
+
+
+    cleaned_data_path = Column(String, nullable=True)
+
+
+    predictions = relationship("PredictionLog", back_populates="run")
+
     status = Column(String, default="running")
-    drift_score = Column(Float, default=0.0)
-    started_at = Column(DateTime, default=datetime.utcnow)
-    ended_at = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    cleaned_data_path = Column(String, nullable=True)
 
     model = relationship("MLModel", back_populates="runs")
-    predictions = relationship("PredictionLog", back_populates="run")
-    incidents = relationship("Incident", back_populates="run")
+
+    findings = relationship("DataQualityFinding", back_populates="run")
+
+
+    schema_changed = Column(Boolean, default=False)
+    drift_findings = relationship("DriftFinding", back_populates="run")  # ADD THIS
+    incidents = relationship("Incident",back_populates='run')
+
+
     drift_findings = relationship("DriftFinding", back_populates="run")
-    data_quality_findings = relationship("DataQualityFinding", back_populates="run")
+
+    incidents = relationship("Incident", back_populates="run")
+

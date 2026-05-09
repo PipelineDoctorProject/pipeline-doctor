@@ -12,5 +12,4 @@ class PredictionLog(Base):
     input_data = Column(JSON, nullable=False)
     prediction = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
     run = relationship("PipelineRun", back_populates="predictions")

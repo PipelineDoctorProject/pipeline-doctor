@@ -158,6 +158,7 @@ ENV/
 env.bak/
 venv.bak/
 
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -167,6 +168,13 @@ venv.bak/
 
 # mkdocs documentation
 /site
+
+# MLflow
+*.db
+mlruns/
+mlartifacts/
+mlflow.db
+
 
 # mypy
 .mypy_cache/

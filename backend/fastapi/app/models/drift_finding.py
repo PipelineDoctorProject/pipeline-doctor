@@ -1,6 +1,9 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from app.models.base import Base
+from sqlalchemy import Boolean
+from datetime import datetime
+from sqlalchemy import DateTime
 
 class DriftFinding(Base):
     __tablename__ = "drift_findings"
@@ -10,6 +13,7 @@ class DriftFinding(Base):
     
     feature_name = Column(String, nullable=False)
     drift_score = Column(Float, nullable=False)
-    drift_detected = Column(String, default="no")  # yes/no or enum
+    drift_detected = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     run = relationship("PipelineRun", back_populates="drift_findings")
