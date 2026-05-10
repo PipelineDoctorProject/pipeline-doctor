@@ -217,3 +217,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+#ml
+mlartifacts
+mlfow.db
+mlflow_backup.db/
