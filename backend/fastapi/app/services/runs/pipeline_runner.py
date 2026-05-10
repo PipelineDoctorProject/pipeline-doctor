@@ -1,8 +1,13 @@
 from datetime import datetime
-from sqlalchemy.orm import Session
-import numpy as np
+
 import mlflow
 import mlflow.pyfunc
+import numpy as np
+import pandas as pd
+import json
+from evidently import Report
+from evidently.presets import DataDriftPreset
+from sqlalchemy.orm import Session
 
 from app.models.pipeline_run import PipelineRun
 from app.models.prediction_log import PredictionLog
@@ -47,16 +52,59 @@ def run_data_quality_checks(db: Session, run: PipelineRun, X):
 
 
 def run_drift_checks(db: Session, run: PipelineRun, X):
-    baseline_mean = 0.5
-    current_mean = float(np.nanmean(X))
-    drift_score = abs(current_mean - baseline_mean)
+    feature_names = ["feature_1", "feature_2", "feature_3"]
 
-    if drift_score > 0.2:
+    reference_data = pd.DataFrame(
+        np.random.normal(0.5, 0.1, (1000, 3)),
+        columns=feature_names
+    )
+
+    current_data = pd.DataFrame(
+        np.nan_to_num(X, nan=0.0),
+        columns=feature_names
+    )
+
+    report = Report([DataDriftPreset()])
+
+    snapshot = report.run(
+        current_data=current_data,
+        reference_data=reference_data
+    )
+
+    result_dict = snapshot.dict()
+    metrics = result_dict.get("metrics", [])
+
+    inserted = False
+
+    for metric in metrics:
+        if metric.get("metric") == "DataDriftTable":
+            drift_by_columns = metric["result"]["drift_by_columns"]
+
+            for feature_name, drift_info in drift_by_columns.items():
+                drift_score = drift_info.get("drift_score", 0.0)
+                drift_detected = drift_info.get("drift_detected", False)
+
+                db.add(DriftFinding(
+                    run_id=run.id,
+                    feature_name=feature_name,
+                    drift_score=float(drift_score) if drift_score is not None else 0.0,
+                    drift_detected=bool(drift_detected)
+                ))
+
+                inserted = True
+
+    # Fallback logic if Evidently output format is different
+    if not inserted:
+        baseline_mean = 0.5
+        current_mean = float(np.nanmean(X))
+        drift_score = abs(current_mean - baseline_mean)
+        drift_detected = drift_score > 0.2
+
         db.add(DriftFinding(
             run_id=run.id,
-            feature_name="global_mean",
+            feature_name="dataset_level",
             drift_score=drift_score,
-            drift_detected=True
+            drift_detected=drift_detected
         ))
 
 
@@ -69,7 +117,7 @@ def create_incidents(db: Session, run: PipelineRun):
             db.add(Incident(
                 run_id=run.id,
                 title="Drift detected",
-                description=f"{drift.feature_name} drifted",
+                description=f"{drift.feature_name} drifted with score {drift.drift_score}",
                 failure_type="drift",
                 finding_type="drift",
                 finding_id=drift.id,
@@ -116,6 +164,7 @@ def run_pipeline(db: Session, model_id: int, mode: str = "bad"):
     try:
         print("MODEL URI:", MODEL_URI)
         print("MODEL RUN ID:", model.metadata.run_id)
+
         X = generate_data(mode)
 
         X_for_prediction = np.nan_to_num(X, nan=0.0)
