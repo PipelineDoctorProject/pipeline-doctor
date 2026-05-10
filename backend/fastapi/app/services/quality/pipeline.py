@@ -13,6 +13,31 @@ from app.services.quality.storage import store_findings
 from app.services.quality.transformer import DataTransformer
 from app.models.schema_change_event import SchemaChangeEvent
 from app.services.quality.data_loader import load_dataset
+from app.services.drift.drift_service import run_drift_checks
+from app.models.prediction_log import PredictionLog
+import mlflow
+import mlflow.pyfunc
+
+# MLflow Config
+mlflow.set_tracking_uri("http://127.0.0.1:5000")
+MODEL_URI = "models:/PipelineDoctorDemoModel@champion"
+try:
+    model = mlflow.pyfunc.load_model(MODEL_URI)
+except Exception as e:
+    print(f"Warning: Could not load MLflow model: {e}")
+    model = None
+
+def clean_value(v):
+    try:
+        v = float(v)
+        if numpy.isnan(v) or numpy.isinf(v):
+            return None
+        return v
+    except Exception:
+        return None
+
+def clean_array(arr):
+    return [clean_value(v) for v in arr]
 
 # --------------------------------------------------
 # 🔥 GLOBAL SAFE CONVERTER (CRITICAL FIX)
@@ -149,9 +174,46 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         )
 
         # --------------------------------------------------
+        # 6.5. GENERATE PREDICTIONS
+        # --------------------------------------------------
+        if model is not None:
+            try:
+                print(f"Generating predictions for run {run.id}...")
+                X_for_prediction = df.fillna(0.0)
+                preds = model.predict(X_for_prediction)
+                
+                prediction_logs = []
+                for i in range(len(df)):
+                    row_features = df.iloc[i].tolist()
+                    pred_val = preds[i] if hasattr(preds, '__getitem__') else preds.iloc[i]
+                    prediction_logs.append(PredictionLog(
+                        run_id=run.id,
+                        input_data={"features": clean_array(row_features)},
+                        prediction={"value": clean_value(pred_val)}
+                    ))
+                db.add_all(prediction_logs)
+                db.commit()
+                print("Predictions generated and saved.")
+            except Exception as pred_e:
+                print(f"Prediction generation failed: {pred_e}")
+                db.rollback()
+        else:
+            print("MLflow model not loaded. Skipping predictions.")
+
+        # --------------------------------------------------
         # 7. UPDATE STATUS
         # --------------------------------------------------
         update_pipeline_run_status(db, run.id, "success")
+
+        # --------------------------------------------------
+        # 7.5. RUN DRIFT DETECTION
+        # --------------------------------------------------
+        try:
+            print(f"Running drift checks for run {run.id}...")
+            run_drift_checks(db, run)
+            print("Drift checks completed.")
+        except Exception as drift_e:
+            print(f"Drift checks encountered an error: {drift_e}")
 
         # --------------------------------------------------
         # 8. SAFE RESPONSE (CRITICAL FIX)
