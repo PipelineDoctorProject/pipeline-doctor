@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -45,14 +45,36 @@ def signup_route(
 @router.post("/verify-otp")
 def verify_otp_route(
     data: VerifyOTPRequest,
+    response: Response,
     db: Session = Depends(get_db)
 ):
 
-    return verify_otp(
+    result = verify_otp(
         db=db,
         email=data.email,
         otp=data.otp
     )
+
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=result["refresh_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    return {
+        "message": "OTP verified",
+        "onboarding_required": result["onboarding_required"]
+    }
 
 
 # ======================================
@@ -61,14 +83,35 @@ def verify_otp_route(
 @router.post("/login")
 def login_route(
     data: LoginRequest,
+    response: Response,
     db: Session = Depends(get_db)
 ):
 
-    return login_user(
+    result = login_user(
         db=db,
         email=data.email,
         password=data.password
     )
+
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=result["refresh_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    return {
+        "message": "Login successful"
+    }
 
 
 # ======================================

@@ -1,6 +1,6 @@
-from app.api.routes import data_quality
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
     health,
@@ -8,24 +8,13 @@ from app.api.routes import (
     incidents,
     predictions,
     drift_findings,
+    data_quality,
     auth,
     onboarding,
     invite,
-    upload_baseline
+    upload_baseline,
+    schema
 )
-
-
-
-
-from app.api.routes import (health, 
-                            runs,
-                            incidents,
-                              predictions,
-                                drift_findings,
-                                  auth,upload_baseline,
-                                  schema,
-                                  )
-
 
 from app.middleware.auth_middleware import AuthMiddleware
 
@@ -33,33 +22,45 @@ app = FastAPI()
 
 
 # ==========================================
+# MIDDLEWARE
+# ==========================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(AuthMiddleware)
+
+
+# ==========================================
 # ROUTERS
 # ==========================================
+
 app.include_router(health.router)
 app.include_router(runs.router)
 app.include_router(incidents.router)
 app.include_router(predictions.router)
 app.include_router(data_quality.router)
 app.include_router(drift_findings.router)
+
 app.include_router(auth.router)
-
-app.include_router(schema.router)
-
-
 app.include_router(onboarding.router)
 app.include_router(invite.router)
+
 app.include_router(upload_baseline.router)
-
-
-# ==========================================
-# MIDDLEWARE
-# ==========================================
-app.add_middleware(AuthMiddleware)
+app.include_router(schema.router)
 
 
 # ==========================================
 # SWAGGER JWT AUTH
 # ==========================================
+
 def custom_openapi():
 
     if app.openapi_schema:
@@ -72,7 +73,7 @@ def custom_openapi():
         routes=app.routes,
     )
 
-    # JWT Auth config
+    # JWT Bearer configuration
     openapi_schema["components"]["securitySchemes"] = {
         "BearerAuth": {
             "type": "http",
@@ -81,7 +82,7 @@ def custom_openapi():
         }
     }
 
-    # Apply auth globally
+    # Apply globally to all routes
     for path in openapi_schema["paths"].values():
         for method in path.values():
             method["security"] = [{"BearerAuth": []}]

@@ -2,7 +2,8 @@ from fastapi import (
     APIRouter,
     Depends,
     Request,
-    HTTPException
+    HTTPException,
+    Response
 )
 
 from fastapi.security import HTTPBearer
@@ -34,6 +35,7 @@ security = HTTPBearer()
 def create_company_route(
     data: CompanyOnboardingRequest,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db)
 ):
 
@@ -45,8 +47,30 @@ def create_company_route(
             detail="Unauthorized"
         )
 
-    return create_company(
+    result = create_company(
         db=db,
         user_id=user.id,
         company_name=data.company_name
     )
+
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=result["refresh_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    return {
+        "message": result["message"],
+        "tenant_id": result["tenant_id"],
+        "schema_name": result["schema_name"]
+    }
