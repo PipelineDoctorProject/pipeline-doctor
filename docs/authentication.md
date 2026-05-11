@@ -106,6 +106,52 @@ PipelineDoctor uses a multi-stage, multi-tenant authentication system designed f
 
 ## 🏢 Multi-Tenancy Architecture
 
+
+PipelineDoctor implements a **Schema-based Multi-Tenancy** strategy, ensuring that data for different organizations is physically isolated at the database level.
+
+### 1. Tenant Isolation
+- **Isolated Schemas**: Every "Company" (Tenant) is assigned a unique PostgreSQL schema (e.g., `tenant_google_a1b2c3`).
+- **Data Sovereignty**: Tables like `ml_models`, `baselines`, and `incidents` are created inside the tenant's specific schema, not in the public schema.
+
+### 2. Tenant Onboarding
+After a user verifies their account via OTP, they must go through the **Onboarding Flow**:
+- **Endpoint**: `POST /onboarding/company`
+- **Process**:
+    - User provides a `company_name`.
+    - System generates a unique `schema_name`.
+    - System executes `CREATE SCHEMA` and initializes all required tables within that schema.
+    - The `user` record is linked to the new `tenant_id`.
+
+### 3. Identity Injection (JWT)
+Once a user is associated with a tenant, all future tokens include multi-tenant metadata:
+- **`tenant_id`**: The unique UUID of the organization.
+- **`schema_name`**: The database schema identifier.
+- **`role`**: The user's permissions within that specific tenant.
+
+### 4. Automated Context Switching (Middleware)
+A dedicated **Auth Middleware** (`app/middleware/auth_middleware.py`) handles every request:
+- It extracts the `tenant_id` from the JWT.
+- It automatically executes `SET search_path TO "..."` on the database session.
+- This ensures that all SQL queries in the service layer are automatically routed to the correct tenant's tables without the developer having to manually filter by `tenant_id`.
+
+---
+
+## 🚦 Token Refresh Flow
+When an access token expires, the client should call:
+- **Endpoint**: `POST /auth/refresh`
+- **Payload**: `{ "refresh_token": "..." }`
+- **Response**: A new valid `access_token`.
+
+---
+
+## 📦 Service Components
+
+- **JWT Core (`app/core/jwt.py`)**: Handles encoding, decoding, and expiration logic.
+- **Security Utils (`app/core/security.py`)**: Handles password hashing and verification.
+- **Auth Service (`app/services/auth/auth_service.py`)**: Business logic for signup, login, and OTP management.
+- **Email Utils (`app/utils/email_utils.py`)**: Orchestrates sending OTPs to users.
+=======
+
 PipelineDoctor implements **PostgreSQL Schema-based Multi-Tenancy**, providing complete physical data isolation between organizations.
 
 ### How it works:
@@ -200,3 +246,4 @@ Admins can invite team members to their tenant workspace.
 | `app/utils/email_utils.py` | SMTP email sending (OTP + invite links) |
 | `app/utils/otp_utils.py` | Random 6-digit OTP generation |
 | `app/utils/schema_utils.py` | `CREATE SCHEMA` and `SET search_path` utilities |
+
