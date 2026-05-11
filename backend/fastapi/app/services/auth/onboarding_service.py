@@ -35,11 +35,17 @@ def create_company(db: Session, user_id: str, company_name: str):
     db.commit()
 
     access_token = create_access_token({
-        "user_id": user.id
+        "user_id": user.id,
+        "tenant_id": tenant.id,
+        "schema_name": tenant.schema_name,
+        "role": user.role
     })
 
     refresh_token = create_refresh_token({
-        "user_id": user.id
+        "user_id": user.id,
+        "tenant_id": tenant.id,
+        "schema_name": tenant.schema_name,
+        "role": user.role
     })
 
     return {
