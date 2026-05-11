@@ -4,6 +4,8 @@ from evidently import Report
 from evidently.presets import DataDriftPreset
 from app.services.drift.metrics import calculate_psi, calculate_ks
 from app.services.drift.utils import classify_drift_severity
+from app.config import settings
+from evidently.ui.workspace import Workspace
 
 def check_data_drift(reference_data: pd.DataFrame, current_data: pd.DataFrame):
     results = []
@@ -17,10 +19,39 @@ def check_data_drift(reference_data: pd.DataFrame, current_data: pd.DataFrame):
 
     try:
         report = Report([DataDriftPreset()])
-        report.run(
+        # Run the report and CAPTURE the resulting Snapshot object
+        snapshot = report.run(
             current_data=current_data[feature_names],
             reference_data=reference_data[feature_names]
         )
+        
+        # --- EVIDENTLY CLOUD INTEGRATION (Verified for 0.7.21) ---
+        if settings.EVIDENTLY_TOKEN:
+            try:
+                from evidently.ui.workspace import CloudWorkspace
+                ws = CloudWorkspace(
+                    token=settings.EVIDENTLY_TOKEN,
+                    url="https://app.evidently.cloud"
+                )
+                
+                # Auto-discover project by name
+                project = None
+                projects = ws.list_projects()
+                for p in projects:
+                    if p.name.lower() == "pipeline-doctor" or p.name == "PipelineDoctor":
+                        project = p
+                        break
+                
+                if project:
+                    # Use the snapshot object we captured from run()
+                    ws.add_run(project.id, snapshot)
+                    print(f"Successfully pushed drift snapshot to Project: {project.name}")
+                else:
+                    print(f"Project not found. Available projects: {[p.name for p in projects]}")
+                    
+            except Exception as cloud_err:
+                print(f"Failed to push to Evidently Cloud: {cloud_err}")
+                
     except Exception as e:
         print(f"Evidently AI report generation failed: {e}")
 
