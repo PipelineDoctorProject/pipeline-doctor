@@ -30,7 +30,7 @@ def train_and_register_model():
         model.fit(X_train, y_train) # Train
 
         preds = model.predict(X_test) # Predict
-        accuracy = accuracy_score(y_test, preds) # calculate accuracy
+        accuracy = accuracy_score(y_test, preds) # Calculate accuracy
 
         mlflow.log_param("model_type", "RandomForestClassifier")
         mlflow.log_param("n_estimators", 100)

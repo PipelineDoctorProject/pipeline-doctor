@@ -56,10 +56,11 @@ def approve_schema_change(event_id: int, db: Session = Depends(get_db)):
 
     # create new baseline
     new_baseline = create_baseline_version(
-        db,
-        model_id=event.model_id,
-        schema=updated_schema,
-        profile=updated_profile
+    db,
+    model_id=event.model_id,
+    schema=updated_schema,
+    profile=updated_profile,
+    approved=True
     )
 
     # IMPORTANT: activate it

@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Dict, List, Any
-
+from app.services.quality.type_utils import normalize_dtype
 
 class DataValidator:
     def __init__(self, df: pd.DataFrame, baseline: Dict[str, Any]):
@@ -15,14 +15,20 @@ class DataValidator:
     # TYPE VALIDATION
     # -----------------------------
     def validate_schema(self):
-        for col, expected_type in self.schema.items():
-            if col in self.df.columns:
-                actual_type = str(self.df[col].dtype)
 
-                if actual_type != expected_type:
-                    self.schema_errors.append(
-                        f"{col}: expected {expected_type}, got {actual_type}"
-                    )
+        for col, expected_type in self.schema.items():
+
+            if col not in self.df.columns:
+                continue
+
+            actual_type = normalize_dtype(self.df[col].dtype)
+            expected_type = normalize_dtype(expected_type)
+
+            if actual_type != expected_type:
+
+                self.schema_errors.append(
+                    f"{col}: expected {expected_type}, got {actual_type}"
+                )
 
     # -----------------------------
     # NULL CHECK
@@ -32,12 +38,12 @@ class DataValidator:
             if col not in self.df.columns:
                 continue
 
-            ratio = float(self.df[col].isna().mean())  # 🔥 FIX
+            ratio = float(self.df[col].isna().mean())  #  FIX
 
             self.checks.append({
                 "column": col,
                 "check": "null_ratio",
-                "success": bool(ratio <= threshold),  # 🔥 FIX
+                "success": bool(ratio <= threshold),  #  FIX
                 "details": f"{ratio:.2f} (threshold={threshold})"
             })
 
@@ -45,17 +51,25 @@ class DataValidator:
     # NUMERIC RANGE
     # -----------------------------
     def validate_numeric_ranges(self):
+
         for col, rules in self.profile.items():
+
             if col not in self.df.columns:
                 continue
 
             if "min" in rules and "max" in rules:
-                series = self.df[col].dropna()
+
+                # SAFE numeric conversion
+                series = pd.to_numeric(
+                    self.df[col],
+                    errors="coerce"
+                ).dropna()
+
                 if series.empty:
                     continue
 
-                min_val = float(series.min())  # 🔥 FIX
-                max_val = float(series.max())  # 🔥 FIX
+                min_val = float(series.min())
+                max_val = float(series.max())
 
                 success = (
                     min_val >= rules["min"]
@@ -65,7 +79,7 @@ class DataValidator:
                 self.checks.append({
                     "column": col,
                     "check": "range",
-                    "success": bool(success),  # 🔥 FIX
+                    "success": bool(success),
                     "details": f"{min_val}-{max_val} vs {rules['min']}-{rules['max']}"
                 })
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, JSON
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -14,6 +14,8 @@ class MLModel(Base):
     mlflow_model_name = Column(String, nullable=True)
     mlflow_alias = Column(String, nullable=True)
     mlflow_run_id = Column(String, nullable=True)
+    mlflow_tracking_uri = Column(String, nullable=True)
+    expected_features = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     runs = relationship("PipelineRun", back_populates="model")

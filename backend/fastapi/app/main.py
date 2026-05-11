@@ -21,9 +21,22 @@ from app.middleware.auth_middleware import AuthMiddleware
 app = FastAPI()
 
 
+
 # ==========================================
 # MIDDLEWARE
 # ==========================================
+
+from app.api.routes import (health, 
+                            runs,
+                            incidents,
+                            predictions,
+                            drift_findings,
+                            auth,upload_baseline,
+                            schema,
+                            ml_models
+                            )
+
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,6 +65,8 @@ app.include_router(drift_findings.router)
 app.include_router(auth.router)
 app.include_router(onboarding.router)
 app.include_router(invite.router)
+app.include_router(upload_baseline.router)
+app.include_router(ml_models.router)
 
 app.include_router(upload_baseline.router)
 app.include_router(schema.router)

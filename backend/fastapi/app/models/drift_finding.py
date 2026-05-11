@@ -14,6 +14,10 @@ class DriftFinding(Base):
     feature_name = Column(String, nullable=False)
     drift_score = Column(Float, nullable=False)
     drift_detected = Column(Boolean, default=False)
+    psi_score = Column(Float, nullable=True)
+    ks_score = Column(Float, nullable=True)
+    ks_pvalue = Column(Float, nullable=True)
+    severity = Column(String, default="low")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     run = relationship("PipelineRun", back_populates="drift_findings")
