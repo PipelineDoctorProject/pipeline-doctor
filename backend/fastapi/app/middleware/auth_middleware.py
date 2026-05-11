@@ -15,12 +15,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         request.state.db = None
         request.state.schema = None
 
-        auth_header = request.headers.get("Authorization")
+        token = request.cookies.get("access_token")
 
-        if auth_header:
+        if token:
 
             try:
-                token = auth_header.replace("Bearer ", "")
+
                 payload = decode_token(token)
 
                 db = SessionLocal()
@@ -32,11 +32,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 )
 
                 if user:
-                    request.state.user = user  # ✅ ORM OBJECT
 
-                    if user.tenant_id:
-                        request.state.schema = user.tenant_id
-                        set_schema(db, user.tenant_id)
+                    request.state.user = user
+
+                    if payload.get("schema_name"):
+
+                        request.state.schema = payload["schema_name"]
+
+                        set_schema(
+                            db,
+                            payload["schema_name"]
+                        )
+
                         request.state.db = db
 
             except Exception as e:
