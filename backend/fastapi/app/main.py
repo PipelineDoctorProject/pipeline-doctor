@@ -20,11 +20,12 @@ from app.api.routes import (
 from app.api.routes import (health, 
                             runs,
                             incidents,
-                              predictions,
-                                drift_findings,
-                                  auth,upload_baseline,
-                                  schema,
-                                  )
+                            predictions,
+                            drift_findings,
+                            auth,upload_baseline,
+                            schema,
+                            ml_models
+                            )
 
 
 from app.middleware.auth_middleware import AuthMiddleware
@@ -49,6 +50,7 @@ app.include_router(schema.router)
 app.include_router(onboarding.router)
 app.include_router(invite.router)
 app.include_router(upload_baseline.router)
+app.include_router(ml_models.router)
 
 
 # ==========================================
