@@ -34,11 +34,13 @@ def check_data_drift(reference_data: pd.DataFrame, current_data: pd.DataFrame):
                     url="https://app.evidently.cloud"
                 )
                 
-                # Auto-discover project by name
+                # Auto-discover project by name from settings
                 project = None
                 projects = ws.list_projects()
+                target_name = settings.EVIDENTLY_PROJECT_NAME
+                
                 for p in projects:
-                    if p.name.lower() == "pipeline-doctor" or p.name == "PipelineDoctor":
+                    if p.name == target_name or p.name.lower() == target_name.lower():
                         project = p
                         break
                 
