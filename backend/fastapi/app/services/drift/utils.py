@@ -12,7 +12,9 @@ def classify_drift_severity(drift_score: float) -> str:
     return "low"
 
 def get_latest_baseline_file():
-    list_of_files = glob.glob(os.path.join(BASELINE_UPLOAD_DIR, '*.csv'))
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+    abs_upload_dir = os.path.join(base_dir, BASELINE_UPLOAD_DIR)
+    list_of_files = glob.glob(os.path.join(abs_upload_dir, '*.csv'))
     if not list_of_files:
         return None
     return max(list_of_files, key=os.path.getctime)
