@@ -3,29 +3,24 @@ import api from "../api/client";
 import { inviteMemberApi } from "../api/invite";
 
 const useAuthStore = create((set) => ({
-
   user: null,
   isAuthenticated: false,
-  workspace:null,
+  workspace: null,
   loading: false,
 
   signup: async (email, password) => {
-
     set({ loading: true });
 
     try {
-
       const response = await api.post("/auth/signup", {
         email,
         password,
       });
-      
+
       set({ loading: false });
 
       return response.data;
-
     } catch (error) {
-
       set({ loading: false });
 
       throw error.response?.data || error;
@@ -33,25 +28,19 @@ const useAuthStore = create((set) => ({
   },
 
   inviteMember: async (email) => {
+    try {
+      const data = await inviteMemberApi(email);
 
-  try {
-
-    const data = await inviteMemberApi(email);
-
-    return data;
-
-  } catch (err) {
-
-    throw err.response?.data || err;
-  }
-},
+      return data;
+    } catch (err) {
+      throw err.response?.data || err;
+    }
+  },
 
   verifyOtp: async (email, otp) => {
-
     set({ loading: true });
 
     try {
-
       const response = await api.post("/auth/verify-otp", {
         email,
         otp,
@@ -63,9 +52,7 @@ const useAuthStore = create((set) => ({
       });
 
       return response.data;
-
     } catch (error) {
-
       set({ loading: false });
 
       throw error.response?.data || error;
@@ -73,11 +60,9 @@ const useAuthStore = create((set) => ({
   },
 
   login: async (email, password) => {
-
     set({ loading: true });
 
     try {
-
       const response = await api.post("/auth/login", {
         email,
         password,
@@ -89,9 +74,7 @@ const useAuthStore = create((set) => ({
       });
 
       return response.data;
-
     } catch (error) {
-
       set({ loading: false });
 
       throw error.response?.data || error;
@@ -99,24 +82,17 @@ const useAuthStore = create((set) => ({
   },
 
   createCompany: async (company_name) => {
-
     set({ loading: true });
 
     try {
-
-      const response = await api.post(
-        "/onboarding/company",
-        {
-          company_name,
-        }
-      );
+      const response = await api.post("/onboarding/company", {
+        company_name,
+      });
 
       set({ loading: false });
 
       return response.data;
-
     } catch (error) {
-
       set({ loading: false });
 
       throw error.response?.data || error;
@@ -124,32 +100,29 @@ const useAuthStore = create((set) => ({
   },
 
   logout: async () => {
-
     try {
-
       await api.post("/auth/logout");
 
       set({
         user: null,
         isAuthenticated: false,
       });
-
     } catch (error) {
       console.log(error);
     }
   },
 
-  me: async () =>{
-    try{
-      const response = await api.get("/me");
-      return response.data
+  me: async () => {
+    try {
+      const response = await api.get("/dashboard/me");
 
-    }catch(error){
+      return response.data;
+    } catch (error) {
       console.log("Details Not Loaded");
-      
-    }
-  }
 
+      throw error.response?.data || error;
+    }
+  },
 }));
 
 export default useAuthStore;
