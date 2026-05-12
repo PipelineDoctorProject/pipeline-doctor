@@ -6,6 +6,7 @@ const useAuthStore = create((set) => ({
 
   user: null,
   isAuthenticated: false,
+  workspace:null,
   loading: false,
 
   signup: async (email, password) => {
@@ -18,7 +19,7 @@ const useAuthStore = create((set) => ({
         email,
         password,
       });
-
+      
       set({ loading: false });
 
       return response.data;
@@ -137,6 +138,17 @@ const useAuthStore = create((set) => ({
       console.log(error);
     }
   },
+
+  me: async () =>{
+    try{
+      const response = await api.get("/me");
+      return response.data
+
+    }catch(error){
+      console.log("Details Not Loaded");
+      
+    }
+  }
 
 }));
 
