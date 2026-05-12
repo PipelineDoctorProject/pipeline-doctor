@@ -32,36 +32,56 @@ export default function AcceptInvitePage() {
 
   const handleAcceptInvite = async (e) => {
 
-    e.preventDefault();
+  e.preventDefault();
 
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
+  if (password !== confirmPassword) {
+
+    alert("Passwords do not match");
+
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+
+    const response = await fetch(
+      "http://localhost:8000/invite/accept",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        credentials: "include",
+
+        body: JSON.stringify({
+          token,
+          password,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw data;
     }
 
-    setIsLoading(true);
+    navigate("/dashboard");
 
-    try {
+  } catch (err) {
 
-      console.log({
-        token,
-        password,
-      });
+    alert(
+      err?.detail || "Failed to accept invitation"
+    );
 
-      navigate("/dashboard");
+  } finally {
 
-    } catch (err) {
-
-      alert(
-        err?.detail || "Failed to accept invitation"
-      );
-
-    } finally {
-
-      setIsLoading(false);
-    }
-  };
-
+    setIsLoading(false);
+  }
+};
   return (
     <div className="min-h-screen bg-[#f4f6fb] overflow-hidden relative flex items-center justify-center font-sans">
 
