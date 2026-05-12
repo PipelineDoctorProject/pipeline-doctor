@@ -15,6 +15,7 @@ export default function App() {
       <Routes>
         
         <Route path="/" element={<OpsSightLandingPage />} />
+        
         <Route path="/signup" element={<SignupPage />} />
 
         <Route path="/verify-otp" element={<VerifyOtpPage />} />

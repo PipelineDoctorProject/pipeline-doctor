@@ -13,6 +13,10 @@ export default function OnboardingPage() {
     (state) => state.createCompany
   );
 
+  const inviteMember = useAuthStore(
+    (state) => state.inviteMember
+  );
+
   const [step, setStep] = useState(1);
 
   const [companyName, setCompanyName] = useState("");
@@ -47,15 +51,24 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
 
     if (!memberEmail.trim()) return;
 
     if (members.includes(memberEmail)) return;
 
-    setMembers([...members, memberEmail]);
+    try {
 
-    setMemberEmail("");
+      await inviteMember(memberEmail);
+
+      setMembers([...members, memberEmail]);
+
+      setMemberEmail("");
+
+    } catch (err) {
+
+      alert(err?.detail || "Invite Failed");
+    }
   };
 
   const handleRemoveMember = (email) => {
@@ -259,7 +272,6 @@ export default function OnboardingPage() {
                         </button>
                       </div>
 
-                      {/* EMAIL LIST */}
                       <div className="mt-8 flex flex-wrap gap-3">
 
                         {members.map((email) => (

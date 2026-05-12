@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "../api/client";
+import { inviteMemberApi } from "../api/invite";
 
 const useAuthStore = create((set) => ({
 
@@ -29,6 +30,20 @@ const useAuthStore = create((set) => ({
       throw error.response?.data || error;
     }
   },
+
+  inviteMember: async (email) => {
+
+  try {
+
+    const data = await inviteMemberApi(email);
+
+    return data;
+
+  } catch (err) {
+
+    throw err.response?.data || err;
+  }
+},
 
   verifyOtp: async (email, otp) => {
 
