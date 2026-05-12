@@ -3,12 +3,13 @@ import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 
 import { useState } from "react";
-import useAuthStore from "../store/authStore";
+import useAuthStore from "../../store/authStore";
 
-import Logo from "../assets/logo_og.png";
+import Logo from "../../assets/logo_og.png";
+import { useNavigate } from "react-router-dom";
 
 export default function OnboardingPage() {
-
+  const navigate = useNavigate()
   const createCompany = useAuthStore(
     (state) => state.createCompany
   );
@@ -304,7 +305,7 @@ export default function OnboardingPage() {
 
                         <button
                           type="button"
-                          onClick={handleFinish}
+                          onClick={()=> navigate("/dashboard")}
                           className="text-[11px] tracking-[0.25em] uppercase text-gray-600 hover:text-white transition"
                         >
                           Skip For Now

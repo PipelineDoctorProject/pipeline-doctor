@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import api from "../api/client";
 import { inviteMemberApi } from "../api/invite";
+import { useNavigate } from "react-router-dom";
 
 const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
   workspace: null,
   loading: false,
-
   signup: async (email, password) => {
     set({ loading: true });
 

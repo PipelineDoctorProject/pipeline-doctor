@@ -6,8 +6,8 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import Logo from "../assets/logo_og.png";
-import Logo2 from '../assets/logo2.png'
+// import Logo from ".../assets/logo_og.png";
+import Logo2 from '../../assets/logo2.png';
 
 export default function AcceptInvitePage() {
 

@@ -1,36 +1,35 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import SignupPage from "./pages/Signup";
-import VerifyOtpPage from "./pages/VerifyOtp";
-import LoginPage from "./pages/Login";
-import OnboardingPage from "./pages/Onboarding";
-import DashboardPage from "./pages/Dashboard";
+import AppLayout from "./layouts/AppLayout";
+
+import LandingPage from "./pages/Landing";
+import LoginPage from "./pages/auth/login";
+import SignupPage from "./pages/auth/Signup";
+import VerifyOtpPage from "./pages/auth/VerifyOtp";
+import DashboardPage from "./pages/dashboard/Dashboard";
+import ModelsPage from "./pages/models/Modelspage";
 import OpsSightLandingPage from "./pages/Landing";
-import AcceptInvitePage from "./pages/AcceptInvite";
-
+import OnboardingPage from "./pages/onboarding/Onboarding";
 export default function App() {
-
   return (
     <BrowserRouter>
-
       <Routes>
-        
-        <Route path="/" element={<OpsSightLandingPage />} />
-        
-        <Route path="/signup" element={<SignupPage />} />
-
-        <Route path="/verify-otp" element={<VerifyOtpPage />} />
+        {/* PUBLIC ROUTES */}
+        <Route path="/" element={<LandingPage />} />
 
         <Route path="/login" element={<LoginPage />} />
 
+        <Route path="/signup" element={<SignupPage />} />
+
+        <Route path="/verify-otp" element={<VerifyOtpPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
 
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/accept-invite" element={<AcceptInvitePage />} />
-
-
+        {/* APP LAYOUT ROUTES */}
+        <Route element={<AppLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/models" element={<ModelsPage />} />
+        </Route>
       </Routes>
-
     </BrowserRouter>
   );
 }
