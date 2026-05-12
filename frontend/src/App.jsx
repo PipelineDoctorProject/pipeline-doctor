@@ -5,6 +5,7 @@ import VerifyOtpPage from "./pages/VerifyOtp";
 import LoginPage from "./pages/Login";
 import OnboardingPage from "./pages/Onboarding";
 import DashboardPage from "./pages/Dashboard";
+import OpsSightLandingPage from "./pages/Landing";
 
 export default function App() {
 
@@ -12,8 +13,9 @@ export default function App() {
     <BrowserRouter>
 
       <Routes>
-
-        <Route path="/" element={<SignupPage />} />
+        
+        <Route path="/" element={<OpsSightLandingPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
         <Route path="/verify-otp" element={<VerifyOtpPage />} />
 
