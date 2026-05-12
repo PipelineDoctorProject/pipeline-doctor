@@ -51,25 +51,16 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleAddMember = async () => {
+  const handleAddMember = () => {
 
-    if (!memberEmail.trim()) return;
+  if (!memberEmail.trim()) return;
 
-    if (members.includes(memberEmail)) return;
+  if (members.includes(memberEmail)) return;
 
-    try {
+  setMembers([...members, memberEmail]);
 
-      await inviteMember(memberEmail);
-
-      setMembers([...members, memberEmail]);
-
-      setMemberEmail("");
-
-    } catch (err) {
-
-      alert(err?.detail || "Invite Failed");
-    }
-  };
+  setMemberEmail("");
+};
 
   const handleRemoveMember = (email) => {
 
@@ -78,12 +69,24 @@ export default function OnboardingPage() {
     );
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+
+  try {
+
+    for (const email of members) {
+
+      await inviteMember(email);
+    }
 
     console.log("Invited Members:", members);
 
     window.location.href = "/dashboard";
-  };
+
+  } catch (err) {
+
+    alert(err?.detail || "Invite Failed");
+  }
+};
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#07090d] font-sans text-white">
