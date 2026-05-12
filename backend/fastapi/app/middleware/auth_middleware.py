@@ -20,6 +20,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         try:
 
             token = request.cookies.get("access_token")
+            
+            # If cookie is missing, check Authorization header (for Swagger/Bearer token)
+            if not token:
+                auth_header = request.headers.get("Authorization")
+                if auth_header and auth_header.startswith("Bearer "):
+                    token = auth_header.split(" ")[1]
 
             if token:
 

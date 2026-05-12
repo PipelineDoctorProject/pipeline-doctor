@@ -7,11 +7,11 @@ from app.models.ml_model import MLModel
 from app.models.baseline import Baseline
 
 TENANT_MODELS = [
+    MLModel,
     PipelineRun,
     PredictionLog,
     Incident,
     DriftFinding,
     DataQualityFinding,
-    MLModel,
     Baseline,
 ]
