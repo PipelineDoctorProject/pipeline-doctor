@@ -13,7 +13,8 @@ from app.api.routes import (
     onboarding,
     invite,
     upload_baseline,
-    schema
+    schema,
+    dashboard,
 )
 
 from app.middleware.auth_middleware import AuthMiddleware
@@ -67,7 +68,7 @@ app.include_router(onboarding.router)
 app.include_router(invite.router)
 app.include_router(upload_baseline.router)
 app.include_router(ml_models.router)
-
+app.include_router(dashboard.router)
 app.include_router(upload_baseline.router)
 app.include_router(schema.router)
 
