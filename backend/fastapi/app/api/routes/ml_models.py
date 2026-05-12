@@ -1,17 +1,78 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Request
+)
+
 from sqlalchemy.orm import Session
+
 from typing import List
-from pydantic import BaseModel
-import mlflow
+
 from mlflow.tracking import MlflowClient
-from app.db.session import get_db
+
 from app.models.ml_model import MLModel
-from app.schemas.ml_model import MLModelCreate, MLModelResponse,DiscoverModelsRequest,ModelVersionsRequest
 
-router = APIRouter(prefix="/ml-models", tags=["ML Models"])
+from app.schemas.ml_model import (
+    MLModelCreate,
+    MLModelResponse,
+    DiscoverModelsRequest,
+    ModelVersionsRequest
+)
 
-@router.post("/", response_model=MLModelResponse)
-def register_model(model_in: MLModelCreate, db: Session = Depends(get_db)):
+router = APIRouter(
+    prefix="/ml-models",
+    tags=["ML Models"]
+)
+
+
+# =====================================================
+# LIST MODEL
+# =====================================================
+@router.get("/", response_model=List[MLModelResponse])
+def list_models(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100
+):
+
+    db: Session = request.state.db
+
+    if not db:
+        raise HTTPException(
+            status_code=401,
+            detail="Tenant database not found"
+        )
+
+    models = (
+        db.query(MLModel)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+    return models
+
+
+# =====================================================
+# REGISTER MODEL
+# =====================================================
+@router.post(
+    "/",
+    response_model=MLModelResponse
+)
+def register_model(
+    model_in: MLModelCreate,
+    request: Request
+):
+
+    db: Session = request.state.db
+
+    if not db:
+        raise HTTPException(
+            status_code=401,
+            detail="Tenant database not found"
+        )
+
     db_model = MLModel(
         name=model_in.name,
         version=model_in.version,
@@ -22,30 +83,85 @@ def register_model(model_in: MLModelCreate, db: Session = Depends(get_db)):
         mlflow_tracking_uri=model_in.mlflow_tracking_uri,
         expected_features=model_in.expected_features
     )
+
     db.add(db_model)
+
     db.commit()
+
     db.refresh(db_model)
+
     return db_model
 
-@router.get("/", response_model=List[MLModelResponse])
-def list_models(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    models = db.query(MLModel).offset(skip).limit(limit).all()
+
+# =====================================================
+# LIST MODELS
+# =====================================================
+@router.get(
+    "/",
+    response_model=List[MLModelResponse]
+)
+def list_models(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100
+):
+
+    db: Session = request.state.db
+
+    if not db:
+        raise HTTPException(
+            status_code=401,
+            detail="Tenant database not found"
+        )
+
+    models = (
+        db.query(MLModel)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
     return models
 
-@router.get("/{model_id}", response_model=MLModelResponse)
-def get_model(model_id: int, db: Session = Depends(get_db)):
-    db_model = db.query(MLModel).filter(MLModel.id == model_id).first()
+
+# =====================================================
+# GET SINGLE MODEL
+# =====================================================
+@router.get(
+    "/{model_id}",
+    response_model=MLModelResponse
+)
+def get_model(
+    model_id: int,
+    request: Request
+):
+
+    db: Session = request.state.db
+
+    if not db:
+        raise HTTPException(
+            status_code=401,
+            detail="Tenant database not found"
+        )
+
+    db_model = (
+        db.query(MLModel)
+        .filter(MLModel.id == model_id)
+        .first()
+    )
+
     if not db_model:
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Model not found"
+        )
+
     return db_model
 
 
-
-
-
-
-# Register Model
-
+# =====================================================
+# DISCOVER REGISTERED MODELS
+# =====================================================
 @router.post("/discover")
 def discover_models(
     data: DiscoverModelsRequest
@@ -80,6 +196,10 @@ def discover_models(
             detail=str(e)
         )
 
+
+# =====================================================
+# GET MODEL VERSIONS
+# =====================================================
 @router.post("/versions")
 def get_model_versions(
     data: ModelVersionsRequest

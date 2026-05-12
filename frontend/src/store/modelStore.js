@@ -1,24 +1,43 @@
 import api from "../api/client";
 
+
+// =====================================================
+// DISCOVER MODELS
+// =====================================================
 export const discoverModels = async (
   trackingUri
 ) => {
 
-  const response = await api.post(
-    "/ml-models/discover",
-    {
-      tracking_uri: trackingUri,
-    }
-  );
+  try {
 
-  return response.data;
+    const response = await api.post(
+      "/ml-models/discover",
+      {
+        tracking_uri: trackingUri,
+      }
+    );
+
+    return response.data;
+
+  } catch (error) {
+
+    throw (
+      error.response?.data ||
+      error
+    );
+  }
 };
 
-export const getModelVersions =
-  async (
-    trackingUri,
-    modelName
-  ) => {
+
+// =====================================================
+// GET MODEL VERSIONS
+// =====================================================
+export const getModelVersions = async (
+  trackingUri,
+  modelName
+) => {
+
+  try {
 
     const response = await api.post(
       "/ml-models/versions",
@@ -29,16 +48,57 @@ export const getModelVersions =
     );
 
     return response.data;
+
+  } catch (error) {
+
+    throw (
+      error.response?.data ||
+      error
+    );
+  }
 };
 
+
+// =====================================================
+// REGISTER MODEL
+// =====================================================
 export const registerModel = async (
   payload
 ) => {
 
-  const response = await api.post(
-    "/ml-models/",
-    payload
-  );
+  try {
 
-  return response.data;
+    const response = await api.post(
+      "/ml-models/",
+      payload
+    );
+
+    return response.data;
+
+  } catch (error) {
+
+    throw (
+      error.response?.data ||
+      error
+    );
+  }
+};
+
+export const getModels = async () => {
+
+  try {
+
+    const response = await api.get(
+      "/ml-models/"
+    );
+
+    return response.data;
+
+  } catch (error) {
+
+    throw (
+      error.response?.data ||
+      error
+    );
+  }
 };
