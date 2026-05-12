@@ -8,18 +8,19 @@ def create_schema(db, schema_name: str):
     if not schema_name.isidentifier():
         raise ValueError("Invalid schema name")
 
-    # Create schema
+    # Create schema and switch to it
     db.execute(
         text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
     )
-
+    db.execute(
+        text(f'SET search_path TO "{schema_name}"')
+    )
     db.commit()
 
-    # Dynamically create tenant tables
+    # Dynamically create tenant tables in the specific schema
     for model in TENANT_MODELS:
-
-        model.__table__.schema = schema_name
-
+        # We don't modify model.__table__.schema globally.
+        # Instead, we just ensure the table exists in the current search_path.
         model.__table__.create(
             bind=db.bind,
             checkfirst=True

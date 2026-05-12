@@ -31,7 +31,15 @@ SessionLocal = sessionmaker(
 )
 
 
-def get_db():
+from fastapi import Request
+from typing import Optional
+
+def get_db(request: Optional[Request] = None):
+    # If the middleware already set up a db session, use it!
+    if request and hasattr(request.state, "db") and request.state.db:
+        return request.state.db
+        
+    # Fallback for background tasks or non-middleware requests
     db = SessionLocal()
     try:
         yield db
