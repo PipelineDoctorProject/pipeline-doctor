@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -13,16 +12,11 @@ router = APIRouter(
     tags=["Invite"]
 )
 
-security = HTTPBearer()
-
 
 # ==========================================
 # INVITE MEMBER
 # ==========================================
-@router.post(
-    "/",
-    dependencies=[Depends(security)]
-)
+@router.post("/member")
 def invite_member_route(
     data: InviteMemberRequest,
     request: Request,
@@ -31,14 +25,12 @@ def invite_member_route(
 
     user = request.state.user
 
-    # 🔒 Authentication check
     if not user:
         raise HTTPException(
             status_code=401,
             detail="Unauthorized"
         )
 
-    # 🔒 Authorization check (FIXED: ORM object, no .get())
     if user.role != "admin":
         raise HTTPException(
             status_code=403,
