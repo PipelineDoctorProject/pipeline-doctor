@@ -32,17 +32,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 )
 
                 if user:
-
                     request.state.user = user
-
-                    if payload.get("schema_name"):
-
-                        request.state.schema = payload["schema_name"]
-
-                        set_schema(
-                            db,
-                            payload["schema_name"]
-                        )
+                    
+                    from app.models.tenant import Tenant
+                    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+                    
+                    if tenant and tenant.schema_name:
+                        request.state.schema = tenant.schema_name
+                        set_schema(db, tenant.schema_name)
 
             request.state.db = db
 
