@@ -10,6 +10,7 @@ import DashboardPage from "./pages/dashboard/Dashboard";
 import ModelsPage from "./pages/models/Modelspage";
 import OpsSightLandingPage from "./pages/Landing";
 import OnboardingPage from "./pages/onboarding/Onboarding";
+import SchemaPage from "./pages/schema/Schema";
 export default function App() {
   return (
     <BrowserRouter>
@@ -28,6 +29,7 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/models" element={<ModelsPage />} />
+          <Route path="/schemas" element={<SchemaPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
