@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 
-from app.services.tenant.delete_tenant_service import (
+from app.services.auth.delete_tenant_service import (
     delete_tenant
 )
 
