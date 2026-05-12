@@ -1,11 +1,26 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import (
+    APIRouter,
+    Depends,
+    Request,
+    HTTPException,
+    Response
+)
+
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.invite import InviteMemberRequest, AcceptInviteRequest
+from app.schemas.invite import (
+    InviteMemberRequest,
+    AcceptInviteRequest
+)
 
-from app.services.auth.invite_service import invite_member
-from app.services.auth.accept_invite_service import accept_invite
+from app.services.auth.invite_service import (
+    invite_member
+)
+
+from app.services.auth.accept_invite_service import (
+    accept_invite
+)
 
 router = APIRouter(
     prefix="/invite",
@@ -50,11 +65,32 @@ def invite_member_route(
 @router.post("/accept")
 def accept_invite_route(
     data: AcceptInviteRequest,
+    response: Response,
     db: Session = Depends(get_db)
 ):
 
-    return accept_invite(
+    result = accept_invite(
         db=db,
         token=data.token,
         password=data.password
     )
+
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=result["refresh_token"],
+        httponly=True,
+        secure=False,
+        samesite="Lax"
+    )
+
+    return {
+        "message": "Invitation accepted"
+    }
