@@ -6,8 +6,6 @@ from fastapi import (
     Response
 )
 
-from fastapi.security import HTTPBearer
-
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -25,13 +23,8 @@ router = APIRouter(
     tags=["Onboarding"]
 )
 
-security = HTTPBearer()
 
-
-@router.post(
-    "/company",
-    dependencies=[Depends(security)]
-)
+@router.post("/company")
 def create_company_route(
     data: CompanyOnboardingRequest,
     request: Request,
@@ -53,6 +46,7 @@ def create_company_route(
         company_name=data.company_name
     )
 
+    # Update cookies with tenant-aware tokens
     response.set_cookie(
         key="access_token",
         value=result["access_token"],

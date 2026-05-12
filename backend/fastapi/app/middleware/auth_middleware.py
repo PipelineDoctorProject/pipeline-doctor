@@ -15,15 +15,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
         request.state.db = None
         request.state.schema = None
 
-        token = request.cookies.get("access_token")
+        db = SessionLocal()
 
-        if token:
+        try:
 
-            try:
+            token = request.cookies.get("access_token")
+
+            if token:
 
                 payload = decode_token(token)
-
-                db = SessionLocal()
 
                 user = (
                     db.query(User)
@@ -44,14 +44,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
                             payload["schema_name"]
                         )
 
-                        request.state.db = db
+            request.state.db = db
 
-            except Exception as e:
-                print("AUTH ERROR:", e)
+            response = await call_next(request)
 
-        response = await call_next(request)
+            return response
 
-        if request.state.db:
-            request.state.db.close()
+        except Exception as e:
 
-        return response
+            print("AUTH ERROR:", e)
+
+            response = await call_next(request)
+
+            return response
+
+        finally:
+
+            db.close()
