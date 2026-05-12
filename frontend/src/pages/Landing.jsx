@@ -73,7 +73,7 @@ export default function OpsSightLandingPage() {
 
           <button
             type="button"
-            onClick={()=> navigate('/logi')}
+            onClick={()=> navigate('/login')}
             className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-10 py-4 text-sm font-medium text-white backdrop-blur-xl transition duration-300 hover:bg-white/[0.04]"
           >
             Login
