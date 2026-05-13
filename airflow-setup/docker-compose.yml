@@ -21,8 +21,8 @@ x-airflow-common: &airflow-common
     # ---- OpsSight Integration Variables ----
     # These become available inside your DAG as os.environ['OPSSIGHT_API_URL']
     OPSSIGHT_API_URL: "http://host.docker.internal:8000"
-    OPSSIGHT_MODEL_ID: "1"
-    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYWM3N2Q3OTEtZWRjZi00Y2UyLTkwYjktYWYwNWZlYTkyMTk3IiwiZW1haWwiOiJ0aGFic2hlZXJwb3J1dGhpeWlsQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudF9pZCI6ImJkZjA3ZTFhLWZhM2UtNDFiMS05NjEzLWVlMGY1NjFmZWE2YSIsImV4cCI6MTc3ODY2ODE4MywidHlwZSI6ImFjY2VzcyJ9.HIGvkQzZAIMyxWSGxpRQkxD18Z6muPFEJF6gyZJNTMQ"
+    OPSSIGHT_MODEL_ID: "2"
+    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTI5NGQ5OTctY2VhZS00YjFjLTkwYTUtZTQ1MzdhOTAyNGE4IiwiZW1haWwiOiJjb2RlY3JhemU5MDIwQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudF9pZCI6IjQzZDg5YjIxLTlhMDgtNDVkYi05NGNkLWE5MTQ3MzRiYmQxNiIsImV4cCI6MTc3ODY3MDA4MywidHlwZSI6ImFjY2VzcyJ9.WW-vO5_6INoFBYiG8jHVYv8OxyYgiNVqWtkRduVHLHc"
   volumes:
     - ./dags:/opt/airflow/dags        # Your DAG files go here
     - ./logs:/opt/airflow/logs
@@ -50,14 +50,7 @@ services:
   airflow-init:
     <<: *airflow-common
     command: >
-      bash -c "airflow db migrate &&
-               airflow users create
-               --username admin
-               --password admin
-               --firstname Admin
-               --lastname User
-               --role Admin
-               --email admin@opssight.ai"
+      bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@opssight.ai"
     restart: "no"
 
   # ---- Airflow Webserver (UI at :8080) ----
