@@ -9,7 +9,7 @@ import requests
 INCOMING_DIR = "/opt/airflow/project/uploads/incoming"
 PROCESSED_DIR = "/opt/airflow/project/uploads/processed"
 
-FASTAPI_URL = "http://host.docker.internal:8001/data-quality/validate?model_id=1"
+FASTAPI_URL = "http://host.docker.internal:8000/data-quality/validate?model_id=1"
 
 
 def process_incoming_files():

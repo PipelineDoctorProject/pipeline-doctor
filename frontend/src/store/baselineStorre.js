@@ -32,3 +32,16 @@ export const uploadBaseline = async (
 
   return response.data;
 };
+
+// ==========================================
+// ACTIVATE BASELINE
+// ==========================================
+export const activateBaseline = async (
+  baselineId,
+) => {
+  const response = await api.patch(
+    `/baselines/${baselineId}/activate`,
+  );
+
+  return response.data;
+};
