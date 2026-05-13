@@ -5,10 +5,16 @@ import uuid
 
 from app.db.session import get_db
 from app.services.quality.pipeline import run_data_quality_pipeline
+from app.models.data_quality import DataQualityFinding
+from app.schemas.data_quality import DataQualityResponse
 
 router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
 
 UPLOAD_DIR = "uploads/incoming"
+
+@router.get("/", response_model=list[DataQualityResponse])
+def list_data_quality_findings(db: Session = Depends(get_db)):
+    return db.query(DataQualityFinding).order_by(DataQualityFinding.id.desc()).all()
 
 
 @router.post("/validate")

@@ -31,20 +31,10 @@ router = APIRouter(prefix="/runs", tags=["Runs"])
 #     }
 
 
-# @router.get("/", response_model=list[RunResponse])
-# def list_runs_api(db: Session = Depends(get_db)):
-#     runs = db.query(PipelineRun).order_by(PipelineRun.id.desc()).all()
-
-#     return [
-#         {
-#             "id": run.id,
-#             "status": run.status,
-#             "drift_score": run.drift_score,
-#             "created_at": run.started_at,
-#         }
-#         for run in runs
-#     ]
-    
+@router.get("/", response_model=list[RunResponse])
+def list_runs_api(db: Session = Depends(get_db)):
+    runs = db.query(PipelineRun).order_by(PipelineRun.id.desc()).all()
+    return runs
     
 # @router.post('/start', response_model=PipeLineResponse)
 # def fake_pipeline_create(data: PipeLineCreate, db: Session = Depends(get_db)):
