@@ -191,5 +191,10 @@ async def upload_baseline(
     # ==========================================
     return {
         "message": "Baseline created",
-        **baseline
+        "id": baseline.id,
+        "model_id": baseline.model_id,
+        "version": baseline.version,
+        "status": baseline.status,
+        "is_active": baseline.is_active,
+        "created_at": str(baseline.created_at),
     }
