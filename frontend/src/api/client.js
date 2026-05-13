@@ -5,44 +5,58 @@ const api = axios.create({
   withCredentials: true,
 });
 
-
-
-
 api.interceptors.response.use(
-
   (response) => response,
 
   async (error) => {
 
     const originalRequest = error.config;
 
-    // Access token expired
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry
-    ) {
+    // routes that should NEVER trigger refresh
+    const excludedRoutes = [
+      "/auth/login",
+      "/auth/signup",
+      "/auth/verify-otp",
+      "/auth/refresh",
+      "/dashboard/me",
+    ];
 
-      originalRequest._retry = true;
-
-      try {
-
-        // Request new access token
-        await api.post("/auth/refresh");
-
-        // Retry original request
-        return api(originalRequest);
-
-      } catch (refreshError) {
-
-        console.log("Refresh token expired");
-
-        window.location.href = "/login";
-
-        return Promise.reject(refreshError);
-      }
+    // stop if not 401
+    if (error.response?.status !== 401) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    // stop if excluded route
+    if (excludedRoutes.includes(originalRequest.url)) {
+      return Promise.reject(error);
+    }
+
+    // stop retry loop
+    if (originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    try {
+
+      // try refresh token
+      await api.post("/auth/refresh");
+
+      // retry original request
+      return api(originalRequest);
+
+    } catch (refreshError) {
+
+      console.log("Refresh token expired");
+
+      // avoid redirect loop
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+
+      return Promise.reject(refreshError);
+    }
   }
 );
 

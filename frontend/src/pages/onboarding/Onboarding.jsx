@@ -2,7 +2,7 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useAuthStore from "../../store/authStore";
 
 import Logo from "../../assets/logo_og.png";
@@ -18,7 +18,13 @@ export default function OnboardingPage() {
     (state) => state.inviteMember
   );
 
-  const [step, setStep] = useState(1);
+  const workspace = useAuthStore(
+  (state) => state.workspace
+);
+
+const [step, setStep] = useState(
+  workspace?.tenant_id ? 2 : 1
+);
 
   const [companyName, setCompanyName] = useState("");
 
@@ -52,6 +58,14 @@ export default function OnboardingPage() {
     }
   };
 
+  useEffect(() => {
+
+  if (workspace?.tenant_id) {
+    setStep(2);
+  }
+
+}, [workspace]);
+  
   const handleAddMember = () => {
 
   if (!memberEmail.trim()) return;
@@ -81,7 +95,7 @@ export default function OnboardingPage() {
 
     console.log("Invited Members:", members);
 
-    window.location.href = "/dashboard";
+    navigate("/dashboard", { replace: true });
 
   } catch (err) {
 
@@ -305,7 +319,7 @@ export default function OnboardingPage() {
 
                         <button
                           type="button"
-                          onClick={()=> navigate("/dashboard")}
+                          onClick={()=> navigate("/dashboard",{replace: true})}
                           className="text-[11px] tracking-[0.25em] uppercase text-gray-600 hover:text-white transition"
                         >
                           Skip For Now

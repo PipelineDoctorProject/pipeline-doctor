@@ -32,7 +32,7 @@ export default function SignupPage() {
 
       navigate("/verify-otp", {
         state: { email },
-      });
+      }, { replace: true });
 
     } catch (err) {
 
