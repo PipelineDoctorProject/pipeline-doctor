@@ -9,7 +9,7 @@ export default function AppLayout() {
 
   return (
 
-    <div className="flex h-screen overflow-hidden bg-[#f7f8fb]">
+    <div className="ops-theme-navy flex h-screen overflow-hidden bg-[#f3f6fb]">
 
       <Sidebar />
 
@@ -17,9 +17,13 @@ export default function AppLayout() {
 
         <Topbar />
 
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto px-8 py-7">
 
-          <Outlet />
+          <div className="mx-auto w-full max-w-[1440px]">
+
+            <Outlet />
+
+          </div>
 
         </main>
       </div>

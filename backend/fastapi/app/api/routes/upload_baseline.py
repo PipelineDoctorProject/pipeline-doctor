@@ -21,6 +21,7 @@ from app.services.quality.baseline import (
 
 from app.services.quality.baseline_service import (
     create_baseline_version,
+    activate_baseline,
 )
 
 from app.config.settings import (
@@ -95,6 +96,59 @@ def get_baselines(
         })
 
     return results
+
+
+# =====================================================
+# ACTIVATE BASELINE
+# =====================================================
+@router.patch("/baselines/{baseline_id}/activate")
+def activate_baseline_route(
+    baseline_id: int,
+    request: Request
+):
+
+    db: Session = request.state.db
+
+    if not db:
+        raise HTTPException(
+            status_code=401,
+            detail="Tenant database not found"
+        )
+
+    try:
+        baseline = activate_baseline(
+            db,
+            baseline_id
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        ) from exc
+
+    model = (
+        db.query(MLModel)
+        .filter(
+            MLModel.id == baseline.model_id
+        )
+        .first()
+    )
+
+    return {
+        "id": baseline.id,
+        "model_id": baseline.model_id,
+        "model_name": (
+            model.name
+            if model
+            else "Unknown Model"
+        ),
+        "version": baseline.version,
+        "status": baseline.status,
+        "is_active": baseline.is_active,
+        "created_at": baseline.created_at,
+        "schema": baseline.schema,
+        "profile": baseline.profile,
+    }
 
 
 # =====================================================

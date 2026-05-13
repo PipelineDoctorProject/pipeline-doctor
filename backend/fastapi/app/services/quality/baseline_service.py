@@ -108,15 +108,13 @@ def activate_baseline(db: Session, baseline_id: int):
     if not baseline:
         raise Exception("Baseline not found")
 
-    if baseline.status != "approved":
-        raise Exception("Baseline must be approved first")
-
     # deactivate others
     db.query(Baseline).filter(
         Baseline.model_id == baseline.model_id,
         Baseline.is_active == True
     ).update({"is_active": False})
 
+    baseline.status = "approved"
     baseline.is_active = True
 
     db.commit()

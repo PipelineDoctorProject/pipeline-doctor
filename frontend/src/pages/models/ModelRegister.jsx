@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-
 import {
-  X,
+  CheckCircle2,
   Database,
   GitBranch,
   Layers3,
-  ShieldCheck,
+  Loader2,
   ServerCog,
+  X,
 } from "lucide-react";
 
 import {
@@ -17,36 +17,21 @@ import {
 
 export default function RegisterModelModal({ onClose }) {
   const [trackingUri, setTrackingUri] = useState("");
-
   const [isLoadingModels, setIsLoadingModels] = useState(false);
-
   const [isRegistering, setIsRegistering] = useState(false);
-
   const [selectedModel, setSelectedModel] = useState("");
-
   const [selectedVersion, setSelectedVersion] = useState("");
-
   const [models, setModels] = useState([]);
-
   const [versions, setVersions] = useState([]);
-
   const [connectionError, setConnectionError] = useState("");
-
   const [successMessage, setSuccessMessage] = useState("");
 
-  // ==========================================
-  // LOAD MODELS FROM URI
-  // ==========================================
   useEffect(() => {
-    if (!trackingUri) {
-      setModels([]);
-      return;
-    }
+    if (!trackingUri) return;
 
     const timer = setTimeout(async () => {
       try {
         setConnectionError("");
-
         setIsLoadingModels(true);
 
         const response = await discoverModels(trackingUri);
@@ -56,7 +41,6 @@ export default function RegisterModelModal({ onClose }) {
         console.log(err);
 
         setModels([]);
-
         setConnectionError(err?.detail || "Unable to connect registry");
       } finally {
         setIsLoadingModels(false);
@@ -66,14 +50,8 @@ export default function RegisterModelModal({ onClose }) {
     return () => clearTimeout(timer);
   }, [trackingUri]);
 
-  // ==========================================
-  // LOAD MODEL VERSIONS
-  // ==========================================
   useEffect(() => {
-    if (!selectedModel) {
-      setVersions([]);
-      return;
-    }
+    if (!selectedModel) return;
 
     const fetchVersions = async () => {
       try {
@@ -93,41 +71,29 @@ export default function RegisterModelModal({ onClose }) {
     fetchVersions();
   }, [selectedModel, trackingUri]);
 
-  // ==========================================
-  // REGISTER MODEL
-  // ==========================================
   const handleRegister = async () => {
     try {
       setIsRegistering(true);
-
       setConnectionError("");
-
       setSuccessMessage("");
 
       const versionData = versions.find(
-        (v) => String(v.version) === String(selectedVersion),
+        (version) => String(version.version) === String(selectedVersion),
       );
 
       await registerModel({
         name: selectedModel,
-
         version: selectedVersion,
-
         framework: "sklearn",
-
         mlflow_model_name: selectedModel,
-
         mlflow_alias: versionData?.stage,
-
         mlflow_run_id: versionData?.run_id,
-
         mlflow_tracking_uri: trackingUri,
-
         expected_features: [],
       });
 
       setSuccessMessage(
-        "Model registered successfully. Now upload your baseline/reference dataset from the Schema page.",
+        "Model registered successfully. Upload a baseline dataset from the Schema page to enable validation.",
       );
     } catch (err) {
       console.log(err);
@@ -139,275 +105,250 @@ export default function RegisterModelModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm px-6">
-      {/* MODAL */}
-      <div className="relative w-full max-w-[860px] overflow-hidden rounded-[24px] border border-black/[0.05] bg-white shadow-[0_30px_100px_rgba(15,23,42,0.12)]">
-        {/* BACKGROUND */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-[-20%] right-[-10%] h-[380px] w-[380px] rounded-full bg-[#3563ff]/[0.06] blur-[120px]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-6 backdrop-blur-sm">
+      <div className="relative w-full max-w-[900px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
+        {successMessage && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 px-6 backdrop-blur-sm">
+            <div className="w-full max-w-[420px] rounded-lg border border-emerald-200 bg-white p-7 shadow-xl">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+                <CheckCircle2 size={24} />
+              </div>
 
-          <div className="absolute bottom-[-30%] left-[-10%] h-[300px] w-[300px] rounded-full bg-[#7c3aed]/[0.04] blur-[120px]" />
+              <h3 className="text-[22px] font-semibold text-slate-950">
+                Registration Successful
+              </h3>
 
-          <div className="absolute inset-0 opacity-[0.025] bg-[linear-gradient(to_right,rgba(15,23,42,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.06)_1px,transparent_1px)] bg-[size:42px_42px]" />
-        </div>
+              <p className="mt-3 text-[14px] leading-6 text-slate-500">
+                {successMessage}
+              </p>
 
-        {/* HEADER */}
-        <div className="relative z-10 flex items-start justify-between border-b border-black/[0.05] px-8 py-6">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-black/[0.05] bg-[#f7f8fb] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-500">
-              <ShieldCheck size={12} />
-              MLflow Registry Connection
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={onClose}
+                  className="h-10 rounded-md bg-slate-950 px-5 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Done
+                </button>
+              </div>
             </div>
+          </div>
+        )}
 
-            <h2 className="text-[28px] font-semibold tracking-[-0.04em] text-[#111827]">
+        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+          <div>
+            
+
+            <h2 className="text-[26px] font-semibold leading-tight text-slate-950">
               Connect ML Model
             </h2>
 
-            <p className="mt-2 max-w-[580px] text-[14px] leading-7 text-gray-500">
-              Connect your MLflow registry, discover available models, and
-              register production versions for monitoring, drift analysis, and
-              observability.
+            <p className="mt-2 max-w-[640px] text-[14px] leading-6 text-slate-500">
+              Discover models from an MLflow tracking server and register the
+              version you want Pipeline Doctor to monitor.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/[0.05] bg-[#f7f8fb] text-gray-500 transition hover:bg-[#eef2ff] hover:text-[#111827]"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
+            aria-label="Close connect model modal"
           >
             <X size={16} />
           </button>
         </div>
 
-        {/* CONTENT */}
-        <div className="relative z-10 px-8 py-7">
-          {/* SUCCESS STATE */}
-          {successMessage && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm">
-              <div className="w-full max-w-md rounded-3xl border border-green-100 bg-white p-8 shadow-2xl">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                  <ShieldCheck
-                    className="text-green-600"
-                    size={28}
-                  />
+        <div className="grid gap-0 lg:grid-cols-[1fr_300px]">
+          <div className="px-6 py-6">
+            {connectionError && (
+              <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700">
+                {connectionError}
+              </div>
+            )}
+
+            <div className="mb-6 grid gap-3 md:grid-cols-3">
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600">
+                  <Database size={15} />
                 </div>
-
-                <h3 className="text-2xl font-semibold text-[#111827]">
-                  Registration Successful
-                </h3>
-
-                <p className="mt-3 text-sm leading-7 text-gray-500">
-                  Model registered successfully.
-                  <br />
-                  Now upload your baseline/reference dataset
-                  from the Schema page to enable validation and
-                  monitoring.
+                <div className="text-[12px] font-semibold text-slate-950">
+                  Registry URI
+                </div>
+                <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                  Connect the tracking server.
                 </p>
+              </div>
 
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={onClose}
-                    className="rounded-xl bg-[#111827] px-5 py-3 text-sm font-medium text-white transition hover:bg-black"
-                  >
-                    OK
-                  </button>
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600">
+                  <GitBranch size={15} />
                 </div>
+                <div className="text-[12px] font-semibold text-slate-950">
+                  Select Model
+                </div>
+                <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                  Choose a registered model.
+                </p>
+              </div>
+
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-600">
+                  <Layers3 size={15} />
+                </div>
+                <div className="text-[12px] font-semibold text-slate-950">
+                  Version
+                </div>
+                <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                  Register one version.
+                </p>
               </div>
             </div>
-          )}
 
-          {/* ERROR */}
-          {connectionError && (
-            <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[12px] text-red-600">
-              {connectionError}
-            </div>
-          )}
-
-          {/* FLOW */}
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-xl border border-black/[0.05] bg-[#f7f8fb] px-3 py-2">
-              <Database
-                size={14}
-                className="text-[#3563ff]"
-              />
-
-              <span className="text-[11px] font-medium text-[#111827]">
-                Registry URI
-              </span>
-            </div>
-
-            <div className="h-px flex-1 bg-gradient-to-r from-[#3563ff]/20 to-transparent" />
-
-            <div className="flex items-center gap-2 rounded-xl border border-black/[0.05] bg-[#f7f8fb] px-3 py-2">
-              <GitBranch
-                size={14}
-                className="text-[#3563ff]"
-              />
-
-              <span className="text-[11px] font-medium text-[#111827]">
-                Models
-              </span>
-            </div>
-
-            <div className="h-px flex-1 bg-gradient-to-r from-[#3563ff]/20 to-transparent" />
-
-            <div className="flex items-center gap-2 rounded-xl border border-black/[0.05] bg-[#f7f8fb] px-3 py-2">
-              <Layers3
-                size={14}
-                className="text-[#3563ff]"
-              />
-
-              <span className="text-[11px] font-medium text-[#111827]">
-                Versions
-              </span>
-            </div>
-          </div>
-
-          {/* GRID */}
-          <div className="grid grid-cols-2 gap-5">
-            {/* LEFT */}
             <div className="space-y-5">
-              {/* URI */}
               <div>
-                <label className="mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400">
+                <label className="mb-2 block text-[12px] font-semibold text-slate-700">
                   MLflow Tracking URI
                 </label>
 
                 <div className="relative">
                   <ServerCog
                     size={16}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                   />
 
                   <input
                     type="text"
                     value={trackingUri}
-                    onChange={(e) =>
-                      setTrackingUri(e.target.value)
-                    }
+                    onChange={(event) => {
+                      setTrackingUri(event.target.value);
+                      setSelectedModel("");
+                      setSelectedVersion("");
+                      setModels([]);
+                      setVersions([]);
+                    }}
                     placeholder="http://localhost:5000"
-                    className="h-[50px] w-full rounded-xl border border-black/[0.05] bg-[#f7f8fb] pl-11 pr-4 text-[13px] text-[#111827] outline-none placeholder:text-gray-400 focus:border-[#3563ff]/30"
+                    className="h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-10 pr-4 text-[14px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
                   />
                 </div>
               </div>
 
-              {/* MODEL */}
-              <div>
-                <label className="mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400">
-                  Available Models
-                </label>
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[12px] font-semibold text-slate-700">
+                    Available Models
+                  </label>
 
-                <select
-                  value={selectedModel}
-                  onChange={(e) =>
-                    setSelectedModel(e.target.value)
-                  }
-                  className="h-[50px] w-full rounded-xl border border-black/[0.05] bg-[#f7f8fb] px-4 text-[13px] text-[#111827] outline-none focus:border-[#3563ff]/30"
-                >
-                  <option value="">
-                    {isLoadingModels
-                      ? "Loading models..."
-                      : "Select model"}
-                  </option>
-
-                  {models.map((model) => (
-                    <option
-                      key={model.name}
-                      value={model.name}
-                    >
-                      {model.name}
+                  <select
+                    value={selectedModel}
+                    onChange={(event) => {
+                      setSelectedModel(event.target.value);
+                      setSelectedVersion("");
+                      setVersions([]);
+                    }}
+                    className="h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="">
+                      {isLoadingModels ? "Loading models..." : "Select model"}
                     </option>
-                  ))}
-                </select>
-              </div>
 
-              {/* VERSION */}
-              <div>
-                <label className="mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400">
-                  Model Version
-                </label>
-
-                <select
-                  value={selectedVersion}
-                  onChange={(e) =>
-                    setSelectedVersion(e.target.value)
-                  }
-                  className="h-[50px] w-full rounded-xl border border-black/[0.05] bg-[#f7f8fb] px-4 text-[13px] text-[#111827] outline-none focus:border-[#3563ff]/30"
-                >
-                  <option value="">
-                    Select version
-                  </option>
-
-                  {versions.map((version) => (
-                    <option
-                      key={version.version}
-                      value={version.version}
-                    >
-                      v{version.version} (
-                      {version.stage || "None"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* RIGHT PANEL */}
-            <div className="relative overflow-hidden rounded-[20px] border border-black/[0.05] bg-[#f8fafc] p-6">
-              <div className="absolute top-[-20%] right-[-10%] h-[240px] w-[240px] rounded-full bg-[#3563ff]/[0.08] blur-[90px]" />
-
-              <div className="relative z-10">
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-black/[0.05] bg-white px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 shadow-sm">
-                  Production Monitoring
+                    {models.map((model) => (
+                      <option key={model.name} value={model.name}>
+                        {model.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <h3 className="max-w-[300px] text-[30px] leading-[1] font-semibold tracking-[-0.05em] text-[#111827]">
-                  Monitor
-                  <br />
-                  model behavior
-                  <br />
-                  automatically.
-                </h3>
+                <div>
+                  <label className="mb-2 block text-[12px] font-semibold text-slate-700">
+                    Model Version
+                  </label>
 
-                <p className="mt-5 max-w-[320px] text-[13px] leading-7 text-gray-500">
-                  Connected models become available for schema
-                  validation, prediction monitoring, drift
-                  detection, incident analysis, and operational
-                  observability.
-                </p>
+                  <select
+                    value={selectedVersion}
+                    onChange={(event) => setSelectedVersion(event.target.value)}
+                    className="h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="">Select version</option>
+
+                    {versions.map((version) => (
+                      <option key={version.version} value={version.version}>
+                        v{version.version} ({version.stage || "None"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* FOOTER */}
-          <div className="relative z-10 mt-8 flex items-center justify-between border-t border-black/[0.05] pt-6">
-            <p className="max-w-[460px] text-[12px] leading-6 text-gray-500">
-              OpsSight connects securely to your MLflow
-              registry and stores only monitoring metadata and
-              model references.
-            </p>
+          <aside className="border-t border-slate-200 bg-slate-50 px-6 py-6 lg:border-l lg:border-t-0">
+            <div className="rounded-lg border border-slate-200 bg-white p-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-950 text-white">
+                <CheckCircle2 size={18} />
+              </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onClose}
-                className="rounded-xl border border-black/[0.05] bg-[#f7f8fb] px-5 py-3 text-[13px] font-medium text-[#111827] transition hover:bg-[#eef2ff]"
-              >
-                Cancel
-              </button>
+              <h3 className="mt-4 text-[17px] font-semibold text-slate-950">
+                Monitoring-ready setup
+              </h3>
 
-              <button
-                onClick={handleRegister}
-                disabled={
-                  !trackingUri ||
-                  !selectedModel ||
-                  !selectedVersion ||
-                  isRegistering
-                }
-                className="rounded-xl bg-gray-700 px-5 py-3 text-[13px] font-medium text-white shadow-[0_10px_40px_rgba(53,99,255,0.18)] transition hover:bg-[#2957f5] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isRegistering
-                  ? "Registering..."
-                  : "Register Model"}
-              </button>
+              <p className="mt-2 text-[13px] leading-6 text-slate-500">
+                Once connected, the model can be paired with a baseline schema
+                for validation, drift detection, and incident review.
+              </p>
+
+              <div className="mt-5 space-y-3 border-t border-slate-200 pt-4">
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-slate-500">Discovered models</span>
+                  <span className="font-semibold text-slate-950">
+                    {models.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-slate-500">Versions loaded</span>
+                  <span className="font-semibold text-slate-950">
+                    {versions.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-slate-500">Selected version</span>
+                  <span className="font-semibold text-slate-950">
+                    {selectedVersion ? `v${selectedVersion}` : "-"}
+                  </span>
+                </div>
+              </div>
             </div>
+          </aside>
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 md:flex-row md:items-center md:justify-between">
+          <p className="text-[12px] leading-5 text-slate-500">
+            Pipeline Doctor stores model metadata and MLflow references for
+            monitoring workflows.
+          </p>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="h-10 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleRegister}
+              disabled={
+                !trackingUri ||
+                !selectedModel ||
+                !selectedVersion ||
+                isRegistering
+              }
+              className="inline-flex h-10 items-center gap-2 rounded-md bg-slate-950 px-4 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isRegistering && <Loader2 size={15} className="animate-spin" />}
+              {isRegistering ? "Registering..." : "Register Model"}
+            </button>
           </div>
         </div>
       </div>
