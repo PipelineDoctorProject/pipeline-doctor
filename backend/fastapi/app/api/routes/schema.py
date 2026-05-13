@@ -2,12 +2,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.schema_change_event import SchemaChangeEvent
+from app.dependencies.auth import require_tenant_user
+
 
 router = APIRouter(prefix="/schema", tags=["Schema Evolution"])
 
 
 @router.get("/pending/{model_id}")
-def get_pending_events(model_id: int, db: Session = Depends(get_db)):
+def get_pending_events(model_id: int, db: Session = Depends(get_db), current_user=Depends(require_tenant_user)):
     events = (
         db.query(SchemaChangeEvent)
         .filter(
@@ -27,7 +29,7 @@ from app.services.quality.baseline_service import create_baseline_version
 
 
 @router.post("/approve/{event_id}")
-def approve_schema_change(event_id: int, db: Session = Depends(get_db)):
+def approve_schema_change(event_id: int, db: Session = Depends(get_db), current_user=Depends(require_tenant_user)):
 
     event = db.get(SchemaChangeEvent, event_id)
 

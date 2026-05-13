@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 import os
 import uuid
-
+from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
 from app.services.quality.pipeline import run_data_quality_pipeline
 from app.models.data_quality import DataQualityFinding
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
 UPLOAD_DIR = "uploads/incoming"
 
 @router.get("/", response_model=list[DataQualityResponse])
-def list_data_quality_findings(db: Session = Depends(get_db)):
+def list_data_quality_findings(db: Session = Depends(get_db), current_user=Depends(require_tenant_user)):
     return db.query(DataQualityFinding).order_by(DataQualityFinding.id.desc()).all()
 
 
@@ -21,7 +21,8 @@ def list_data_quality_findings(db: Session = Depends(get_db)):
 async def validate_data(
     model_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user)
 ):
     # 1. Validate file
     if not file.filename.endswith(".csv"):

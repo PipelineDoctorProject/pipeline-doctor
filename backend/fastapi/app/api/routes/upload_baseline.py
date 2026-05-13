@@ -4,6 +4,8 @@ from fastapi import (
     File,
     HTTPException,
     Request,
+    Depends
+    
 )
 
 from sqlalchemy.orm import Session
@@ -14,6 +16,7 @@ import uuid
 
 from app.models.baseline import Baseline
 from app.models.ml_model import MLModel
+from app.dependencies.auth import require_tenant_user
 
 from app.services.quality.baseline import (
     create_baseline,
@@ -37,7 +40,9 @@ router = APIRouter(
 # =====================================================
 @router.get("/baselines/")
 def get_baselines(
-    request: Request
+    request: Request,
+    current_user=Depends(require_tenant_user)
+
 ):
 
     db: Session = request.state.db
@@ -158,7 +163,8 @@ def activate_baseline_route(
 async def upload_baseline(
     request: Request,
     model_id: int,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user=Depends(require_tenant_user)
 ):
 
     db: Session = request.state.db

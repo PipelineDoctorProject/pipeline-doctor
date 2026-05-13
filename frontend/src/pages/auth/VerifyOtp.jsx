@@ -31,7 +31,7 @@ export default function VerifyOtpPage() {
       if (response.onboarding_required) {
         navigate("/onboarding");
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard",{ replace: true });
       }
     } catch (err) {
       alert(err?.detail || "OTP verification failed");
