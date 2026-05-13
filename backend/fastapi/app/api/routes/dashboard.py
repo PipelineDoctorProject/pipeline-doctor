@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.tenant import Tenant
+from app.models.ml_model import MLModel
+from app.models.pipeline_run import PipelineRun
+from app.models.incident import Incident
 
 router = APIRouter(
     prefix="/dashboard",
@@ -57,6 +60,12 @@ def get_dashboard_context(
                 tenant.schema_name
                 if tenant else None
             )
+        },
+
+        "stats": {
+            "total_models": db.query(MLModel).count() if user.tenant_id else 0,
+            "total_runs": db.query(PipelineRun).count() if user.tenant_id else 0,
+            "open_incidents": db.query(Incident).filter(Incident.status == "open").count() if user.tenant_id else 0,
         },
 
         "is_onboarded": bool(user.tenant_id)
