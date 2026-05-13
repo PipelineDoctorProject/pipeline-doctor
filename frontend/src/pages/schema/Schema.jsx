@@ -131,7 +131,7 @@ export default function SchemaPage() {
                       </td>
 
                       <td className="px-5 py-4 text-[13px] font-medium text-[#374151]">
-                        Model #{baseline.model_id}
+                        {baseline.model_name}
                       </td>
 
                       <td className="px-5 py-4 text-[13px] font-medium text-[#374151]">
@@ -178,7 +178,7 @@ export default function SchemaPage() {
                     </div>
 
                     <h2 className="text-[22px] font-semibold tracking-[-0.03em] text-[#111827]">
-                      Version {selectedBaseline.version}
+                      {selectedBaseline.model_name} v{selectedBaseline.version}
                     </h2>
                   </div>
 

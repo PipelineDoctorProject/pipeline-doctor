@@ -32,12 +32,9 @@ export default function DashboardPage() {
       {/* HEADER */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-black/[0.05] bg-white px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-500 shadow-sm">
-            <ShieldCheck size={12} className="text-green-600" />
-            Active Workspace
-          </div>
+          
           <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-[#111827]">
-            Overview: {workspace?.workspace_name}
+            Overview
           </h1>
           <p className="mt-2 max-w-[720px] text-[15px] leading-7 text-gray-500">
             Welcome back, {user?.email}. Here is the high-level health and activity summary of your machine learning infrastructure.

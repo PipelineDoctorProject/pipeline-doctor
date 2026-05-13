@@ -49,23 +49,48 @@ def get_baselines(
 
     baselines = (
         db.query(Baseline)
-        .order_by(Baseline.created_at.desc())
+        .order_by(
+            Baseline.created_at.desc()
+        )
         .all()
     )
-    models = db.query(MLModel)
 
     results = []
 
     for baseline in baselines:
 
+        # ==========================================
+        # GET MODEL
+        # ==========================================
+        model = (
+            db.query(MLModel)
+            .filter(
+                MLModel.id == baseline.model_id
+            )
+            .first()
+        )
+
         results.append({
             "id": baseline.id,
+
             "model_id": baseline.model_id,
+
+            "model_name": (
+                model.name
+                if model
+                else "Unknown Model"
+            ),
+
             "version": baseline.version,
+
             "status": baseline.status,
+
             "is_active": baseline.is_active,
+
             "created_at": baseline.created_at,
+
             "schema": baseline.schema,
+
             "profile": baseline.profile,
         })
 
