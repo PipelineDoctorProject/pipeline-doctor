@@ -87,12 +87,12 @@ export default function ModelsPage() {
             onClick={() =>
               setShowRegisterModal(true)
             }
-            className="flex items-center gap-3 rounded-2xl bg-gray-800 px-5 py-3 text-[13px] font-medium text-white shadow-[0_10px_40px_rgba(53,99,255,0.18)] transition hover:bg-[#2957f5]"
+            className="flex items-center gap-3 rounded-2xl bg-gray-700 px-5 py-3 text-[13px] font-medium text-white shadow-[0_10px_40px_rgba(53,99,255,0.18)] transition hover:bg-[#2957f5]"
           >
 
             <Plus size={16} />
 
-            Conect ML Model
+            Connect ML Model
           </button>
         </div>
 

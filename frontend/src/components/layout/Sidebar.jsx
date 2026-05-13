@@ -9,10 +9,11 @@ import {
   Workflow,
   Settings,
   Brain,
+  LogOut,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
-
+import useAuthStore from "../../store/authStore";
 import Logo from "../../assets/logo_og.png";
 import Logo2 from "../../assets/logo2.png";
 
@@ -55,6 +56,8 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+    const logOut = useAuthStore((state) => state.logout);
+
   return (
     <aside className="flex h-full w-[270px] flex-col border-r border-black/[0.05] bg-white">
       {/* LOGO */}
@@ -68,10 +71,7 @@ export default function Sidebar() {
 
       {/* NAVIGATION */}
       <div className="flex-1 px-4 py-6">
-        <div className="mb-4 px-4 text-[11px] font-medium uppercase tracking-[0.28em] text-gray-400">
-          Workspace
-        </div>
-
+        
         <nav className="space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -99,9 +99,9 @@ export default function Sidebar() {
 
       {/* FOOTER */}
       <div className="border-t border-black/[0.04] p-4">
-        <button className="flex w-full items-center gap-4 rounded-2xl px-4 py-3 text-[14px] font-medium text-gray-500 transition hover:bg-[#f3f5fb] hover:text-[#111827]">
-          <Settings size={18} />
-          Settings
+        <button onClick={()=> logOut } className="flex w-full items-center gap-4 rounded-2xl px-4 py-3 text-[14px] font-medium text-gray-500 transition hover:bg-[#f3f5fb] hover:text-[#111827]">
+          <LogOut size={18} />
+          Logout
         </button>
       </div>
     </aside>
