@@ -86,18 +86,15 @@ def create_baseline_version(
         is_active=is_active
     )
 
-    db.add(baseline)
-    db.commit()
-    db.refresh(baseline)
-
-    # ensure only one active
     if is_active:
         db.query(Baseline).filter(
             Baseline.model_id == model_id,
             Baseline.id != baseline.id
         ).update({"is_active": False})
 
-        db.commit()
+    db.add(baseline)
+    db.flush()
+    db.commit()
 
     return baseline
 
@@ -118,6 +115,5 @@ def activate_baseline(db: Session, baseline_id: int):
     baseline.is_active = True
 
     db.commit()
-    db.refresh(baseline)
 
     return baseline

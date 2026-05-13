@@ -1,194 +1,292 @@
-import { useEffect, useState } from "react";
-import { AlertTriangle, AlertCircle, Info, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Info,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+} from "lucide-react";
+
 import { getIncidents } from "../../store/incidentStore";
+
+const severityConfig = {
+  critical: {
+    className: "border-red-200 bg-red-50 text-red-700",
+    icon: ShieldAlert,
+  },
+  high: {
+    className: "border-orange-200 bg-orange-50 text-orange-700",
+    icon: AlertTriangle,
+  },
+  medium: {
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+    icon: AlertCircle,
+  },
+  low: {
+    className: "border-blue-200 bg-blue-50 text-blue-700",
+    icon: Info,
+  },
+  default: {
+    className: "border-slate-200 bg-slate-50 text-slate-700",
+    icon: Info,
+  },
+};
+
+function formatDate(value) {
+  if (!value) return "Not available";
+
+  return new Date(value).toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getSeverityMeta(severity) {
+  return severityConfig[String(severity || "").toLowerCase()] || severityConfig.default;
+}
+
+function isResolved(status) {
+  const normalized = String(status || "").toLowerCase();
+  return normalized === "resolved" || normalized === "closed";
+}
 
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
-  // ==========================================
-  // LOAD INCIDENTS
-  // ==========================================
-  const loadIncidents = async () => {
+  async function loadIncidents() {
     try {
       setLoading(true);
       const data = await getIncidents();
-      setIncidents(data);
+      setIncidents(data || []);
     } catch (err) {
       console.log(err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadIncidents();
   }, []);
 
-  // Format Severity Badge
-  const renderSeverityBadge = (severity) => {
-    const config = {
-      critical: {
-        bg: "bg-red-50",
-        text: "text-red-700",
-        border: "border-red-200",
-        icon: <ShieldAlert size={14} className="mr-1.5" />,
-      },
-      high: {
-        bg: "bg-orange-50",
-        text: "text-orange-700",
-        border: "border-orange-200",
-        icon: <AlertTriangle size={14} className="mr-1.5" />,
-      },
-      medium: {
-        bg: "bg-yellow-50",
-        text: "text-yellow-700",
-        border: "border-yellow-200",
-        icon: <AlertCircle size={14} className="mr-1.5" />,
-      },
-      low: {
-        bg: "bg-blue-50",
-        text: "text-blue-700",
-        border: "border-blue-200",
-        icon: <Info size={14} className="mr-1.5" />,
-      },
-      default: {
-        bg: "bg-gray-100",
-        text: "text-gray-700",
-        border: "border-gray-200",
-        icon: <Info size={14} className="mr-1.5" />,
-      },
-    };
+  const filteredIncidents = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return incidents;
 
-    const style = config[severity?.toLowerCase()] || config.default;
-
-    return (
-      <div
-        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}
-      >
-        {style.icon}
-        <span className="capitalize">{severity || "Unknown"}</span>
-      </div>
+    return incidents.filter((incident) =>
+      [
+        incident.title,
+        incident.description,
+        incident.failure_type,
+        incident.severity,
+        incident.status,
+        incident.run_id,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(needle),
     );
-  };
+  }, [incidents, query]);
 
-  // Format Status Badge
-  const renderStatusBadge = (status) => {
-    const isResolved = status?.toLowerCase() === "resolved" || status?.toLowerCase() === "closed";
-    
-    return (
-      <span
-        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-          isResolved
-            ? "bg-gray-100 text-gray-600 border border-gray-200"
-            : "bg-red-50 text-red-600 border border-red-100"
-        }`}
-      >
-        <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${isResolved ? "bg-gray-400" : "bg-red-500 animate-pulse"}`}></span>
-        {status || "Open"}
-      </span>
-    );
-  };
+  const openCount = incidents.filter((incident) => !isResolved(incident.status)).length;
+  const criticalCount = incidents.filter(
+    (incident) => String(incident.severity || "").toLowerCase() === "critical",
+  ).length;
+  const resolvedCount = incidents.filter((incident) => isResolved(incident.status)).length;
 
   return (
-    <div className="space-y-8">
-      {/* HEADER */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-[#111827]">
-            Incidents
-          </h1>
-          <p className="mt-2 max-w-[720px] text-[15px] leading-7 text-gray-500">
-            Triage and resolve active alerts across your ML infrastructure. 
-            Incidents are automatically created when pipelines detect severe drift, data quality failures, or schema changes.
-          </p>
-        </div>
-        <button
-          onClick={loadIncidents}
-          className="flex items-center gap-3 rounded-2xl border border-black/[0.05] bg-white px-5 py-3 text-[13px] font-medium text-[#111827] shadow-sm transition hover:bg-[#f7f8fb]"
-        >
-          <AlertTriangle size={16} />
-          Refresh Incidents
-        </button>
-      </div>
+    <div className="flex flex-col gap-5">
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+        <div className="flex flex-col gap-5 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-[760px]">
+            <h1 className="text-[30px] font-semibold leading-tight text-slate-950">
+              Incidents
+            </h1>
 
-      {/* LOADING STATE */}
-      {loading && (
-        <div className="rounded-3xl border border-black/[0.05] bg-white p-12 text-center text-[14px] text-gray-500 shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          Loading Incidents...
-        </div>
-      )}
-
-      {/* EMPTY STATE */}
-      {!loading && incidents.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-black/[0.08] bg-white p-16 text-center shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 mb-4 border border-green-100">
-            <ShieldAlert size={28} className="text-green-600" />
+            <p className="mt-2 text-[14px] leading-6 text-slate-500">
+              Triage alerts created from severe drift, schema changes, and data
+              quality failures across production model runs.
+            </p>
           </div>
-          <h3 className="text-[18px] font-semibold text-[#111827]">
-            All Clear
-          </h3>
-          <p className="mt-2 text-[14px] text-gray-500 max-w-sm mx-auto">
-            Your ML infrastructure is healthy. No active incidents or alerts require your attention.
-          </p>
-        </div>
-      )}
 
-      {/* DATA TABLE */}
-      {!loading && incidents.length > 0 && (
-        <div className="overflow-hidden rounded-3xl border border-black/[0.05] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          <table className="w-full text-left text-[14px]">
-            <thead className="bg-[#f7f8fb] text-[12px] font-medium uppercase tracking-[0.1em] text-gray-500">
-              <tr>
-                <th className="px-6 py-5">Severity</th>
-                <th className="px-6 py-5">Title & Context</th>
-                <th className="px-6 py-5">Type</th>
-                <th className="px-6 py-5">Status</th>
-                <th className="px-6 py-5">Run ID</th>
-                <th className="px-6 py-5 text-right">Detected At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/[0.04]">
-              {incidents.map((incident) => (
-                <tr
-                  key={incident.id}
-                  className="transition hover:bg-[#f7f8fb]/50 group"
-                >
-                  <td className="px-6 py-5">
-                    {renderSeverityBadge(incident.severity)}
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-[#111827]">
-                        {incident.title}
-                      </span>
-                      <span className="text-xs text-gray-500 max-w-xs truncate" title={incident.description}>
-                        {incident.description}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-mono">
-                      {incident.failure_type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5">
-                    {renderStatusBadge(incident.status)}
-                  </td>
-                  <td className="px-6 py-5 text-gray-600">
-                    <a href={`/pipelines?run=${incident.run_id}`} className="hover:text-blue-600 hover:underline">
-                      #{incident.run_id}
-                    </a>
-                  </td>
-                  <td className="px-6 py-5 text-right text-gray-500">
-                    {new Date(incident.created_at).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <button
+            onClick={loadIncidents}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+          >
+            <RefreshCw size={15} />
+            Refresh Incidents
+          </button>
         </div>
-      )}
+
+        <div className="grid border-b border-slate-200 md:grid-cols-3">
+          <div className="border-b border-slate-200 px-6 py-4 md:border-b-0 md:border-r">
+            <div className="flex items-center justify-between text-[12px] font-medium text-slate-500">
+              Open incidents
+              <AlertTriangle size={16} />
+            </div>
+            <div className="mt-2 text-[26px] font-semibold text-slate-950">
+              {openCount}
+            </div>
+          </div>
+
+          <div className="border-b border-slate-200 px-6 py-4 md:border-b-0 md:border-r">
+            <div className="flex items-center justify-between text-[12px] font-medium text-slate-500">
+              Critical severity
+              <ShieldAlert size={16} />
+            </div>
+            <div className="mt-2 text-[26px] font-semibold text-slate-950">
+              {criticalCount}
+            </div>
+          </div>
+
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between text-[12px] font-medium text-slate-500">
+              Resolved
+              <CheckCircle2 size={16} />
+            </div>
+            <div className="mt-2 text-[26px] font-semibold text-slate-950">
+              {resolvedCount}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-[16px] font-semibold text-slate-950">
+              Incident Queue
+            </h2>
+            <p className="mt-1 text-[13px] text-slate-500">
+              Review current incident context and affected pipeline runs.
+            </p>
+          </div>
+
+          <label className="flex h-10 w-full items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 md:max-w-[340px]">
+            <Search size={16} className="text-slate-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search title, type, status, run"
+              className="h-full min-w-0 flex-1 bg-transparent text-[14px] text-slate-700 outline-none placeholder:text-slate-400"
+            />
+          </label>
+        </div>
+
+        {loading && (
+          <div className="px-6 py-12 text-center text-[14px] text-slate-500">
+            Loading incidents...
+          </div>
+        )}
+
+        {!loading && filteredIncidents.length === 0 && (
+          <div className="px-6 py-14 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-400">
+              <CheckCircle2 size={22} />
+            </div>
+            <h3 className="mt-4 text-[17px] font-semibold text-slate-950">
+              All clear
+            </h3>
+            <p className="mx-auto mt-2 max-w-[420px] text-[14px] leading-6 text-slate-500">
+              No matching incidents need attention right now.
+            </p>
+          </div>
+        )}
+
+        {!loading && filteredIncidents.length > 0 && (
+          <div className="divide-y divide-slate-200">
+            {filteredIncidents.map((incident) => {
+              const severity = getSeverityMeta(incident.severity);
+              const SeverityIcon = severity.icon;
+              const resolved = isResolved(incident.status);
+
+              return (
+                <article
+                  key={incident.id}
+                  className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_130px_170px]"
+                >
+                  <div>
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${severity.className}`}
+                    >
+                      <SeverityIcon size={14} />
+                      {incident.severity || "Unknown"}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0">
+                    <h3 className="truncate text-[15px] font-semibold text-slate-950">
+                      {incident.title || "Untitled incident"}
+                    </h3>
+                    <p
+                      className="mt-1 truncate text-[12px] text-slate-500"
+                      title={incident.description}
+                    >
+                      {incident.description || "No incident description available."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                      Type
+                    </div>
+                    <span className="mt-1 inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700 lg:mt-0">
+                      {incident.failure_type || "unknown"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                      Status
+                    </div>
+                    <span
+                      className={`mt-1 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold lg:mt-0 ${
+                        resolved
+                          ? "border-slate-200 bg-slate-50 text-slate-600"
+                          : "border-red-200 bg-red-50 text-red-700"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          resolved ? "bg-slate-400" : "bg-red-500"
+                        }`}
+                      />
+                      {incident.status || "Open"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                      Run ID
+                    </div>
+                    <a
+                      href={`/pipelines?run=${incident.run_id}`}
+                      className="mt-1 inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50 lg:mt-0"
+                    >
+                      #{incident.run_id || "-"}
+                    </a>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500 lg:justify-end">
+                    <Clock3 size={14} />
+                    {formatDate(incident.created_at)}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

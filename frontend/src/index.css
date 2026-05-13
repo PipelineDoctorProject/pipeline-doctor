@@ -28,9 +28,6 @@
 }
 
 .ops-theme-navy header,
-.ops-theme-navy aside,
-.ops-theme-navy section,
-.ops-theme-navy article,
 .ops-theme-navy .bg-white,
 .ops-theme-navy .bg-white\/80 {
   background-color: var(--theme-surface) !important;

@@ -1,199 +1,395 @@
-import { useEffect, useState } from "react";
-import { Activity, ShieldAlert, AlertTriangle, Info, BarChart2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart2,
+  Info,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+} from "lucide-react";
+
 import { getDriftFindings } from "../../store/driftStore";
+
+const severityStyles = {
+  critical: "border-red-200 bg-red-50 text-red-700",
+  high: "border-orange-200 bg-orange-50 text-orange-700",
+  medium: "border-amber-200 bg-amber-50 text-amber-700",
+  low: "border-blue-200 bg-blue-50 text-blue-700",
+};
+
+const severityColors = {
+  critical: "#dc2626",
+  high: "#ea580c",
+  medium: "#d97706",
+  low: "#2563eb",
+  unknown: "#64748b",
+};
+
+function formatNumber(value, digits = 3) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(digits) : "N/A";
+}
+
+function getSeverityClass(severity) {
+  return (
+    severityStyles[String(severity || "").toLowerCase()] ||
+    "border-slate-200 bg-slate-50 text-slate-700"
+  );
+}
+
+function DistributionBars({ counts, total }) {
+  const rows = ["critical", "high", "medium", "low"];
+
+  return (
+    <div className="space-y-3">
+      {rows.map((severity) => {
+        const value = counts[severity] || 0;
+        const width = total ? Math.max((value / total) * 100, value ? 8 : 0) : 0;
+
+        return (
+          <div key={severity}>
+            <div className="mb-1 flex items-center justify-between text-[12px]">
+              <span className="font-medium capitalize text-slate-600">
+                {severity}
+              </span>
+              <span className="font-semibold text-slate-950">{value}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${width}%`,
+                  backgroundColor: severityColors[severity],
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DriftScoreChart({ findings }) {
+  const chartData = findings
+    .filter((finding) => Number.isFinite(Number(finding.drift_score)))
+    .slice(0, 10);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="flex min-h-[240px] items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[13px] text-slate-500">
+        Drift scores will appear here after pipeline runs produce findings.
+      </div>
+    );
+  }
+
+  const maxScore = Math.max(
+    1,
+    ...chartData.map((finding) => Number(finding.drift_score)),
+  );
+  const chartHeight = 180;
+
+  return (
+    <div>
+      <div className="flex h-[220px] items-end gap-3 border-b border-l border-slate-200 px-3 pb-3">
+        {chartData.map((finding) => {
+          const score = Number(finding.drift_score);
+          const barHeight = Math.max((score / maxScore) * chartHeight, 8);
+          const severity = String(finding.severity || "unknown").toLowerCase();
+
+          return (
+            <div
+              key={finding.id}
+              className="group flex min-w-0 flex-1 flex-col items-center justify-end gap-2"
+              title={`${finding.feature_name}: ${formatNumber(score)}`}
+            >
+              <div className="relative flex h-[180px] w-full items-end justify-center">
+                <div
+                  className="w-full max-w-[34px] rounded-t-md transition group-hover:opacity-80"
+                  style={{
+                    height: `${barHeight}px`,
+                    backgroundColor:
+                      severityColors[severity] || severityColors.unknown,
+                  }}
+                />
+              </div>
+              <span className="w-full truncate text-center text-[11px] font-medium text-slate-500">
+                {finding.feature_name || "feature"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+        <span>Top {chartData.length} drift findings</span>
+        <span>Max score {formatNumber(maxScore)}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function DriftPage() {
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
-  // ==========================================
-  // LOAD DRIFT FINDINGS
-  // ==========================================
-  const loadFindings = async () => {
+  async function loadFindings() {
     try {
       setLoading(true);
       const data = await getDriftFindings();
-      setFindings(data);
+      setFindings(data || []);
     } catch (err) {
       console.log(err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFindings();
   }, []);
 
-  // Format Severity Badge
-  const renderSeverityBadge = (severity) => {
-    const config = {
-      critical: {
-        bg: "bg-red-50",
-        text: "text-red-700",
-        border: "border-red-200",
-        icon: <ShieldAlert size={14} className="mr-1.5" />,
-      },
-      high: {
-        bg: "bg-orange-50",
-        text: "text-orange-700",
-        border: "border-orange-200",
-        icon: <AlertTriangle size={14} className="mr-1.5" />,
-      },
-      low: {
-        bg: "bg-blue-50",
-        text: "text-blue-700",
-        border: "border-blue-200",
-        icon: <Info size={14} className="mr-1.5" />,
-      },
-      default: {
-        bg: "bg-gray-100",
-        text: "text-gray-700",
-        border: "border-gray-200",
-        icon: <Info size={14} className="mr-1.5" />,
-      },
-    };
+  const filteredFindings = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return findings;
 
-    const style = config[severity?.toLowerCase()] || config.default;
-
-    return (
-      <div
-        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}
-      >
-        {style.icon}
-        <span className="capitalize">{severity || "Low"}</span>
-      </div>
+    return findings.filter((finding) =>
+      [
+        finding.feature_name,
+        finding.severity,
+        finding.run_id,
+        finding.drift_score,
+        finding.psi_score,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(needle),
     );
-  };
+  }, [findings, query]);
+
+  const driftCount = findings.filter((finding) => finding.drift_detected).length;
+  const averageScore =
+    findings.length === 0
+      ? 0
+      : findings.reduce(
+          (sum, finding) => sum + Number(finding.drift_score || 0),
+          0,
+        ) / findings.length;
+
+  const severityCounts = findings.reduce((counts, finding) => {
+    const severity = String(finding.severity || "unknown").toLowerCase();
+    return {
+      ...counts,
+      [severity]: (counts[severity] || 0) + 1,
+    };
+  }, {});
 
   return (
-    <div className="space-y-8">
-      {/* HEADER */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-[#111827]">
-            Drift Detection
-          </h1>
-          <p className="mt-2 max-w-[720px] text-[15px] leading-7 text-gray-500">
-            Monitor feature and target drift across your machine learning models. 
-            Analyze changes in data distributions using PSI and KS metrics compared to your MLflow baselines.
-          </p>
-        </div>
-        <button
-          onClick={loadFindings}
-          className="flex items-center gap-3 rounded-2xl border border-black/[0.05] bg-white px-5 py-3 text-[13px] font-medium text-[#111827] shadow-sm transition hover:bg-[#f7f8fb]"
-        >
-          <Activity size={16} />
-          Refresh Analysis
-        </button>
-      </div>
+    <div className="flex flex-col gap-5">
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+        <div className="flex flex-col gap-5 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-[760px]">
+            <h1 className="text-[30px] font-semibold leading-tight text-slate-950">
+              Drift Detection
+            </h1>
+            <p className="mt-2 text-[14px] leading-6 text-slate-500">
+              Track drift findings from production pipeline runs using real PSI,
+              KS, and drift score data.
+            </p>
+          </div>
 
-      {/* STATS ROW */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="rounded-3xl border border-black/[0.05] bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-red-600">
-              <ShieldAlert size={18} />
+          <button
+            onClick={loadFindings}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+          >
+            <RefreshCw size={15} />
+            Refresh Analysis
+          </button>
+        </div>
+
+        <div className="grid border-b border-slate-200 md:grid-cols-3">
+          <div className="border-b border-slate-200 px-6 py-4 md:border-b-0 md:border-r">
+            <div className="flex items-center justify-between text-[12px] font-medium text-slate-500">
+              Findings
+              <Activity size={16} />
             </div>
-            <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wider">Features Drifting</span>
+            <div className="mt-2 text-[26px] font-semibold text-slate-950">
+              {findings.length}
+            </div>
           </div>
-          <p className="text-3xl font-semibold text-[#111827]">{findings.filter(f => f.drift_detected).length}</p>
-        </div>
-        
-        <div className="col-span-2 rounded-3xl border border-black/[0.05] bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.03)] flex flex-col justify-center items-center text-gray-400">
-          <BarChart2 size={32} className="mb-2 opacity-50" />
-          <p className="text-sm font-medium">Global Drift Trend Chart</p>
-          <p className="text-xs mt-1">(Metrics visualization will populate here after sufficient data collection)</p>
-        </div>
-      </div>
 
-      {/* LOADING STATE */}
-      {loading && (
-        <div className="rounded-3xl border border-black/[0.05] bg-white p-12 text-center text-[14px] text-gray-500 shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          Loading Drift Analysis...
-        </div>
-      )}
-
-      {/* EMPTY STATE */}
-      {!loading && findings.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-black/[0.08] bg-white p-16 text-center shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 mb-4 border border-blue-100">
-            <Activity size={28} className="text-blue-500" />
+          <div className="border-b border-slate-200 px-6 py-4 md:border-b-0 md:border-r">
+            <div className="flex items-center justify-between text-[12px] font-medium text-slate-500">
+              Features drifting
+              <ShieldAlert size={16} />
+            </div>
+            <div className="mt-2 text-[26px] font-semibold text-slate-950">
+              {driftCount}
+            </div>
           </div>
-          <h3 className="text-[18px] font-semibold text-[#111827]">
-            No Drift Detected
-          </h3>
-          <p className="mt-2 text-[14px] text-gray-500 max-w-sm mx-auto">
-            Your models are behaving as expected compared to their baselines. Analysis will appear here when shifts occur.
-          </p>
-        </div>
-      )}
 
-      {/* DATA TABLE */}
-      {!loading && findings.length > 0 && (
-        <div className="overflow-hidden rounded-3xl border border-black/[0.05] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          <table className="w-full text-left text-[14px]">
-            <thead className="bg-[#f7f8fb] text-[12px] font-medium uppercase tracking-[0.1em] text-gray-500">
-              <tr>
-                <th className="px-6 py-5">Severity</th>
-                <th className="px-6 py-5">Feature</th>
-                <th className="px-6 py-5">Drift Score</th>
-                <th className="px-6 py-5">PSI Score</th>
-                <th className="px-6 py-5">KS Stats</th>
-                <th className="px-6 py-5 text-right">Run ID</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/[0.04]">
-              {findings.map((finding) => (
-                <tr
-                  key={finding.id}
-                  className="transition hover:bg-[#f7f8fb]/50 group"
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between text-[12px] font-medium text-slate-500">
+              Avg drift score
+              <BarChart2 size={16} />
+            </div>
+            <div className="mt-2 text-[26px] font-semibold text-slate-950">
+              {formatNumber(averageScore)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-[16px] font-semibold text-slate-950">
+                Drift Score by Feature
+              </h2>
+              <p className="mt-1 text-[13px] text-slate-500">
+                Bar chart generated from live drift findings.
+              </p>
+            </div>
+            <BarChart2 size={18} className="text-slate-400" />
+          </div>
+
+          <DriftScoreChart findings={filteredFindings} />
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-[16px] font-semibold text-slate-950">
+                Severity Mix
+              </h2>
+              <p className="mt-1 text-[13px] text-slate-500">
+                Distribution from current findings.
+              </p>
+            </div>
+            <AlertTriangle size={18} className="text-slate-400" />
+          </div>
+
+          <DistributionBars counts={severityCounts} total={findings.length} />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-[16px] font-semibold text-slate-950">
+              Drift Findings
+            </h2>
+            <p className="mt-1 text-[13px] text-slate-500">
+              Detailed metrics behind the charts.
+            </p>
+          </div>
+
+          <label className="flex h-10 w-full items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 md:max-w-[340px]">
+            <Search size={16} className="text-slate-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search feature, severity, run"
+              className="h-full min-w-0 flex-1 bg-transparent text-[14px] text-slate-700 outline-none placeholder:text-slate-400"
+            />
+          </label>
+        </div>
+
+        {loading && (
+          <div className="px-6 py-12 text-center text-[14px] text-slate-500">
+            Loading drift analysis...
+          </div>
+        )}
+
+        {!loading && filteredFindings.length === 0 && (
+          <div className="px-6 py-14 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-400">
+              <Activity size={22} />
+            </div>
+            <h3 className="mt-4 text-[17px] font-semibold text-slate-950">
+              No drift findings
+            </h3>
+            <p className="mx-auto mt-2 max-w-[420px] text-[14px] leading-6 text-slate-500">
+              Drift metrics will appear after pipeline runs are processed.
+            </p>
+          </div>
+        )}
+
+        {!loading && filteredFindings.length > 0 && (
+          <div className="divide-y divide-slate-200">
+            {filteredFindings.map((finding) => (
+              <article
+                key={finding.id}
+                className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[140px_minmax(220px,1fr)_150px_140px_170px_110px]"
+              >
+                <div>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${getSeverityClass(
+                      finding.severity,
+                    )}`}
+                  >
+                    <Info size={14} />
+                    {finding.severity || "Low"}
+                  </span>
+                </div>
+
+                <div className="min-w-0">
+                  <h3 className="truncate text-[15px] font-semibold text-slate-950">
+                    {finding.feature_name || "Unknown feature"}
+                  </h3>
+                  <p className="mt-1 text-[12px] text-slate-500">
+                    Drift detected: {finding.drift_detected ? "Yes" : "No"}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                    Drift score
+                  </div>
+                  <span className="mt-1 inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700 lg:mt-0">
+                    {formatNumber(finding.drift_score)}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                    PSI
+                  </div>
+                  <span className="mt-1 inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700 lg:mt-0">
+                    {formatNumber(finding.psi_score, 4)}
+                  </span>
+                </div>
+
+                <div className="text-[12px] text-slate-600">
+                  <div>
+                    KS:{" "}
+                    <span className="font-mono font-semibold">
+                      {formatNumber(finding.ks_score, 4)}
+                    </span>
+                  </div>
+                  <div>
+                    p-value:{" "}
+                    <span className="font-mono font-semibold">
+                      {formatNumber(finding.ks_pvalue, 4)}
+                    </span>
+                  </div>
+                </div>
+
+                <a
+                  href={`/pipelines?run=${finding.run_id}`}
+                  className="inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50 lg:justify-center"
                 >
-                  <td className="px-6 py-5">
-                    {renderSeverityBadge(finding.severity)}
-                  </td>
-                  <td className="px-6 py-5">
-                    <span className="font-mono text-[13px] bg-gray-50 px-2 py-1 rounded text-gray-700 border border-gray-100">
-                      {finding.feature_name}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${finding.drift_score > 0.5 ? 'bg-red-500' : 'bg-green-500'}`} 
-                          style={{width: `${Math.min(finding.drift_score * 100, 100)}%`}}
-                        ></div>
-                      </div>
-                      <span className="text-xs font-medium text-gray-600">{finding.drift_score.toFixed(3)}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <span className="text-gray-600">
-                      {finding.psi_score !== null ? finding.psi_score.toFixed(4) : "N/A"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex flex-col text-xs">
-                      <span className="text-gray-600">
-                        <span className="text-gray-400">Score:</span> {finding.ks_score !== null ? finding.ks_score.toFixed(4) : "N/A"}
-                      </span>
-                      <span className="text-gray-600">
-                        <span className="text-gray-400">p-value:</span> {finding.ks_pvalue !== null ? finding.ks_pvalue.toFixed(4) : "N/A"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    <a href={`/pipelines?run=${finding.run_id}`} className="text-blue-600 hover:underline">
-                      #{finding.run_id}
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  #{finding.run_id || "-"}
+                </a>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

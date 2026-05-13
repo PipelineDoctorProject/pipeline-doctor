@@ -180,8 +180,8 @@ export default function SchemaPage() {
 
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="flex min-w-0 flex-col gap-4">
+      <section className="grid gap-5 bg-transparent xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="flex bg-transparent min-w-0 flex-col gap-4">
           <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-[0_12px_34px_rgba(15,23,42,0.04)] md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-[16px] font-semibold text-slate-950">

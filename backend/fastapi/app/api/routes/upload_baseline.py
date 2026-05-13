@@ -239,12 +239,19 @@ async def upload_baseline(
     # ==========================================
     # SAVE BASELINE VERSION
     # ==========================================
-    baseline = create_baseline_version(
-        db,
-        model_id,
-        baseline_data["schema"],
-        baseline_data["profile"]
-    )
+    try:
+        baseline = create_baseline_version(
+            db,
+            model_id,
+            baseline_data["schema"],
+            baseline_data["profile"]
+        )
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create baseline: {exc}"
+        ) from exc
 
     # ==========================================
     # RESPONSE
