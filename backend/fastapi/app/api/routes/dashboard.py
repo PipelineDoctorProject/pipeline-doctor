@@ -8,7 +8,7 @@ from fastapi import (
 )
 
 from sqlalchemy.orm import Session
-
+from app.dependencies.auth import get_current_user
 from app.db.session import get_db
 from app.models.tenant import Tenant
 from app.models.ml_model import MLModel
@@ -24,16 +24,11 @@ router = APIRouter(
 @router.get("/me")
 def get_dashboard_context(
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
 
-    user = request.state.user
-
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized"
-        )
+    user = current_user
 
     tenant = None
 

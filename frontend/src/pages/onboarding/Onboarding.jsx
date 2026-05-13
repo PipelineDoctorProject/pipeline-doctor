@@ -2,20 +2,24 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useAuthStore from "../../store/authStore";
 
-import Logo from "../../assets/logo_og.png";
 import Logo2 from "../../assets/logo2.png";
 import { useNavigate } from "react-router-dom";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+
   const createCompany = useAuthStore((state) => state.createCompany);
 
   const inviteMember = useAuthStore((state) => state.inviteMember);
 
-  const [step, setStep] = useState(1);
+  const workspace = useAuthStore((state) => state.workspace);
+
+  const [step, setStep] = useState(
+    workspace?.tenant_id ? 2 : 1
+  );
 
   const [companyName, setCompanyName] = useState("");
 
@@ -24,6 +28,12 @@ export default function OnboardingPage() {
   const [members, setMembers] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (workspace?.tenant_id) {
+      setStep(2);
+    }
+  }, [workspace]);
 
   const handleCreateCompany = async (e) => {
     e.preventDefault();
@@ -54,7 +64,9 @@ export default function OnboardingPage() {
   };
 
   const handleRemoveMember = (email) => {
-    setMembers(members.filter((member) => member !== email));
+    setMembers(
+      members.filter((member) => member !== email)
+    );
   };
 
   const handleFinish = async () => {
@@ -65,7 +77,8 @@ export default function OnboardingPage() {
 
       console.log("Invited Members:", members);
 
-      window.location.href = "/dashboard";
+      navigate("/dashboard", { replace: true });
+
     } catch (err) {
       alert(err?.detail || "Invite Failed");
     }
@@ -94,6 +107,7 @@ export default function OnboardingPage() {
       {/* MAIN */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-20">
         <div className="w-full max-w-[760px]">
+
           {/* PROGRESS */}
           <div className="mb-14">
             <div className="mb-4 flex items-center justify-between">
@@ -117,15 +131,15 @@ export default function OnboardingPage() {
 
           {/* CARD */}
           <div className="rounded-[24px] border border-black/[0.05] bg-white p-12 shadow-[0_20px_80px_rgba(15,23,42,0.06)]">
+
             {/* STEP 1 */}
             {step === 1 && (
               <>
                 <div className="text-center">
                   <h1 className="text-[48px] font-semibold tracking-[-0.06em] text-[#111827]">
                     Create Your
-                    {/* <br />  */}
                     &nbsp;
-                     Workspace
+                    Workspace
                   </h1>
 
                   <p className="mx-auto mt-6 max-w-[560px] text-[15px] leading-8 text-[#6b7280]">
@@ -135,7 +149,10 @@ export default function OnboardingPage() {
                   </p>
                 </div>
 
-                <form onSubmit={handleCreateCompany} className="mt-14">
+                <form
+                  onSubmit={handleCreateCompany}
+                  className="mt-14"
+                >
                   <div className="space-y-6">
                     <div>
                       <label className="mb-3 block text-[12px] font-medium text-[#6b7280]">
@@ -146,7 +163,9 @@ export default function OnboardingPage() {
                         type="text"
                         placeholder="Enter Workspace Name"
                         value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
+                        onChange={(e) =>
+                          setCompanyName(e.target.value)
+                        }
                         className="h-[56px] w-full rounded-[14px] border border-[#e5e7eb] bg-[#fafafa] px-5 text-[15px] text-[#111827] outline-none transition focus:border-[#3563ff] focus:bg-white"
                       />
                     </div>
@@ -161,7 +180,9 @@ export default function OnboardingPage() {
                         disabled={isLoading}
                         className="h-[50px] rounded-[14px] bg-[#3563ff] px-6 text-[14px] font-medium text-white transition hover:bg-[#2957f5] disabled:opacity-50"
                       >
-                        {isLoading ? "Creating..." : "Continue"}
+                        {isLoading
+                          ? "Creating..."
+                          : "Continue"}
                       </button>
                     </div>
                   </div>
@@ -196,7 +217,9 @@ export default function OnboardingPage() {
                         type="email"
                         placeholder="Enter Team Member Email"
                         value={memberEmail}
-                        onChange={(e) => setMemberEmail(e.target.value)}
+                        onChange={(e) =>
+                          setMemberEmail(e.target.value)
+                        }
                         className="h-[56px] flex-1 rounded-[14px] border border-[#e5e7eb] bg-[#fafafa] px-5 text-[15px] text-[#111827] outline-none transition focus:border-[#3563ff] focus:bg-white"
                       />
 
@@ -224,7 +247,9 @@ export default function OnboardingPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleRemoveMember(email)}
+                            onClick={() =>
+                              handleRemoveMember(email)
+                            }
                             className="text-[#9ca3af] transition hover:text-red-500"
                           >
                             ×
@@ -238,7 +263,9 @@ export default function OnboardingPage() {
                   <div className="flex items-center justify-between pt-6">
                     <button
                       type="button"
-                      onClick={() => navigate("/dashboard")}
+                      onClick={() =>
+                        navigate("/dashboard")
+                      }
                       className="text-[13px] font-medium text-[#6b7280] transition hover:text-[#111827]"
                     >
                       Skip For Now

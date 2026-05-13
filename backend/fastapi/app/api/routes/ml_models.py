@@ -1,7 +1,8 @@
 from fastapi import (
     APIRouter,
     HTTPException,
-    Request
+    Request,
+    Depends
 )
 
 from sqlalchemy.orm import Session
@@ -11,6 +12,9 @@ from typing import List
 from mlflow.tracking import MlflowClient
 
 from app.models.ml_model import MLModel
+
+from app.dependencies.auth import require_tenant_user
+
 
 from app.schemas.ml_model import (
     MLModelCreate,
@@ -32,7 +36,8 @@ router = APIRouter(
 def list_models(
     request: Request,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    current_user=Depends(require_tenant_user)
 ):
 
     db: Session = request.state.db
@@ -62,7 +67,8 @@ def list_models(
 )
 def register_model(
     model_in: MLModelCreate,
-    request: Request
+    request: Request,
+    current_user=Depends(require_tenant_user)
 ):
 
     db: Session = request.state.db
@@ -103,7 +109,8 @@ def register_model(
 def list_models(
     request: Request,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    current_user=Depends(require_tenant_user)
 ):
 
     db: Session = request.state.db
@@ -133,7 +140,8 @@ def list_models(
 )
 def get_model(
     model_id: int,
-    request: Request
+    request: Request,
+    current_user=Depends(require_tenant_user)
 ):
 
     db: Session = request.state.db
@@ -164,7 +172,8 @@ def get_model(
 # =====================================================
 @router.post("/discover")
 def discover_models(
-    data: DiscoverModelsRequest
+    data: DiscoverModelsRequest,
+    current_user=Depends(require_tenant_user)
 ):
 
     try:
@@ -202,7 +211,8 @@ def discover_models(
 # =====================================================
 @router.post("/versions")
 def get_model_versions(
-    data: ModelVersionsRequest
+    data: ModelVersionsRequest,
+    current_user=Depends(require_tenant_user)
 ):
 
     try:
