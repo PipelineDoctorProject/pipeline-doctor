@@ -99,7 +99,7 @@ export default function Sidebar() {
 
       {/* FOOTER */}
       <div className="border-t border-black/[0.04] p-4">
-        <button onClick={()=> logOut } className="flex w-full items-center gap-4 rounded-2xl px-4 py-3 text-[14px] font-medium text-gray-500 transition hover:bg-[#f3f5fb] hover:text-[#111827]">
+        <button onClick={()=> logOut()} className="flex w-full items-center gap-4 rounded-2xl px-4 py-3 text-[14px] font-medium text-gray-500 transition hover:bg-[#f3f5fb] hover:text-[#111827]">
           <LogOut size={18} />
           Logout
         </button>

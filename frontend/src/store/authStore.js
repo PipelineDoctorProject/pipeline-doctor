@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import api from "../api/client";
 import { inviteMemberApi } from "../api/invite";
-import { useNavigate } from "react-router-dom";
+
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -100,18 +100,24 @@ const useAuthStore = create((set) => ({
   },
 
   logout: async () => {
-    try {
-      await api.post("/auth/logout");
 
-      set({
-        user: null,
-        isAuthenticated: false,
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  },
+  try {
 
+    await api.post("/auth/logout");
+
+    set({
+      user: null,
+      isAuthenticated: false,
+      workspace: null
+    });
+
+    window.location.href = "/login";
+
+  } catch (error) {
+
+    console.log(error);
+  }
+},
   me: async () => {
     try {
       const response = await api.get("/dashboard/me");
