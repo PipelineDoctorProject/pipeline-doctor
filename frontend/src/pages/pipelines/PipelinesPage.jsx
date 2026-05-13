@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Workflow, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
+import { Workflow, CheckCircle2, XCircle, AlertCircle, Clock, Download } from "lucide-react";
 import { getPipelineRuns } from "../../store/pipelineStore";
 
 export default function PipelinesPage() {
   const [runs, setRuns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(null);
 
   // ==========================================
   // LOAD PIPELINE RUNS
@@ -24,6 +25,42 @@ export default function PipelinesPage() {
   useEffect(() => {
     loadRuns();
   }, []);
+
+  // ==========================================
+  // DOWNLOAD CLEANED DATA
+  // ==========================================
+  const downloadCleaned = async (runId) => {
+    try {
+      setDownloading(runId);
+      const response = await fetch(
+        `http://localhost:8000/runs/${runId}/download-cleaned`,
+        {
+          // Use credentials: include so cookies are sent automatically
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        alert(`Download failed: ${err.detail}`);
+        return;
+      }
+
+      // Trigger browser download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cleaned_run_${runId}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Download failed. Check that the backend is running.");
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   // Format Status Badge
   const renderStatusBadge = (status) => {
@@ -121,7 +158,8 @@ export default function PipelinesPage() {
                 <th className="px-6 py-5">Status</th>
                 <th className="px-6 py-5">Baseline Version</th>
                 <th className="px-6 py-5">Schema Status</th>
-                <th className="px-6 py-5 text-right">Started At</th>
+                <th className="px-6 py-5">Started At</th>
+                <th className="px-6 py-5 text-right">Cleaned Data</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
@@ -156,8 +194,22 @@ export default function PipelinesPage() {
                       <span className="text-gray-500 text-xs">Unchanged</span>
                     )}
                   </td>
-                  <td className="px-6 py-5 text-right text-gray-500">
+                  <td className="px-6 py-5 text-gray-500">
                     {new Date(run.created_at).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-5 text-right">
+                    {run.status === "success" ? (
+                      <button
+                        onClick={() => downloadCleaned(run.id)}
+                        disabled={downloading === run.id}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-black/[0.05] bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:bg-green-50 hover:text-green-700 hover:border-green-200 disabled:opacity-50"
+                      >
+                        <Download size={12} />
+                        {downloading === run.id ? "Downloading..." : "Download CSV"}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">N/A</span>
+                    )}
                   </td>
                 </tr>
               ))}
