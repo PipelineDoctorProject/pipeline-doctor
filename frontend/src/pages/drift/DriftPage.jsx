@@ -26,6 +26,17 @@ const severityColors = {
   unknown: "#64748b",
 };
 
+const featurePalette = [
+  "#0b2442",
+  "#2563eb",
+  "#0891b2",
+  "#16a34a",
+  "#d97706",
+  "#dc2626",
+  "#7c3aed",
+  "#475569",
+];
+
 function formatNumber(value, digits = 3) {
   const number = Number(value);
   return Number.isFinite(number) ? number.toFixed(digits) : "N/A";
@@ -72,11 +83,40 @@ function DistributionBars({ counts, total }) {
 }
 
 function DriftScoreChart({ findings }) {
-  const chartData = findings
-    .filter((finding) => Number.isFinite(Number(finding.drift_score)))
-    .slice(0, 10);
+  const numericFindings = findings.filter((finding) =>
+    Number.isFinite(Number(finding.drift_score)),
+  );
 
-  if (chartData.length === 0) {
+  const featureNames = Array.from(
+    new Set(
+      numericFindings.map(
+        (finding) => finding.feature_name || "Unknown feature",
+      ),
+    ),
+  ).slice(0, 8);
+
+  const runGroups = Array.from(
+    numericFindings
+      .reduce((groups, finding) => {
+        const runId = finding.run_id || "Unknown";
+        const featureName = finding.feature_name || "Unknown feature";
+
+        if (!featureNames.includes(featureName)) return groups;
+
+        const currentGroup = groups.get(runId) || {
+          runId,
+          values: {},
+        };
+
+        currentGroup.values[featureName] = Number(finding.drift_score);
+        groups.set(runId, currentGroup);
+
+        return groups;
+      }, new Map())
+      .values(),
+  ).slice(0, 8);
+
+  if (runGroups.length === 0 || featureNames.length === 0) {
     return (
       <div className="flex min-h-[240px] items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[13px] text-slate-500">
         Drift scores will appear here after pipeline runs produce findings.
@@ -86,43 +126,79 @@ function DriftScoreChart({ findings }) {
 
   const maxScore = Math.max(
     1,
-    ...chartData.map((finding) => Number(finding.drift_score)),
+    ...runGroups.flatMap((group) => Object.values(group.values)),
   );
   const chartHeight = 180;
 
   return (
     <div>
-      <div className="flex h-[220px] items-end gap-3 border-b border-l border-slate-200 px-3 pb-3">
-        {chartData.map((finding) => {
-          const score = Number(finding.drift_score);
-          const barHeight = Math.max((score / maxScore) * chartHeight, 8);
-          const severity = String(finding.severity || "unknown").toLowerCase();
-
-          return (
-            <div
-              key={finding.id}
-              className="group flex min-w-0 flex-1 flex-col items-center justify-end gap-2"
-              title={`${finding.feature_name}: ${formatNumber(score)}`}
-            >
-              <div className="relative flex h-[180px] w-full items-end justify-center">
-                <div
-                  className="w-full max-w-[34px] rounded-t-md transition group-hover:opacity-80"
+      <div className="overflow-x-auto">
+        <div className="min-w-[760px]">
+          <div className="mb-4 flex flex-wrap gap-3">
+            {featureNames.map((featureName, index) => (
+              <div
+                key={featureName}
+                className="flex items-center gap-2 text-[11px] font-medium text-slate-600"
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
                   style={{
-                    height: `${barHeight}px`,
                     backgroundColor:
-                      severityColors[severity] || severityColors.unknown,
+                      featurePalette[index % featurePalette.length],
                   }}
                 />
+                <span className="max-w-[140px] truncate">{featureName}</span>
               </div>
-              <span className="w-full truncate text-center text-[11px] font-medium text-slate-500">
-                {finding.feature_name || "feature"}
-              </span>
-            </div>
-          );
-        })}
+            ))}
+          </div>
+
+          <div className="flex h-[240px] items-end gap-5 border-b border-l border-slate-200 px-4 pb-4">
+            {runGroups.map((group) => (
+              <div
+                key={group.runId}
+                className="flex min-w-[92px] flex-1 flex-col items-center justify-end gap-2"
+              >
+                <div className="flex h-[190px] w-full items-end justify-center gap-1.5">
+                  {featureNames.map((featureName, index) => {
+                    const score = group.values[featureName] || 0;
+                    const barHeight = score
+                      ? Math.max((score / maxScore) * chartHeight, 6)
+                      : 0;
+
+                    return (
+                      <div
+                        key={`${group.runId}-${featureName}`}
+                        className="group flex h-full flex-1 items-end justify-center"
+                        title={`Run #${group.runId} / ${featureName}: ${formatNumber(
+                          score,
+                        )}`}
+                      >
+                        <div
+                          className="w-full max-w-[18px] rounded-t-sm transition group-hover:opacity-80"
+                          style={{
+                            height: `${barHeight}px`,
+                            backgroundColor:
+                              featurePalette[index % featurePalette.length],
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <span className="w-full truncate text-center text-[11px] font-semibold text-slate-600">
+                  Run #{group.runId}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
       <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
-        <span>Top {chartData.length} drift findings</span>
+        <span>
+          Grouped by run ID / {featureNames.length} column
+          {featureNames.length === 1 ? "" : "s"}
+        </span>
         <span>Max score {formatNumber(maxScore)}</span>
       </div>
     </div>
@@ -248,10 +324,10 @@ export default function DriftPage() {
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-[16px] font-semibold text-slate-950">
-                Drift Score by Feature
+                Column Drift by Run
               </h2>
               <p className="mt-1 text-[13px] text-slate-500">
-                Bar chart generated from live drift findings.
+                Each run is a group; each colored bar is a drifted column.
               </p>
             </div>
             <BarChart2 size={18} className="text-slate-400" />

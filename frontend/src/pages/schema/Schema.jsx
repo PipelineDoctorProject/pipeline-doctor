@@ -246,7 +246,7 @@ export default function SchemaPage() {
                     onClick={() => setSelectedBaseline(baseline)}
                     className={`group flex min-h-[172px] flex-col justify-between rounded-lg border bg-white p-4 text-left shadow-[0_12px_34px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-[0_18px_40px_rgba(15,23,42,0.06)] ${
                       isSelected
-                        ? "border-slate-950 ring-2 ring-slate-200"
+                        ? "border-slate-150 ring-2 ring-slate-100"
                         : "border-slate-200"
                     }`}
                   >
@@ -357,11 +357,11 @@ export default function SchemaPage() {
                         }}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full border transition ${
                           isActive
-                            ? "border-emerald-500 bg-emerald-500"
+                            ? "bg-gray-700"
                             : "border-slate-300 bg-slate-200"
                         } ${
                           activationDisabled
-                            ? "cursor-not-allowed opacity-70"
+                            ? "cursor-not-allowed opacity-700"
                             : "cursor-pointer hover:border-slate-400"
                         }`}
                       >
@@ -444,9 +444,9 @@ export default function SchemaPage() {
                     onClick={() => handleActivateBaseline(inspectedBaseline)}
                     className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition ${
                       inspectedBaseline.is_active
-                        ? "border-emerald-500 bg-emerald-500"
+                        ? "bg-gray-700"
                         : "border-slate-300 bg-slate-200"
-                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                    } disabled:cursor-not-allowed disabled:opacity-100`}
                     aria-label="Activate inspected baseline"
                   >
                     <span
