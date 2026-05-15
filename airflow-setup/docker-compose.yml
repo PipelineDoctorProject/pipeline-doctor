@@ -15,11 +15,7 @@ x-airflow-common: &airflow-common
     OPSSIGHT_API_URL: "http://host.docker.internal:8000"
 
     OPSSIGHT_MODEL_ID: "1"
-    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYWM5MzhjYmMtODlkMy00YmRhLTlhZDMtYzdiZjUwOWVmOGRjIiwiZXhwIjoxNzc4Njc0NzQxLCJ0eXBlIjoiYWNjZXNzIn0.BkUna_iwyIETstytcpgVvcUCC3GYgUhuHQ4iWU3ILCQ"
-
-
-    OPSSIGHT_MODEL_ID: "2"
-    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTI5NGQ5OTctY2VhZS00YjFjLTkwYTUtZTQ1MzdhOTAyNGE4IiwiZXhwIjoxNzc4NzM2NjAyLCJ0eXBlIjoiYWNjZXNzIn0.Yowpvojj54PeiegTdwglRiqvbZKsvHfUspZn2R6NuO4"
+    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYWM5MzhjYmMtODlkMy00YmRhLTlhZDMtYzdiZjUwOWVmOGRjIiwiZXhwIjoxNzc4NzQwNjA1LCJ0eXBlIjoiYWNjZXNzIn0.SK39DxtetIyd9F8wKzmpzti0M01eSAibPpCRJiDF0fI"
 
  
   volumes:
