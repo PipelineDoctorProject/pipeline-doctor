@@ -4,54 +4,93 @@ from fastapi import HTTPException
 
 from app.models.user import User
 from app.models.tenant import Tenant
+
 from app.utils.schema_utils import create_schema
-from app.core.jwt import create_access_token, create_refresh_token
+
+from app.core.jwt import (
+    create_access_token,
+    create_refresh_token
+)
 
 
-def create_company(db: Session, user_id: str, company_name: str):
+def create_company(
+    db: Session,
+    user_id: str,
+    company_name: str
+):
 
-    user = db.query(User).filter(User.id == user_id).first()
+    try:
 
-    if not user:
-        raise HTTPException(404, "User not found")
+        user = (
+            db.query(User)
+            .filter(User.id == user_id)
+            .first()
+        )
 
-    if user.tenant_id:
-        raise HTTPException(400, "Company already created")
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
 
-    schema_name = f"tenant_{company_name.lower().replace(' ', '_')}_{uuid.uuid4().hex[:6]}"
+        if user.tenant_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Company already created"
+            )
 
-    tenant = Tenant(
-        name=company_name,
-        schema_name=schema_name
-    )
+        schema_name = (
+            f"tenant_"
+            f"{company_name.lower().replace(' ', '_')}_"
+            f"{uuid.uuid4().hex[:6]}"
+        )
 
-    db.add(tenant)
-    db.commit()
-    db.refresh(tenant)
+        tenant = Tenant(
+            name=company_name,
+            schema_name=schema_name
+        )
 
-    create_schema(db, schema_name)
+        db.add(tenant)
 
-    user.tenant_id = tenant.id
-    db.commit()
+        db.flush()
 
-    access_token = create_access_token({
-        "user_id": user.id,
-        "tenant_id": tenant.id,
-        "schema_name": tenant.schema_name,
-        "role": user.role
-    })
+        # CREATE SCHEMA
+        create_schema(db, schema_name)
 
-    refresh_token = create_refresh_token({
-        "user_id": user.id,
-        "tenant_id": tenant.id,
-        "schema_name": tenant.schema_name,
-        "role": user.role
-    })
+        # LINK USER
+        user.tenant_id = tenant.id
 
-    return {
-        "message": "Company created",
-        "tenant_id": tenant.id,
-        "schema_name": schema_name,
-        "access_token": access_token,
-        "refresh_token": refresh_token
-    }
+        db.commit()
+
+        db.refresh(tenant)
+
+        access_token = create_access_token({
+            "user_id": user.id,
+            "tenant_id": tenant.id,
+            "schema_name": tenant.schema_name,
+            "role": user.role
+        })
+
+        refresh_token = create_refresh_token({
+            "user_id": user.id,
+            "tenant_id": tenant.id,
+            "schema_name": tenant.schema_name,
+            "role": user.role
+        })
+
+        return {
+            "message": "Company created",
+            "tenant_id": tenant.id,
+            "schema_name": schema_name,
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )

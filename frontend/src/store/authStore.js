@@ -1,11 +1,15 @@
 import { create } from "zustand";
 import api from "../api/client";
+import { inviteMemberApi } from "../api/invite";
 
-const useAuthStore = create((set) => ({
+const useAuthStore = create((set, get) => ({
 
   user: null,
   isAuthenticated: false,
+  workspace: null,
   loading: false,
+  checkingAuth: true,
+  onboardingStep: 1,
 
   signup: async (email, password) => {
 
@@ -30,6 +34,20 @@ const useAuthStore = create((set) => ({
     }
   },
 
+  inviteMember: async (email) => {
+
+    try {
+
+      const data = await inviteMemberApi(email);
+
+      return data;
+
+    } catch (err) {
+
+      throw err.response?.data || err;
+    }
+  },
+
   verifyOtp: async (email, otp) => {
 
     set({ loading: true });
@@ -41,8 +59,9 @@ const useAuthStore = create((set) => ({
         otp,
       });
 
+      await get().me();
+
       set({
-        isAuthenticated: true,
         loading: false,
       });
 
@@ -50,7 +69,9 @@ const useAuthStore = create((set) => ({
 
     } catch (error) {
 
-      set({ loading: false });
+      set({
+        loading: false,
+      });
 
       throw error.response?.data || error;
     }
@@ -67,8 +88,9 @@ const useAuthStore = create((set) => ({
         password,
       });
 
+      await get().me();
+
       set({
-        isAuthenticated: true,
         loading: false,
       });
 
@@ -76,7 +98,9 @@ const useAuthStore = create((set) => ({
 
     } catch (error) {
 
-      set({ loading: false });
+      set({
+        loading: false,
+      });
 
       throw error.response?.data || error;
     }
@@ -84,45 +108,88 @@ const useAuthStore = create((set) => ({
 
   createCompany: async (company_name) => {
 
-    set({ loading: true });
+  set({ loading: true });
 
-    try {
+  try {
 
-      const response = await api.post(
-        "/onboarding/company",
-        {
-          company_name,
-        }
-      );
+    const response = await api.post(
+      "/onboarding/company",
+      {
+        company_name,
+      }
+    );
 
-      set({ loading: false });
+    await get().me();
 
-      return response.data;
+    set({
+      loading: false,
+      onboardingStep: 2,
+    });
 
-    } catch (error) {
+    return response.data;
 
-      set({ loading: false });
+  } catch (error) {
 
-      throw error.response?.data || error;
-    }
-  },
+    set({ loading: false });
 
+    throw error.response?.data || error;
+  }
+},
   logout: async () => {
 
     try {
 
       await api.post("/auth/logout");
 
-      set({
-        user: null,
-        isAuthenticated: false,
-      });
-
     } catch (error) {
+
       console.log(error);
+    }
+
+    set({
+      user: null,
+      isAuthenticated: false,
+      workspace: null,
+      checkingAuth: false,
+    });
+
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
     }
   },
 
+  me: async () => {
+
+    try {
+
+      const response = await api.get(
+        "/dashboard/me",
+        {
+          skipAuthRefresh: true,
+        }
+      );
+
+      set({
+        user: response.data.user,
+        workspace: response.data.workspace,
+        isAuthenticated: true,
+        checkingAuth: false,
+      });
+
+      return response.data;
+
+    } catch (error) {
+
+      set({
+        user: null,
+        workspace: null,
+        isAuthenticated: false,
+        checkingAuth: false,
+      });
+
+      return null;
+    }
+  },
 }));
 
 export default useAuthStore;

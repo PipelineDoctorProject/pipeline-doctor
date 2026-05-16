@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.data_quality import DataQualityFinding
 
@@ -14,12 +15,11 @@ def store_findings(db: Session, model_id: int, run_id: int, result, extra_cols, 
             DataQualityFinding(
                 model_id=model_id,
                 pipeline_run_id=run_id,
-
                 column_name=check["column"],
                 check_type=check["check"],
                 success=check["success"],
                 details={"info": check["details"]},
-
+                created_at=datetime.utcnow(),
             )
         )
 
@@ -31,7 +31,8 @@ def store_findings(db: Session, model_id: int, run_id: int, result, extra_cols, 
                 column_name=None,
                 check_type="extra_columns",
                 success=False,
-                details={"columns": extra_cols}
+                details={"columns": extra_cols},
+                created_at=datetime.utcnow(),
             )
         )
 
@@ -43,7 +44,8 @@ def store_findings(db: Session, model_id: int, run_id: int, result, extra_cols, 
                 column_name=None,
                 check_type="missing_columns",
                 success=False,
-                details={"columns": missing_cols}
+                details={"columns": missing_cols},
+                created_at=datetime.utcnow(),
             )
         )
 
