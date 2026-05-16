@@ -7,11 +7,22 @@ from app.services.drift.utils import classify_drift_severity
 from app.config import settings
 from evidently.ui.workspace import Workspace
 
+IDENTIFIER_TOKENS = {"id", "uuid", "key"}
+
+
+def _is_identifier_column(col: str) -> bool:
+    normalized = col.strip().lower().replace("_", "")
+    return normalized in IDENTIFIER_TOKENS or normalized.endswith("id")
+
 def check_data_drift(reference_data: pd.DataFrame, current_data: pd.DataFrame):
     results = []
     
     numeric_cols = current_data.select_dtypes(include=[np.number]).columns.tolist()
-    feature_names = [col for col in numeric_cols if col in reference_data.columns]
+    feature_names = [
+        col
+        for col in numeric_cols
+        if col in reference_data.columns and not _is_identifier_column(col)
+    ]
 
     if not feature_names:
         print("No matching numeric features found for data drift detection.")
