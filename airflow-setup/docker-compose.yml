@@ -15,7 +15,7 @@ x-airflow-common: &airflow-common
     OPSSIGHT_API_URL: "http://host.docker.internal:8000"
 
     OPSSIGHT_MODEL_ID: "2"
-    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTI5NGQ5OTctY2VhZS00YjFjLTkwYTUtZTQ1MzdhOTAyNGE4IiwiZXhwIjoxNzc4NzM2NjAyLCJ0eXBlIjoiYWNjZXNzIn0.Yowpvojj54PeiegTdwglRiqvbZKsvHfUspZn2R6NuO4"
+    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTI5NGQ5OTctY2VhZS00YjFjLTkwYTUtZTQ1MzdhOTAyNGE4IiwiZXhwIjoxNzc4NzM4OTY5LCJ0eXBlIjoiYWNjZXNzIn0.DsUHVmLO5V7LXrD68EFajiESgMx7zL8apv_dMAn4-pI"
 
   volumes:
     - ./dags:/opt/airflow/dags          # DAG files (bind mount is fine - read only)
