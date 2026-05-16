@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String
 from app.models.base import Base
 import uuid
+from sqlalchemy.orm import relationship
 
 class Tenant(Base):
     __tablename__ = "tenants"
@@ -8,3 +9,4 @@ class Tenant(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String)
     schema_name = Column(String, unique=True)
+    users = relationship( "User",cascade="all, delete",passive_deletes=True)

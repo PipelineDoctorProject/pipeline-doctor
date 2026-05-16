@@ -3,7 +3,7 @@ from fastapi import HTTPException
 
 from app.models.user import User
 from app.core.security import hash_password, verify_password
-from app.core.jwt import create_access_token, create_refresh_token
+from app.core.jwt import create_access_token, decode_token, create_refresh_token
 from app.utils.otp_utils import generate_otp
 from app.tasks.email_tasks import send_otp_email_task
 
@@ -43,7 +43,7 @@ def verify_otp(db: Session, email: str, otp: str):
     db.commit()
 
     access_token = create_access_token({
-        "user_id": user.id   # ✅ ONLY ID
+        "user_id": user.id   # ONLY ID
     })
 
     refresh_token = create_refresh_token({
@@ -81,18 +81,55 @@ from app.core.jwt import create_access_token, decode_token
 from fastapi import HTTPException
 
 
-def refresh_access_token(refresh_token: str):
+def refresh_access_token(
+    db,
+    refresh_token: str
+):
 
     payload = decode_token(refresh_token)
 
     if payload.get("type") != "refresh":
-        raise HTTPException(401, "Invalid refresh token")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token"
+        )
+
+    user = (
+        db.query(User)
+        .filter(User.id == payload["user_id"])
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
 
     new_access_token = create_access_token({
-        "user_id": payload["user_id"]
+        "user_id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "tenant_id": user.tenant_id
     })
 
     return {
         "access_token": new_access_token,
         "token_type": "bearer"
+    }
+
+def logout_user(response):
+
+    response.delete_cookie(
+        key="access_token",
+        path="/"
+    )
+
+    response.delete_cookie(
+        key="refresh_token",
+        path="/"
+    )
+
+    return {
+        "message": "Logged out successfully"
     }

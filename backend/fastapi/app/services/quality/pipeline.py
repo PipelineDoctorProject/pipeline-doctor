@@ -14,6 +14,7 @@ from app.services.quality.transformer import DataTransformer
 from app.models.schema_change_event import SchemaChangeEvent
 from app.services.quality.data_loader import load_dataset
 from app.services.drift.drift_service import run_drift_checks
+from app.services.ai_orchestration.supervisor import run_root_cause_analysis
 from app.models.prediction_log import PredictionLog
 import mlflow
 import mlflow.pyfunc
@@ -255,6 +256,26 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         except Exception as drift_e:
             print(f"Drift checks encountered an error: {drift_e}")
 
+        root_cause_report = None
+        try:
+            print(f"Running AI root cause analysis for run {run.id}...")
+            root_cause_state = run_root_cause_analysis(
+                db=db,
+                run=run,
+                validation_result=result,
+                schema_change_detected=bool(extra_cols or missing_cols),
+                extra_columns=extra_cols,
+                missing_columns=missing_cols,
+            )
+            root_cause_report = {
+                "failure_types": root_cause_state.get("parsed_failure_types", []),
+                "severity": root_cause_state.get("severity"),
+                "report": root_cause_state.get("report"),
+            }
+            print("AI root cause analysis completed.")
+        except Exception as ai_e:
+            print(f"AI root cause analysis encountered an error: {ai_e}")
+
         # --------------------------------------------------
         # 8. SAFE RESPONSE (CRITICAL FIX)
         # --------------------------------------------------
@@ -264,11 +285,12 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
             "cleaned_data_path": cleaned_path,
             "result": result,
 
-            "schema_change_detected": bool(extra_cols),
+            "schema_change_detected": bool(extra_cols or missing_cols),
             "new_columns": extra_cols,
             "missing_columns": missing_cols,
             "schema_event_id": int(schema_event.id) if schema_event else None,
-            "action": "awaiting_approval" if schema_event else "none"
+            "action": "awaiting_approval" if schema_event else "none",
+            "root_cause_analysis": root_cause_report,
         }
 
         return to_python_types(response)

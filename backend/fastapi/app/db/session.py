@@ -28,10 +28,20 @@ SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine,
+    expire_on_commit=False,
 )
 
 
-def get_db():
+from fastapi import Request
+from typing import Generator
+
+def get_db(request: Request = None) -> Generator:
+    # If the middleware already set up a db session, use it!
+    if request and hasattr(request.state, "db") and request.state.db:
+        yield request.state.db
+        return
+        
+    # Fallback for background tasks or non-middleware requests
     db = SessionLocal()
     try:
         yield db

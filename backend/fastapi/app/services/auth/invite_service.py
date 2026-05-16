@@ -31,9 +31,15 @@ def invite_member(db: Session, admin_user, email: str):
     db.add(user)
     db.commit()
 
+
     send_invite_email_task.delay(
         email,
         f"http://localhost:8000/invite/accept?token={token}"
     )
+
+    send_invite_email(
+    email,
+    f"http://localhost:5173/accept-invite?token={token}"
+)
 
     return {"message": "Invitation sent","invite_token": token}

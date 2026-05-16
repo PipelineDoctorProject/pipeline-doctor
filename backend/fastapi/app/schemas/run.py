@@ -6,11 +6,27 @@ class RunCreate(BaseModel):
     status: str
     drift_score: float
 
+from typing import Optional
+
+class MLModelSummary(BaseModel):
+    id: int
+    name: str
+    version: str
+
+    class Config:
+        orm_mode = True
+
 class RunResponse(BaseModel):
     id: int
+    model_id: int
+    baseline_version: int
     status: str
-    drift_score: float
     created_at: datetime
+    schema_changed: Optional[bool] = False
+    model: Optional[MLModelSummary] = None
+
+    class Config:
+        orm_mode = True
     
     
 class PipeLineCreate(BaseModel):

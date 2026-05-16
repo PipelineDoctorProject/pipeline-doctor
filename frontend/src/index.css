@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/*
+  Authenticated app theme.
+  Remove `ops-theme-navy` from AppLayout to return to the previous
+  page-level colors without touching login, signup, onboarding, or landing.
+*/
+.ops-theme-navy {
+  --theme-app-bg: #f3f6fb;
+  --theme-surface: #ffffff;
+  --theme-surface-soft: #f7f9fd;
+  --theme-surface-muted: #edf2f9;
+  --theme-border: #d9e3ef;
+  --theme-border-strong: #b8c9dd;
+  --theme-heading: #071b33;
+  --theme-text: #263d57;
+  --theme-muted: #697b8f;
+  --theme-primary: #0b2442;
+  --theme-primary-hover: #071a30;
+  --theme-accent: #2563eb;
+  --theme-accent-soft: #e8f0ff;
+}
+
+.ops-theme-navy,
+.ops-theme-navy main {
+  background-color: var(--theme-app-bg) !important;
+  color: var(--theme-text);
+}
+
+.ops-theme-navy header,
+.ops-theme-navy .bg-white,
+.ops-theme-navy .bg-white\/80 {
+  background-color: var(--theme-surface) !important;
+}
+
+.ops-theme-navy .bg-\[\#f7f8fb\],
+.ops-theme-navy .bg-slate-50,
+.ops-theme-navy .bg-gray-50 {
+  background-color: var(--theme-surface-soft) !important;
+}
+
+.ops-theme-navy .bg-slate-100,
+.ops-theme-navy .bg-gray-100 {
+  background-color: var(--theme-surface-muted) !important;
+}
+
+.ops-theme-navy .bg-slate-950,
+.ops-theme-navy .bg-gray-700,
+.ops-theme-navy .bg-\[\#111827\],
+.ops-theme-navy .bg-\[\#3563ff\] {
+  background-color: var(--theme-primary) !important;
+}
+
+.ops-theme-navy .hover\:bg-slate-800:hover,
+.ops-theme-navy .hover\:bg-black:hover,
+.ops-theme-navy .hover\:bg-\[\#2957f5\]:hover {
+  background-color: var(--theme-primary-hover) !important;
+}
+
+.ops-theme-navy .hover\:bg-slate-50:hover,
+.ops-theme-navy .hover\:bg-slate-50\/70:hover,
+.ops-theme-navy .hover\:bg-slate-100:hover,
+.ops-theme-navy .hover\:bg-\[\#f3f5fb\]:hover,
+.ops-theme-navy .hover\:bg-\[\#eef2ff\]:hover {
+  background-color: var(--theme-surface-muted) !important;
+}
+
+.ops-theme-navy h1,
+.ops-theme-navy h2,
+.ops-theme-navy h3,
+.ops-theme-navy .text-slate-950,
+.ops-theme-navy .text-gray-900,
+.ops-theme-navy [class*="text-[#111827]"] {
+  color: var(--theme-heading) !important;
+}
+
+.ops-theme-navy .text-slate-800,
+.ops-theme-navy .text-slate-700,
+.ops-theme-navy .text-gray-700,
+.ops-theme-navy .text-gray-600 {
+  color: var(--theme-text) !important;
+}
+
+.ops-theme-navy .text-slate-500,
+.ops-theme-navy .text-slate-400,
+.ops-theme-navy .text-gray-500,
+.ops-theme-navy .text-gray-400 {
+  color: var(--theme-muted) !important;
+}
+
+.ops-theme-navy .text-blue-700,
+.ops-theme-navy .text-\[\#3563ff\] {
+  color: var(--theme-accent) !important;
+}
+
+.ops-theme-navy .bg-blue-50,
+.ops-theme-navy .bg-indigo-50 {
+  background-color: var(--theme-accent-soft) !important;
+}
+
+.ops-theme-navy .border-slate-100,
+.ops-theme-navy .border-slate-200,
+.ops-theme-navy .border-gray-100,
+.ops-theme-navy .border-gray-200,
+.ops-theme-navy [class*="border-black"] {
+  border-color: var(--theme-border) !important;
+}
+
+.ops-theme-navy .hover\:border-slate-300:hover,
+.ops-theme-navy .focus\:border-slate-400:focus,
+.ops-theme-navy .focus\:border-\[\#3563ff\]\/30:focus {
+  border-color: var(--theme-border-strong) !important;
+}
+
+.ops-theme-navy input,
+.ops-theme-navy select,
+.ops-theme-navy textarea {
+  color: var(--theme-heading) !important;
+}
+
+.ops-theme-navy input::placeholder,
+.ops-theme-navy textarea::placeholder {
+  color: var(--theme-muted) !important;
+}

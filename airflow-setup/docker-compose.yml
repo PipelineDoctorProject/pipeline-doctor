@@ -1,0 +1,81 @@
+# ============================================================
+# Docker Compose for Apache Airflow 2.8 - Windows Compatible
+# ============================================================
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.8.0
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+    AIRFLOW__CORE__FERNET_KEY: 'ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg='
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__WEBSERVER__SECRET_KEY: 'opssight_secret_key'
+    # ---- OpsSight Integration Variables ----
+    OPSSIGHT_API_URL: "http://host.docker.internal:8000"
+
+
+    OPSSIGHT_MODEL_ID: "2"
+    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTI5NGQ5OTctY2VhZS00YjFjLTkwYTUtZTQ1MzdhOTAyNGE4IiwiZXhwIjoxNzc4NzM4OTY5LCJ0eXBlIjoiYWNjZXNzIn0.DsUHVmLO5V7LXrD68EFajiESgMx7zL8apv_dMAn4-pI
+
+  volumes:
+    - ./dags:/opt/airflow/dags          # DAG files (bind mount is fine - read only)
+    - ./data:/opt/airflow/data          # Input CSV files (bind mount is fine - read only)
+    - airflow_logs:/opt/airflow/logs    # ← NAMED VOLUME: Docker manages permissions, no Windows issues
+    - airflow_plugins:/opt/airflow/plugins
+  depends_on:
+    airflow-db:
+      condition: service_healthy
+
+services:
+  # ---- Airflow Database ----
+  airflow-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+
+  # ---- Airflow DB Init (runs once) ----
+  airflow-init:
+    <<: *airflow-common
+    command: >
+      bash -c "airflow db migrate &&
+               airflow users create
+               --username admin
+               --password admin
+               --firstname Admin
+               --lastname User
+               --role Admin
+               --email admin@opssight.ai"
+    restart: "no"
+
+  # ---- Airflow Webserver (UI at :8080) ----
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      retries: 5
+
+  # ---- Airflow Scheduler (Executes DAGs) ----
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+
+# ---- Named Volumes (Docker manages permissions internally) ----
+volumes:
+  airflow_db_data:
+  airflow_logs:      # ← No Windows path, Docker handles permissions itself
+  airflow_plugins:
