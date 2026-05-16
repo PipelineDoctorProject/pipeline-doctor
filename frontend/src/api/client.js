@@ -18,7 +18,6 @@ api.interceptors.response.use(
       "/auth/signup",
       "/auth/verify-otp",
       "/auth/refresh",
-      "/dashboard/me",
     ];
 
     // stop if not 401
