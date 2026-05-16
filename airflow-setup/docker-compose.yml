@@ -14,7 +14,7 @@ x-airflow-common: &airflow-common
     # ---- OpsSight Integration Variables ----
     OPSSIGHT_API_URL: "http://host.docker.internal:8000"
     OPSSIGHT_MODEL_ID: "1"
-    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYWM3N2Q3OTEtZWRjZi00Y2UyLTkwYjktYWYwNWZlYTkyMTk3IiwiZXhwIjoxNzc4NzM3NDUyLCJ0eXBlIjoiYWNjZXNzIn0.42RKSQS2DPfHvBaA4d2IscHOrEGr6Av6fUoYwckUKzE"
+    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYWM3N2Q3OTEtZWRjZi00Y2UyLTkwYjktYWYwNWZlYTkyMTk3IiwiZXhwIjoxNzc4NzM5Mjk0LCJ0eXBlIjoiYWNjZXNzIn0.evrseKpoSvvGyOmDxstYsA6l_1YTBMIMUjC53sbN9jQ"
   volumes:
     - ./dags:/opt/airflow/dags          # DAG files (bind mount is fine - read only)
     - ./data:/opt/airflow/data          # Input CSV files (bind mount is fine - read only)
