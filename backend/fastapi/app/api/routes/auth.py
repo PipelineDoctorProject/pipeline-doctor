@@ -59,16 +59,20 @@ def verify_otp_route(
         key="access_token",
         value=result["access_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 30
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 60 * 24 * 7
     )
 
     return {
@@ -97,16 +101,20 @@ def login_route(
         key="access_token",
         value=result["access_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 30
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 60 * 24 * 7
     )
 
     return {
@@ -141,8 +149,10 @@ def refresh_token_route(
         key="access_token",
         value=result["access_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 30
     )
 
     return {

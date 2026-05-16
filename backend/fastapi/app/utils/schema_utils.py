@@ -36,7 +36,7 @@ def set_schema(db, schema_name: str):
 
     if not schema_name.isidentifier():
         raise ValueError("Invalid schema name")
-
+        
     db.execute(
         text(f'SET search_path TO "{schema_name}", public')
     )

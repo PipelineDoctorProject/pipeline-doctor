@@ -43,7 +43,7 @@ def verify_otp(db: Session, email: str, otp: str):
     db.commit()
 
     access_token = create_access_token({
-        "user_id": user.id   # ✅ ONLY ID
+        "user_id": user.id   # ONLY ID
     })
 
     refresh_token = create_refresh_token({
@@ -121,11 +121,13 @@ def refresh_access_token(
 def logout_user(response):
 
     response.delete_cookie(
-        key="access_token"
+        key="access_token",
+        path="/"
     )
 
     response.delete_cookie(
-        key="refresh_token"
+        key="refresh_token",
+        path="/"
     )
 
     return {
