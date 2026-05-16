@@ -6,6 +6,7 @@ import PublicRoute from "./routes/PublicRoute";
 import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
 
+
 import AppLayout from "./layouts/AppLayout";
 
 import LandingPage from "./pages/Landing";
@@ -21,6 +22,13 @@ import PipelinesPage from "./pages/pipelines/PipelinesPage";
 import IncidentsPage from "./pages/incidents/IncidentsPage";
 import DataQualityPage from "./pages/data-quality/DataQualityPage";
 import DriftPage from "./pages/drift/DriftPage";
+import SignupPage from "./pages/Signup";
+import VerifyOtpPage from "./pages/VerifyOtp";
+import LoginPage from "./pages/Login";
+import OnboardingPage from "./pages/Onboarding";
+import DashboardPage from "./pages/Dashboard";
+import OpsSightLandingPage from "./pages/Landing";
+
 
 export default function App() {
   const me = useAuthStore(
@@ -38,6 +46,12 @@ export default function App() {
     };
 
     checkAuth();
+
+      <Routes>
+        
+        <Route path="/" element={<OpsSightLandingPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+
 
   }, []);
   return (

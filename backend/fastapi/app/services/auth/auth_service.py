@@ -121,11 +121,13 @@ def refresh_access_token(
 def logout_user(response):
 
     response.delete_cookie(
-        key="access_token"
+        key="access_token",
+        path="/"
     )
 
     response.delete_cookie(
-        key="refresh_token"
+        key="refresh_token",
+        path="/"
     )
 
     return {
