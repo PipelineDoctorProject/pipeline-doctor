@@ -230,3 +230,4 @@ __marimo__/
 mlartifacts
 mlfow.db
 mlflow_backup.db/backend/fastapi/mlflow.db
+mlflow_backup.db/backend/fastapi/mlflow.db
