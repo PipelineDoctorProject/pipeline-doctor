@@ -77,7 +77,7 @@ def train_and_register_model():
         mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="model",
-            registered_model_name="PipelineDoctorDemoModel",
+            registered_model_name="Demo Model 2",
             input_example=X_test[:2],
             signature=signature
         )
