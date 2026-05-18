@@ -36,7 +36,22 @@ def set_schema(db, schema_name: str):
 
     if not schema_name.isidentifier():
         raise ValueError("Invalid schema name")
-        
+
+    db.info["schema_name"] = schema_name
     db.execute(
+        text(f'SET search_path TO "{schema_name}", public')
+    )
+
+
+def apply_session_schema(session, connection):
+    schema_name = session.info.get("schema_name")
+
+    if not schema_name:
+        return
+
+    if not schema_name.isidentifier():
+        raise ValueError("Invalid schema name")
+
+    connection.execute(
         text(f'SET search_path TO "{schema_name}", public')
     )

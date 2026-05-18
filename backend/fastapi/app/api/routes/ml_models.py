@@ -29,6 +29,58 @@ router = APIRouter(
 )
 
 
+def _mlflow_registry_status(model: MLModel):
+    if not model.mlflow_model_name:
+        return {
+            "registry_status": "local_only",
+            "registry_message": "This model is registered only in Pipeline Doctor."
+        }
+
+    try:
+        client = MlflowClient(
+            tracking_uri=model.mlflow_tracking_uri
+        )
+
+        if model.version:
+            version = client.get_model_version(
+                name=model.mlflow_model_name,
+                version=str(model.version)
+            )
+            return {
+                "registry_status": "available",
+                "registry_message": f"MLflow version {version.version} is available."
+            }
+
+        client.get_registered_model(model.mlflow_model_name)
+        return {
+            "registry_status": "available",
+            "registry_message": "MLflow registered model is available."
+        }
+
+    except Exception as exc:
+        return {
+            "registry_status": "missing",
+            "registry_message": f"MLflow registry lookup failed: {exc}"
+        }
+
+
+def _serialize_model(model: MLModel):
+    data = {
+        "id": model.id,
+        "name": model.name,
+        "version": model.version,
+        "framework": model.framework,
+        "mlflow_model_name": model.mlflow_model_name,
+        "mlflow_alias": model.mlflow_alias,
+        "mlflow_run_id": model.mlflow_run_id,
+        "mlflow_tracking_uri": model.mlflow_tracking_uri,
+        "expected_features": model.expected_features,
+        "created_at": model.created_at,
+    }
+    data.update(_mlflow_registry_status(model))
+    return data
+
+
 # =====================================================
 # LIST MODEL
 # =====================================================
@@ -55,7 +107,7 @@ def list_models(
         .all()
     )
 
-    return models
+    return [_serialize_model(model) for model in models]
 
 
 # =====================================================
@@ -128,7 +180,7 @@ def list_models(
         .all()
     )
 
-    return models
+    return [_serialize_model(model) for model in models]
 
 
 # =====================================================
@@ -164,7 +216,7 @@ def get_model(
             detail="Model not found"
         )
 
-    return db_model
+    return _serialize_model(db_model)
 
 
 # =====================================================
