@@ -18,10 +18,26 @@ def create_pipeline_run(db: Session, model_id: int, baseline_version: int, file_
 
 
 def update_pipeline_run_status(db: Session, run_id: int, status: str):
-    run = db.get(PipelineRun, run_id)
+    updated = (
+        db.query(PipelineRun)
+        .filter(PipelineRun.id == run_id)
+        .update({"status": status}, synchronize_session=False)
+    )
 
-    if not run:
+    if not updated:
         raise Exception("Pipeline run not found")
 
-    run.status = status
+    db.commit()
+
+
+def update_pipeline_run_fields(db: Session, run_id: int, **fields):
+    updated = (
+        db.query(PipelineRun)
+        .filter(PipelineRun.id == run_id)
+        .update(fields, synchronize_session=False)
+    )
+
+    if not updated:
+        raise Exception("Pipeline run not found")
+
     db.commit()

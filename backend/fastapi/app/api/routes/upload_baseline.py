@@ -235,6 +235,10 @@ async def upload_baseline(
     # CREATE BASELINE
     # ==========================================
     baseline_data = create_baseline(df)
+    baseline_data["profile"]["_meta"] = {
+        "source_file_path": file_path,
+        "source_filename": file.filename,
+    }
 
     # ==========================================
     # SAVE BASELINE VERSION

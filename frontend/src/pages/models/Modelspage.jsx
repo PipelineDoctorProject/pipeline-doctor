@@ -32,6 +32,32 @@ function getFrameworkColor(framework) {
   return "bg-slate-100 text-slate-700";
 }
 
+function getRegistryStatus(model) {
+  const status = String(model.registry_status || "available").toLowerCase();
+
+  if (status === "missing") {
+    return {
+      label: "Registry missing",
+      className: "text-rose-700",
+      icon: Activity,
+    };
+  }
+
+  if (status === "local_only") {
+    return {
+      label: "Local only",
+      className: "text-amber-700",
+      icon: Database,
+    };
+  }
+
+  return {
+    label: "Ready",
+    className: "text-emerald-700",
+    icon: CheckCircle2,
+  };
+}
+
 export default function ModelsPage() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [models, setModels] = useState([]);
@@ -193,71 +219,77 @@ export default function ModelsPage() {
 
           {!loading && filteredModels.length > 0 && (
             <div className="divide-y divide-slate-200">
-              {filteredModels.map((model, index) => (
-                <article
-                  key={model.id || `${model.name}-${model.version}-${index}`}
-                  className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[minmax(260px,1.4fr)_120px_150px_150px_140px]"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700">
-                      <Brain size={18} />
+              {filteredModels.map((model, index) => {
+                const registry = getRegistryStatus(model);
+                const RegistryIcon = registry.icon;
+
+                return (
+                  <article
+                    key={model.id || `${model.name}-${model.version}-${index}`}
+                    className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[minmax(260px,1.4fr)_120px_150px_150px_170px]"
+                    title={model.registry_message || ""}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700">
+                        <Brain size={18} />
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3 className="truncate text-[15px] font-semibold text-slate-950">
+                          {model.name || model.mlflow_model_name || "Unnamed model"}
+                        </h3>
+                        <p className="mt-1 truncate text-[12px] text-slate-500">
+                          {model.mlflow_run_id
+                            ? `Run ${model.mlflow_run_id}`
+                            : "MLflow registry"}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="min-w-0">
-                      <h3 className="truncate text-[15px] font-semibold text-slate-950">
-                        {model.name || model.mlflow_model_name || "Unnamed model"}
-                      </h3>
-                      <p className="mt-1 truncate text-[12px] text-slate-500">
-                        {model.mlflow_run_id
-                          ? `Run ${model.mlflow_run_id}`
-                          : "MLflow registry"}
-                      </p>
+                    <div>
+                      <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                        Version
+                      </div>
+                      <div className="mt-1 inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-800 lg:mt-0">
+                        v{model.version || "-"}
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <div className="text-[11px] font-medium text-slate-500 lg:hidden">
-                      Version
+                    <div>
+                      <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                        Framework
+                      </div>
+                      <div
+                        className={`mt-1 inline-flex rounded-md px-2.5 py-1 text-[12px] font-semibold lg:mt-0 ${getFrameworkColor(
+                          model.framework,
+                        )}`}
+                      >
+                        {model.framework || "unknown"}
+                      </div>
                     </div>
-                    <div className="mt-1 inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-800 lg:mt-0">
-                      v{model.version || "-"}
-                    </div>
-                  </div>
 
-                  <div>
-                    <div className="text-[11px] font-medium text-slate-500 lg:hidden">
-                      Framework
+                    <div>
+                      <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                        Alias
+                      </div>
+                      <div className="mt-1 truncate text-[13px] font-medium text-slate-700 lg:mt-0">
+                        {model.mlflow_alias || "No alias"}
+                      </div>
                     </div>
-                    <div
-                      className={`mt-1 inline-flex rounded-md px-2.5 py-1 text-[12px] font-semibold lg:mt-0 ${getFrameworkColor(
-                        model.framework,
-                      )}`}
-                    >
-                      {model.framework || "unknown"}
-                    </div>
-                  </div>
 
-                  <div>
-                    <div className="text-[11px] font-medium text-slate-500 lg:hidden">
-                      Alias
+                    <div className="flex items-center justify-between gap-3 lg:justify-end">
+                      <div className={`inline-flex items-center gap-2 text-[12px] font-semibold ${registry.className}`}>
+                        <RegistryIcon size={15} />
+                        {registry.label}
+                      </div>
+                      <button className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
+                        <Activity size={14} />
+                        View
+                      </button>
                     </div>
-                    <div className="mt-1 truncate text-[13px] font-medium text-slate-700 lg:mt-0">
-                      {model.mlflow_alias || "No alias"}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3 lg:justify-end">
-                    <div className="inline-flex items-center gap-2 text-[12px] font-semibold text-emerald-700">
-                      <CheckCircle2 size={15} />
-                      Ready
-                    </div>
-                    <button className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
-                      <Activity size={14} />
-                      View
-                    </button>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>

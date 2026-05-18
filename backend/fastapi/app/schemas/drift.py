@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Any, Optional
 from datetime import datetime
 
 class DriftResponse(BaseModel):
@@ -13,6 +13,7 @@ class DriftResponse(BaseModel):
     ks_pvalue: Optional[float] = None
     severity: str
     created_at: datetime
+    interpretation: Optional[dict[str, Any]] = None
 
     class Config:
         orm_mode = True

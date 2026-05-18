@@ -1,14 +1,38 @@
 // components/layout/Topbar.jsx
 
-import { Bell, Search, ChevronDown } from "lucide-react";
+import { Bell, Search, ChevronDown, Brain } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import useDashboard from "../../hooks/useDashboard";
+import { getModels } from "../../store/modelStore";
+import useSelectedModelStore from "../../store/selectedModelStore";
 
 export default function Topbar() {
-  const { dashboardData, loading } = useDashboard();
+  const { dashboardData } = useDashboard();
+  const [models, setModels] = useState([]);
+  const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
+  const setSelectedModelId = useSelectedModelStore((state) => state.setSelectedModelId);
 
   // const user = dashboardData?.user
   const workspace = dashboardData?.workspace;
-  console.log(workspace);
+  const selectedModel = useMemo(
+    () => models.find((model) => String(model.id) === String(selectedModelId)),
+    [models, selectedModelId],
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getModels()
+      .then((data) => {
+        if (!isMounted) return;
+        setModels(data || []);
+      })
+      .catch((error) => console.log(error));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   
   return (
     <header className="flex h-[80px] items-center justify-between border-b border-black/[0.05] bg-white/80 px-8 backdrop-blur-xl">
@@ -17,6 +41,23 @@ export default function Topbar() {
 
       {/* RIGHT */}
       <div className="flex items-center gap-4">
+        <label className="flex h-[46px] min-w-[260px] items-center gap-3 rounded-2xl border border-black/[0.05] bg-[#f7f8fb] px-4 text-[13px] text-gray-500">
+          <Brain size={16} className="shrink-0 text-gray-400" />
+          <select
+            value={selectedModelId}
+            onChange={(event) => setSelectedModelId(event.target.value)}
+            className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium text-[#111827] outline-none"
+            title="Select model context"
+          >
+            <option value="all">All models</option>
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name || model.mlflow_model_name || `Model ${model.id}`} v{model.version || "-"}
+              </option>
+            ))}
+          </select>
+        </label>
+
         {/* SEARCH */}
         <div className="relative">
           <Search
@@ -47,7 +88,9 @@ export default function Topbar() {
           <div className="text-left">
             <p className="text-[13px] font-medium text-[#111827]">{workspace?.workspace_name}</p>
 
-            <p className="text-[11px] text-gray-500">Workspace Admin</p>
+            <p className="max-w-[140px] truncate text-[11px] text-gray-500">
+              {selectedModel ? selectedModel.name : "Workspace Admin"}
+            </p>
           </div>
 
           <ChevronDown size={16} className="text-gray-400" />

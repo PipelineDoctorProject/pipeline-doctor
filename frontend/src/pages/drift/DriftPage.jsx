@@ -12,7 +12,9 @@ import {
   X,
 } from "lucide-react";
 
-import { getDriftFindings } from "../../store/driftStore";
+import { getDriftFindings, getDriftFindingsByRun } from "../../store/driftStore";
+import { useSearchParams } from "react-router-dom";
+import useSelectedModelStore from "../../store/selectedModelStore";
 
 const severityStyles = {
   critical: "border-red-200 bg-red-50 text-red-700",
@@ -63,6 +65,78 @@ function getWorstSeverity(findings) {
       ? finding.severity
       : worst;
   }, "low");
+}
+
+function getDriftInterpretation(finding) {
+  if (finding.interpretation?.title || finding.interpretation?.cause) {
+    return {
+      title: finding.interpretation.title || `${finding.feature_name || "Feature"} drift interpretation`,
+      cause: finding.interpretation.cause || "No drift cause was returned.",
+      action: finding.interpretation.action || "Review the related batch and baseline data.",
+    };
+  }
+
+  const psi = Number(finding.psi_score);
+  const ksPvalue = Number(finding.ks_pvalue);
+  const feature = finding.feature_name || "Feature";
+
+  if (!finding.drift_detected) {
+    return {
+      title: `${feature} is stable`,
+      cause: "The current distribution is close enough to the baseline population.",
+      action: "Keep monitoring future runs.",
+    };
+  }
+
+  const strength = Number.isFinite(psi)
+    ? psi >= 0.3
+      ? "strong"
+      : psi >= 0.2
+        ? "moderate"
+        : "minor"
+    : "detected";
+
+  const significance = Number.isFinite(ksPvalue) && ksPvalue < 0.05
+    ? "The KS p-value also supports a statistically significant shift."
+    : "The KS p-value is not strongly significant, so treat this as a monitoring signal and confirm with business context.";
+
+  return {
+    title: `${feature} shows ${strength} population drift`,
+    cause: `${feature} no longer follows the baseline distribution. This can come from source changes, seasonality, traffic mix changes, or a stale baseline. ${significance}`,
+    action: "Compare the current batch source and time window with the baseline. Refresh the baseline or retrain only if the new population is expected.",
+  };
+}
+
+function buildRunDriftSummary(run) {
+  if (!run) return [];
+
+  const drifting = run.findings.filter((finding) => finding.drift_detected);
+  const stable = run.findings.length - drifting.length;
+  const strongest = [...drifting].sort(
+    (a, b) => Number(b.drift_score || 0) - Number(a.drift_score || 0),
+  )[0];
+
+  return [
+    {
+      label: "Primary signal",
+      value: drifting.length
+        ? `${drifting.length} feature${drifting.length === 1 ? "" : "s"} drifted`
+        : "No drifted features",
+      detail: stable > 0 ? `${stable} feature${stable === 1 ? "" : "s"} remained stable.` : "All tracked features drifted in this run.",
+    },
+    {
+      label: "Strongest feature",
+      value: strongest?.feature_name || "Not available",
+      detail: strongest
+        ? `Drift score ${formatNumber(strongest.drift_score)}, PSI ${formatNumber(strongest.psi_score, 4)}.`
+        : "No drift signal exceeded the configured threshold.",
+    },
+    {
+      label: "RCA guidance",
+      value: run.severity === "critical" ? "Investigate before relying on predictions" : "Review as monitoring context",
+      detail: "Use this with Data Quality findings to decide whether the issue is data corruption, expected population change, or baseline staleness.",
+    },
+  ];
 }
 
 function groupFindingsByRun(findings) {
@@ -270,15 +344,20 @@ function DriftScoreChart({ findings }) {
 }
 
 export default function DriftPage() {
+  const [searchParams] = useSearchParams();
+  const runParam = searchParams.get("run");
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [selectedRunId, setSelectedRunId] = useState(null);
+  const [selectedRunId, setSelectedRunId] = useState(runParam);
+  const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
 
   async function loadFindings() {
     try {
       setLoading(true);
-      const data = await getDriftFindings();
+      const data = runParam
+        ? await getDriftFindingsByRun(runParam)
+        : await getDriftFindings(selectedModelId);
       setFindings(data || []);
     } catch (err) {
       console.log(err);
@@ -290,7 +369,7 @@ export default function DriftPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFindings();
-  }, []);
+  }, [runParam, selectedModelId]);
 
   const filteredFindings = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -463,8 +542,15 @@ export default function DriftPage() {
               No drift findings
             </h3>
             <p className="mx-auto mt-2 max-w-[420px] text-[14px] leading-6 text-slate-500">
-              Drift metrics will appear after pipeline runs are processed.
+              {runParam
+                ? `No drift findings were stored for run #${runParam}.`
+                : "Drift metrics will appear after pipeline runs are processed."}
             </p>
+            {!runParam && selectedModelId !== "all" && (
+              <p className="mx-auto mt-2 max-w-[420px] font-mono text-[12px] text-slate-400">
+                Selected model id: {selectedModelId}
+              </p>
+            )}
           </div>
         )}
 
@@ -578,10 +664,15 @@ export default function DriftPage() {
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-[13px] font-medium text-slate-500">
-                  Column-level drift metrics saved for this pipeline run.
-                </p>
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-[14px] font-semibold text-slate-900">
+                    Root-cause context
+                  </p>
+                  <p className="mt-1 text-[13px] leading-5 text-slate-500">
+                    Drift signals explain population changes. Compare them with data quality and incident pages for the full RCA.
+                  </p>
+                </div>
                 <a
                   href={`/pipelines?run=${selectedRun.runId}`}
                   className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50"
@@ -589,6 +680,22 @@ export default function DriftPage() {
                   <ExternalLink size={14} />
                   Open pipeline
                 </a>
+              </div>
+
+              <div className="mb-6 grid gap-3 lg:grid-cols-3">
+                {buildRunDriftSummary(selectedRun).map((item) => (
+                  <div key={item.label} className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-[15px] font-semibold leading-6 text-slate-950">
+                      {item.value}
+                    </p>
+                    <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                      {item.detail}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
@@ -599,49 +706,67 @@ export default function DriftPage() {
                   <span>PSI</span>
                   <span>KS / p-value</span>
                 </div>
-                {selectedRun.findings.map((finding) => (
-                  <div
-                    key={finding.id}
-                    className="grid gap-4 border-b border-slate-200 px-4 py-3 last:border-b-0 lg:grid-cols-[140px_minmax(220px,1fr)_150px_140px_170px]"
-                  >
-                    <div>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${getSeverityClass(
-                          finding.severity,
-                        )}`}
-                      >
-                        <Info size={14} />
-                        {finding.severity || "Low"}
-                      </span>
-                    </div>
+                {selectedRun.findings.map((finding) => {
+                  const interpretation = getDriftInterpretation(finding);
 
-                    <div className="min-w-0">
-                      <h4 className="truncate text-[14px] font-semibold text-slate-950">
-                        {finding.feature_name || "Unknown feature"}
-                      </h4>
-                      <p className="mt-1 text-[12px] text-slate-500">
-                        Drift detected: {finding.drift_detected ? "Yes" : "No"}
-                      </p>
-                    </div>
+                  return (
+                    <div
+                      key={finding.id}
+                      className="border-b border-slate-200 px-4 py-3 last:border-b-0"
+                    >
+                      <div className="grid gap-4 lg:grid-cols-[140px_minmax(220px,1fr)_150px_140px_170px]">
+                        <div>
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${getSeverityClass(
+                              finding.severity,
+                            )}`}
+                          >
+                            <Info size={14} />
+                            {finding.severity || "Low"}
+                          </span>
+                        </div>
 
-                    <span className="inline-flex h-fit rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
-                      Score {formatNumber(finding.drift_score)}
-                    </span>
+                        <div className="min-w-0">
+                          <h4 className="truncate text-[14px] font-semibold text-slate-950">
+                            {finding.feature_name || "Unknown feature"}
+                          </h4>
+                          <p className="mt-1 text-[12px] text-slate-500">
+                            Drift detected: {finding.drift_detected ? "Yes" : "No"}
+                          </p>
+                        </div>
 
-                    <span className="inline-flex h-fit rounded-md border border-slate-200 bg-white px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
-                      PSI {formatNumber(finding.psi_score, 4)}
-                    </span>
+                        <span className="inline-flex h-fit rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
+                          Score {formatNumber(finding.drift_score)}
+                        </span>
 
-                    <div className="text-[12px] text-slate-600">
-                      <div>
-                        KS: <span className="font-mono font-semibold">{formatNumber(finding.ks_score, 4)}</span>
+                        <span className="inline-flex h-fit rounded-md border border-slate-200 bg-white px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
+                          PSI {formatNumber(finding.psi_score, 4)}
+                        </span>
+
+                        <div className="text-[12px] text-slate-600">
+                          <div>
+                            KS: <span className="font-mono font-semibold">{formatNumber(finding.ks_score, 4)}</span>
+                          </div>
+                          <div>
+                            p-value: <span className="font-mono font-semibold">{formatNumber(finding.ks_pvalue, 4)}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        p-value: <span className="font-mono font-semibold">{formatNumber(finding.ks_pvalue, 4)}</span>
+
+                      <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-[12px] font-semibold text-slate-800">
+                          {interpretation.title}
+                        </p>
+                        <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                          {interpretation.cause}
+                        </p>
+                        <p className="mt-2 text-[12px] font-medium leading-5 text-blue-800">
+                          {interpretation.action}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </aside>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Database,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   ListChecks,
 } from "lucide-react";
 import { getDataQualityFindings } from "../../store/dataQualityStore";
+import useSelectedModelStore from "../../store/selectedModelStore";
 
 function formatDate(value) {
   if (!value) return "Not available";
@@ -229,9 +231,12 @@ function DetailRows({ details }) {
 }
 
 export default function DataQualityPage() {
+  const [searchParams] = useSearchParams();
+  const runParam = searchParams.get("run");
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRunId, setSelectedRunId] = useState(null);
+  const [selectedRunId, setSelectedRunId] = useState(runParam);
+  const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
 
   // ==========================================
   // LOAD DATA QUALITY FINDINGS
@@ -239,7 +244,7 @@ export default function DataQualityPage() {
   const loadFindings = async () => {
     try {
       setLoading(true);
-      const data = await getDataQualityFindings();
+      const data = await getDataQualityFindings(selectedModelId);
       setFindings(data || []);
     } catch (err) {
       console.log(err);
@@ -251,7 +256,7 @@ export default function DataQualityPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFindings();
-  }, []);
+  }, [selectedModelId]);
 
   const groupedRuns = useMemo(() => groupFindingsByRun(findings), [findings]);
   const selectedRun = groupedRuns.find((group) => String(group.runId) === String(selectedRunId));
