@@ -22,7 +22,9 @@ from app.models import (
     DriftFinding,
     DataQualityFinding,
     Tenant,
-    User
+    User,
+    AgentRun,
+    AgentStepLog
 )
 
 # Load environment variables
