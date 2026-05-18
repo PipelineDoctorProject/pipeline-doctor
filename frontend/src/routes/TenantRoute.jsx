@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
+import LoadingScreen from "../components/common/LoadingScreen";
 
 export default function TenantRoute({ children }) {
 
@@ -16,7 +17,7 @@ export default function TenantRoute({ children }) {
   );
 
   if (checkingAuth) {
-    return <div>Loading...</div>;
+    return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {

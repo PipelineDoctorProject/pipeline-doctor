@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
+import LoadingScreen from "../components/common/LoadingScreen";
 
 export default function PublicRoute({ children }) {
 
@@ -12,7 +13,7 @@ export default function PublicRoute({ children }) {
   );
 
   if (checkingAuth) {
-    return <div>Loading...</div>;
+    return <LoadingScreen />;
   }
 
   if (isAuthenticated) {
