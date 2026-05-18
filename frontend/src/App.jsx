@@ -1,32 +1,102 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-import SignupPage from "./pages/Signup";
-import VerifyOtpPage from "./pages/VerifyOtp";
-import LoginPage from "./pages/Login";
-import OnboardingPage from "./pages/Onboarding";
-import DashboardPage from "./pages/Dashboard";
-import OpsSightLandingPage from "./pages/Landing";
+import AppLayout from "./layouts/AppLayout";
+import OnboardingRoute from "./routes/OnboardingRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
+import TenantRoute from "./routes/TenantRoute";
+import useAuthStore from "./store/authStore";
+
+import LandingPage from "./pages/Landing";
+import AcceptInvitePage from "./pages/auth/AcceptInvite";
+import LoginPage from "./pages/auth/login";
+import SignupPage from "./pages/auth/Signup";
+import VerifyOtpPage from "./pages/auth/VerifyOtp";
+import DashboardPage from "./pages/dashboard/Dashboard";
+import DataQualityPage from "./pages/data-quality/DataQualityPage";
+import DriftPage from "./pages/drift/DriftPage";
+import IncidentsPage from "./pages/incidents/IncidentsPage";
+import ModelsPage from "./pages/models/Modelspage";
+import OnboardingPage from "./pages/onboarding/Onboarding";
+import PipelinesPage from "./pages/pipelines/PipelinesPage";
+import SchemaPage from "./pages/schema/Schema";
 
 export default function App() {
+  const me = useAuthStore((state) => state.me);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await me();
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    checkAuth();
+  }, [me]);
 
   return (
     <BrowserRouter>
-
       <Routes>
-        
-        <Route path="/" element={<OpsSightLandingPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <SignupPage />
+            </PublicRoute>
+          }
+        />
 
         <Route path="/verify-otp" element={<VerifyOtpPage />} />
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/onboarding"
+          element={
+            <OnboardingRoute>
+              <OnboardingPage />
+            </OnboardingRoute>
+          }
+        />
 
-        <Route path="/onboarding" element={<OnboardingPage />} />
-
-        <Route path="/dashboard" element={<DashboardPage />} />
-
+        <Route
+          element={
+            <ProtectedRoute>
+              <TenantRoute>
+                <AppLayout />
+              </TenantRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/pipelines" element={<PipelinesPage />} />
+          <Route path="/incidents" element={<IncidentsPage />} />
+          <Route path="/data-quality" element={<DataQualityPage />} />
+          <Route path="/drift" element={<DriftPage />} />
+          <Route path="/models" element={<ModelsPage />} />
+          <Route path="/schemas" element={<SchemaPage />} />
+        </Route>
       </Routes>
-
     </BrowserRouter>
   );
 }

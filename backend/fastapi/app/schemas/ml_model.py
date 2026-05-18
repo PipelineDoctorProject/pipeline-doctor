@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+import mlflow
+from mlflow.tracking import MlflowClient
 
 class MLModelBase(BaseModel):
     name: str
@@ -18,6 +20,17 @@ class MLModelCreate(MLModelBase):
 class MLModelResponse(MLModelBase):
     id: int
     created_at: datetime
+    registry_status: Optional[str] = None
+    registry_message: Optional[str] = None
 
     class Config:
         orm_mode = True
+
+
+class DiscoverModelsRequest(BaseModel):
+    tracking_uri: str
+    
+
+class ModelVersionsRequest(BaseModel):
+    tracking_uri: str
+    model_name: str

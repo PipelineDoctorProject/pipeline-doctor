@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import json
 from sqlalchemy.orm import Session
 import numpy
 from app.services.quality.baseline_service import get_active_baseline
@@ -7,6 +8,7 @@ from app.services.quality.schema_handler import handle_schema
 from app.services.quality.validator import DataValidator
 from app.services.quality.pipeline_run_service import (
     create_pipeline_run,
+    update_pipeline_run_fields,
     update_pipeline_run_status
 )
 from app.services.quality.storage import store_findings
@@ -14,9 +16,12 @@ from app.services.quality.transformer import DataTransformer
 from app.models.schema_change_event import SchemaChangeEvent
 from app.services.quality.data_loader import load_dataset
 from app.services.drift.drift_service import run_drift_checks
+from app.services.ai_orchestration.supervisor import run_root_cause_analysis
+from app.models.pipeline_run import PipelineRun
 from app.models.prediction_log import PredictionLog
 import mlflow
 import mlflow.pyfunc
+from app.models.incident import Incident
 
 # MLflow Config
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
@@ -78,6 +83,55 @@ def to_python_types(obj):
         return obj
 
 
+def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
+    report = root_cause_state.get("report") or {}
+    failure_types = report.get("failure_types") or []
+
+    if not failure_types:
+        return None
+
+    payload = {
+        "provider": root_cause_state.get("llm_provider"),
+        "model": root_cause_state.get("llm_model"),
+        "summary": report.get("summary"),
+        "recommendation": report.get("recommendation"),
+        "failure_types": failure_types,
+        "severity": report.get("severity"),
+        "issues": report.get("issues", []),
+        "evidence": report.get("evidence", []),
+    }
+
+    incident = (
+        db.query(Incident)
+        .filter(
+            Incident.run_id == run_id,
+            Incident.failure_type == "ai_root_cause",
+            Incident.finding_type == "root_cause",
+        )
+        .first()
+    )
+
+    if not incident:
+        incident = Incident(
+            run_id=run_id,
+            title="AI Root Cause Analysis",
+            description="",
+            failure_type="ai_root_cause",
+            finding_type="root_cause",
+            finding_id=None,
+            severity=report.get("severity", "medium"),
+            status="open",
+        )
+        db.add(incident)
+
+    incident.title = "AI Root Cause Analysis"
+    incident.description = json.dumps(payload, default=str)
+    incident.severity = report.get("severity", "medium")
+    db.commit()
+    db.refresh(incident)
+    return incident
+
+
 # --------------------------------------------------
 # 🚀 MAIN PIPELINE
 # --------------------------------------------------
@@ -91,6 +145,7 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         baseline_version=baseline.version,
         file_path=file_path
     )
+    run_id = run.id
 
     try:
         # --------------------------------------------------
@@ -125,7 +180,7 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
             else:
                 schema_event = SchemaChangeEvent(
                     model_id=model_id,
-                    pipeline_run_id=run.id,
+                    pipeline_run_id=run_id,
                     baseline_id=baseline.id,
                     new_columns=extra_cols,
                     missing_columns=missing_cols,
@@ -136,11 +191,9 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
                 db.refresh(schema_event)
 
             # mark run
-            run.schema_changed = True
-            db.commit()
+            update_pipeline_run_fields(db, run_id, schema_changed=True)
         else:
-            run.schema_changed = False
-            db.commit()
+            update_pipeline_run_fields(db, run_id, schema_changed=False)
 
         # --------------------------------------------------
         # 3. SCHEMA HANDLING (NO DATA LOSS CHANGE)
@@ -174,11 +227,10 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         # --------------------------------------------------
         os.makedirs("cleaned", exist_ok=True)
 
-        cleaned_path = f"cleaned/{run.id}.csv"
+        cleaned_path = f"cleaned/{run_id}.csv"
         df.to_csv(cleaned_path, index=False)
 
-        run.cleaned_data_path = cleaned_path
-        db.commit()
+        update_pipeline_run_fields(db, run_id, cleaned_data_path=cleaned_path)
 
         # --------------------------------------------------
         # 6. STORE FINDINGS
@@ -186,7 +238,7 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         store_findings(
             db,
             model_id,
-            run.id,
+            run_id,
             result,
             extra_cols,
             missing_cols
@@ -198,7 +250,7 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         model, db_model = get_mlflow_model(db, model_id)
         if model is not None:
             try:
-                print(f"Generating predictions for run {run.id}...")
+                print(f"Generating predictions for run {run_id}...")
                 
                 if db_model.expected_features:
                     # Case-insensitive column matching
@@ -227,7 +279,7 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
                     row_features = df.iloc[i].tolist()
                     pred_val = preds[i] if hasattr(preds, '__getitem__') else preds.iloc[i]
                     prediction_logs.append(PredictionLog(
-                        run_id=run.id,
+                        run_id=run_id,
                         input_data={"features": clean_array(row_features)},
                         prediction={"value": clean_value(pred_val)}
                     ))
@@ -243,36 +295,72 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         # --------------------------------------------------
         # 7. UPDATE STATUS
         # --------------------------------------------------
-        update_pipeline_run_status(db, run.id, "success")
+        update_pipeline_run_status(db, run_id, "success")
 
         # --------------------------------------------------
         # 7.5. RUN DRIFT DETECTION
         # --------------------------------------------------
         try:
-            print(f"Running drift checks for run {run.id}...")
-            run_drift_checks(db, run)
-            print("Drift checks completed.")
+            print(f"Running drift checks for run {run_id}...")
+            run_for_drift = db.get(PipelineRun, run_id, populate_existing=True)
+            if not run_for_drift:
+                raise Exception("Pipeline run not found for drift checks")
+            drift_result = run_drift_checks(db, run_for_drift)
+            print(f"Drift checks completed: {drift_result}")
         except Exception as drift_e:
+            db.rollback()
+            import traceback
             print(f"Drift checks encountered an error: {drift_e}")
+            traceback.print_exc()
+
+        root_cause_report = None
+        try:
+            print(f"Running AI root cause analysis for run {run_id}...")
+            run_for_rca = db.get(PipelineRun, run_id, populate_existing=True)
+            if not run_for_rca:
+                raise Exception("Pipeline run not found for RCA")
+            root_cause_state = run_root_cause_analysis(
+                db=db,
+                run=run_for_rca,
+                validation_result=result,
+                schema_change_detected=bool(extra_cols or missing_cols),
+                extra_columns=extra_cols,
+                missing_columns=missing_cols,
+            )
+            root_cause_report = {
+                "failure_types": root_cause_state.get("parsed_failure_types", []),
+                "severity": root_cause_state.get("severity"),
+                "report": root_cause_state.get("report"),
+            }
+            persist_root_cause_incident(db, run_id, root_cause_state)
+            print("AI root cause analysis completed.")
+        except Exception as ai_e:
+            db.rollback()
+            print(f"AI root cause analysis encountered an error: {ai_e}")
 
         # --------------------------------------------------
         # 8. SAFE RESPONSE (CRITICAL FIX)
         # --------------------------------------------------
         response = {
-            "run_id": int(run.id),
+            "run_id": int(run_id),
             "baseline_version": int(baseline.version),
             "cleaned_data_path": cleaned_path,
             "result": result,
 
-            "schema_change_detected": bool(extra_cols),
+            "schema_change_detected": bool(extra_cols or missing_cols),
             "new_columns": extra_cols,
             "missing_columns": missing_cols,
             "schema_event_id": int(schema_event.id) if schema_event else None,
-            "action": "awaiting_approval" if schema_event else "none"
+            "action": "awaiting_approval" if schema_event else "none",
+            "root_cause_analysis": root_cause_report,
         }
 
         return to_python_types(response)
 
     except Exception as e:
-        update_pipeline_run_status(db, run.id, "failed")
+        db.rollback()
+        try:
+            update_pipeline_run_status(db, run_id, "failed")
+        except Exception as status_e:
+            print(f"Could not mark run {run_id} as failed: {status_e}")
         raise e

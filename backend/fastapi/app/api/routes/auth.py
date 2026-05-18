@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -6,15 +6,15 @@ from app.db.session import get_db
 from app.schemas.auth import (
     SignupRequest,
     VerifyOTPRequest,
-    LoginRequest,
-    RefreshTokenRequest
+    LoginRequest
 )
 
 from app.services.auth.auth_service import (
     signup_user,
     verify_otp,
     login_user,
-    refresh_access_token
+    refresh_access_token,
+    logout_user
 )
 
 router = APIRouter(
@@ -59,16 +59,20 @@ def verify_otp_route(
         key="access_token",
         value=result["access_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 30
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 60 * 24 * 7
     )
 
     return {
@@ -97,16 +101,20 @@ def login_route(
         key="access_token",
         value=result["access_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 30
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
         httponly=True,
-        secure=False,
-        samesite="Lax"
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 60 * 24 * 7
     )
 
     return {
@@ -119,9 +127,44 @@ def login_route(
 # ======================================
 @router.post("/refresh")
 def refresh_token_route(
-    data: RefreshTokenRequest
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db)
 ):
 
-    return refresh_access_token(
-        data.refresh_token
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token missing"
+        )
+
+    result = refresh_access_token(
+    db=db,
+    refresh_token=refresh_token
+)
+
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        httponly=True,
+        secure=True,
+        samesite="None",
+        path="/",
+        max_age=60 * 30
     )
+
+    return {
+        "message": "Token refreshed"
+    }
+
+# ======================================
+# LOGOUT
+# ======================================
+@router.post("/logout")
+def logout_route(
+    response: Response
+):
+
+    return logout_user(response)

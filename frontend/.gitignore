@@ -1,3 +1,6 @@
+
+node_modules/
+
 # Logs
 logs
 *.log
@@ -6,7 +9,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
+backend/fastapi/logs/
 node_modules
 dist
 dist-ssr
