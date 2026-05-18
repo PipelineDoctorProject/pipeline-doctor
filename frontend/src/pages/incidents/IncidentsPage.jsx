@@ -4,10 +4,13 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  Eye,
+  ExternalLink,
   Info,
   RefreshCw,
   Search,
   ShieldAlert,
+  X,
 } from "lucide-react";
 
 import { getIncidents } from "../../store/incidentStore";
@@ -56,10 +59,58 @@ function isResolved(status) {
   return normalized === "resolved" || normalized === "closed";
 }
 
+function getSeverityRank(severity) {
+  const ranks = { critical: 4, high: 3, medium: 2, low: 1 };
+  return ranks[String(severity || "").toLowerCase()] || 0;
+}
+
+function getWorstSeverity(incidents) {
+  return incidents.reduce((worst, incident) => {
+    return getSeverityRank(incident.severity) > getSeverityRank(worst)
+      ? incident.severity
+      : worst;
+  }, "low");
+}
+
+function groupIncidentsByRun(incidents) {
+  return Array.from(
+    incidents
+      .reduce((groups, incident) => {
+        const runId = incident.run_id || "unknown";
+        const group = groups.get(runId) || {
+          runId,
+          incidents: [],
+          open: 0,
+          resolved: 0,
+          severity: "low",
+          latestAt: null,
+        };
+
+        group.incidents.push(incident);
+        if (isResolved(incident.status)) group.resolved += 1;
+        else group.open += 1;
+        group.severity = getWorstSeverity(group.incidents);
+
+        if (incident.created_at) {
+          const currentTime = new Date(incident.created_at).getTime();
+          const latestTime = group.latestAt ? new Date(group.latestAt).getTime() : 0;
+          if (Number.isFinite(currentTime) && currentTime > latestTime) {
+            group.latestAt = incident.created_at;
+          }
+        }
+
+        groups.set(runId, group);
+        return groups;
+      }, new Map())
+      .values(),
+  ).sort((a, b) => Number(b.runId) - Number(a.runId));
+}
+
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [selectedRunId, setSelectedRunId] = useState(null);
 
   async function loadIncidents() {
     try {
@@ -103,6 +154,13 @@ export default function IncidentsPage() {
     (incident) => String(incident.severity || "").toLowerCase() === "critical",
   ).length;
   const resolvedCount = incidents.filter((incident) => isResolved(incident.status)).length;
+  const groupedRuns = useMemo(
+    () => groupIncidentsByRun(filteredIncidents),
+    [filteredIncidents],
+  );
+  const selectedRun = groupedRuns.find(
+    (group) => String(group.runId) === String(selectedRunId),
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -165,10 +223,10 @@ export default function IncidentsPage() {
         <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-[16px] font-semibold text-slate-950">
-              Incident Queue
+              Incident Runs
             </h2>
             <p className="mt-1 text-[13px] text-slate-500">
-              Review current incident context and affected pipeline runs.
+              Use View details to inspect each incident raised inside a run.
             </p>
           </div>
 
@@ -205,43 +263,39 @@ export default function IncidentsPage() {
 
         {!loading && filteredIncidents.length > 0 && (
           <div className="divide-y divide-slate-200">
-            {filteredIncidents.map((incident) => {
-              const severity = getSeverityMeta(incident.severity);
+            {groupedRuns.map((run) => {
+              const severity = getSeverityMeta(run.severity);
               const SeverityIcon = severity.icon;
-              const resolved = isResolved(incident.status);
 
               return (
                 <article
-                  key={incident.id}
-                  className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_130px_170px]"
+                  key={run.runId}
+                  className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_170px_130px]"
                 >
                   <div>
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${severity.className}`}
                     >
                       <SeverityIcon size={14} />
-                      {incident.severity || "Unknown"}
+                      {run.severity || "Unknown"}
                     </span>
                   </div>
 
                   <div className="min-w-0">
                     <h3 className="truncate text-[15px] font-semibold text-slate-950">
-                      {incident.title || "Untitled incident"}
+                      Run #{run.runId}
                     </h3>
-                    <p
-                      className="mt-1 truncate text-[12px] text-slate-500"
-                      title={incident.description}
-                    >
-                      {incident.description || "No incident description available."}
+                    <p className="mt-1 truncate text-[12px] text-slate-500">
+                      {run.incidents.length} incidents, {run.open} open, {run.resolved} resolved
                     </p>
                   </div>
 
                   <div>
                     <div className="text-[11px] font-medium text-slate-500 lg:hidden">
-                      Type
+                      Incident count
                     </div>
                     <span className="mt-1 inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700 lg:mt-0">
-                      {incident.failure_type || "unknown"}
+                      {run.incidents.length}
                     </span>
                   </div>
 
@@ -251,35 +305,35 @@ export default function IncidentsPage() {
                     </div>
                     <span
                       className={`mt-1 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold lg:mt-0 ${
-                        resolved
+                        run.open === 0
                           ? "border-slate-200 bg-slate-50 text-slate-600"
                           : "border-red-200 bg-red-50 text-red-700"
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
-                          resolved ? "bg-slate-400" : "bg-red-500"
+                          run.open === 0 ? "bg-slate-400" : "bg-red-500"
                         }`}
                       />
-                      {incident.status || "Open"}
+                      {run.open === 0 ? "Resolved" : `${run.open} open`}
                     </span>
                   </div>
 
-                  <div>
+                  <div className="text-[12px] text-slate-600">
                     <div className="text-[11px] font-medium text-slate-500 lg:hidden">
-                      Run ID
+                      Last detected
                     </div>
-                    <a
-                      href={`/pipelines?run=${incident.run_id}`}
-                      className="mt-1 inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50 lg:mt-0"
-                    >
-                      #{incident.run_id || "-"}
-                    </a>
+                    <span>{formatDate(run.latestAt)}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500 lg:justify-end">
-                    <Clock3 size={14} />
-                    {formatDate(incident.created_at)}
+                  <div className="flex items-center justify-end">
+                    <button
+                      onClick={() => setSelectedRunId(run.runId)}
+                      className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <Eye size={14} />
+                      View details
+                    </button>
                   </div>
                 </article>
               );
@@ -287,6 +341,126 @@ export default function IncidentsPage() {
           </div>
         )}
       </section>
+
+      {selectedRun && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/30 backdrop-blur-sm">
+          <button
+            type="button"
+            aria-label="Close details backdrop"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setSelectedRunId(null)}
+          />
+          <aside className="relative flex h-full w-full max-w-5xl flex-col border-l border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.25)]">
+            <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+              <div>
+                <h3 className="text-[18px] font-semibold text-slate-950">
+                  Run #{selectedRun.runId} incident details
+                </h3>
+                <p className="mt-1 text-[13px] text-slate-500">
+                  {selectedRun.incidents.length} incidents, {selectedRun.open} open, {selectedRun.resolved} resolved
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedRunId(null)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                aria-label="Close details"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid gap-4 border-b border-slate-200 bg-slate-50 px-6 py-4 md:grid-cols-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Incidents</p>
+                <p className="mt-1 text-[22px] font-semibold text-slate-950">{selectedRun.incidents.length}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Open</p>
+                <p className="mt-1 text-[22px] font-semibold text-red-600">{selectedRun.open}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Resolved</p>
+                <p className="mt-1 text-[22px] font-semibold text-slate-950">{selectedRun.resolved}</p>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-[13px] font-medium text-slate-500">
+                  Incidents raised from this pipeline run.
+                </p>
+                <a
+                  href={`/pipelines?run=${selectedRun.runId}`}
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50"
+                >
+                  <ExternalLink size={14} />
+                  Open pipeline
+                </a>
+              </div>
+
+              <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+                <div className="grid gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_170px]">
+                  <span>Severity</span>
+                  <span>Incident</span>
+                  <span>Type</span>
+                  <span>Status</span>
+                  <span className="text-right">Created At</span>
+                </div>
+                {selectedRun.incidents.map((incident) => {
+                  const severity = getSeverityMeta(incident.severity);
+                  const SeverityIcon = severity.icon;
+                  const resolved = isResolved(incident.status);
+
+                  return (
+                    <div
+                      key={incident.id}
+                      className="grid gap-4 border-b border-slate-200 px-4 py-3 last:border-b-0 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_170px]"
+                    >
+                      <div>
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${severity.className}`}
+                        >
+                          <SeverityIcon size={14} />
+                          {incident.severity || "Unknown"}
+                        </span>
+                      </div>
+
+                      <div className="min-w-0">
+                        <h4 className="truncate text-[14px] font-semibold text-slate-950">
+                          {incident.title || "Untitled incident"}
+                        </h4>
+                        <p className="mt-1 text-[12px] text-slate-500" title={incident.description}>
+                          {incident.description || "No incident description available."}
+                        </p>
+                      </div>
+
+                      <span className="inline-flex h-fit rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
+                        {incident.failure_type || "unknown"}
+                      </span>
+
+                      <span
+                        className={`inline-flex h-fit items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold ${
+                          resolved
+                            ? "border-slate-200 bg-slate-50 text-slate-600"
+                            : "border-red-200 bg-red-50 text-red-700"
+                        }`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${resolved ? "bg-slate-400" : "bg-red-500"}`} />
+                        {incident.status || "Open"}
+                      </span>
+
+                      <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500 lg:justify-end">
+                        <Clock3 size={14} />
+                        {formatDate(incident.created_at)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

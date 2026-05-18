@@ -3,10 +3,13 @@ import {
   Activity,
   AlertTriangle,
   BarChart2,
+  Eye,
+  ExternalLink,
   Info,
   RefreshCw,
   Search,
   ShieldAlert,
+  X,
 } from "lucide-react";
 
 import { getDriftFindings } from "../../store/driftStore";
@@ -47,6 +50,67 @@ function getSeverityClass(severity) {
     severityStyles[String(severity || "").toLowerCase()] ||
     "border-slate-200 bg-slate-50 text-slate-700"
   );
+}
+
+function getSeverityRank(severity) {
+  const ranks = { critical: 4, high: 3, medium: 2, low: 1 };
+  return ranks[String(severity || "").toLowerCase()] || 0;
+}
+
+function getWorstSeverity(findings) {
+  return findings.reduce((worst, finding) => {
+    return getSeverityRank(finding.severity) > getSeverityRank(worst)
+      ? finding.severity
+      : worst;
+  }, "low");
+}
+
+function groupFindingsByRun(findings) {
+  return Array.from(
+    findings
+      .reduce((groups, finding) => {
+        const runId = finding.run_id || "unknown";
+        const group = groups.get(runId) || {
+          runId,
+          findings: [],
+          drifted: 0,
+          maxScore: 0,
+          severity: "low",
+          latestAt: null,
+        };
+
+        group.findings.push(finding);
+        if (finding.drift_detected) group.drifted += 1;
+        group.maxScore = Math.max(group.maxScore, Number(finding.drift_score || 0));
+        group.severity = getWorstSeverity(group.findings);
+
+        if (finding.created_at) {
+          const currentTime = new Date(finding.created_at).getTime();
+          const latestTime = group.latestAt ? new Date(group.latestAt).getTime() : 0;
+          if (Number.isFinite(currentTime) && currentTime > latestTime) {
+            group.latestAt = finding.created_at;
+          }
+        }
+
+        groups.set(runId, group);
+        return groups;
+      }, new Map())
+      .values(),
+  ).sort((a, b) => Number(b.runId) - Number(a.runId));
+}
+
+function formatDate(value) {
+  if (!value) return "Not available";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
+  return date.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function DistributionBars({ counts, total }) {
@@ -209,6 +273,7 @@ export default function DriftPage() {
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [selectedRunId, setSelectedRunId] = useState(null);
 
   async function loadFindings() {
     try {
@@ -262,6 +327,14 @@ export default function DriftPage() {
       [severity]: (counts[severity] || 0) + 1,
     };
   }, {});
+
+  const groupedRuns = useMemo(
+    () => groupFindingsByRun(filteredFindings),
+    [filteredFindings],
+  );
+  const selectedRun = groupedRuns.find(
+    (group) => String(group.runId) === String(selectedRunId),
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -357,10 +430,10 @@ export default function DriftPage() {
         <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-[16px] font-semibold text-slate-950">
-              Drift Findings
+              Drift Runs
             </h2>
             <p className="mt-1 text-[13px] text-slate-500">
-              Detailed metrics behind the charts.
+              Use View details to inspect the column-level findings for a run.
             </p>
           </div>
 
@@ -397,75 +470,183 @@ export default function DriftPage() {
 
         {!loading && filteredFindings.length > 0 && (
           <div className="divide-y divide-slate-200">
-            {filteredFindings.map((finding) => (
+            {groupedRuns.map((run) => (
               <article
-                key={finding.id}
-                className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[140px_minmax(220px,1fr)_150px_140px_170px_110px]"
+                key={run.runId}
+                className="grid gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:grid-cols-[140px_minmax(220px,1fr)_150px_140px_170px_130px]"
               >
                 <div>
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${getSeverityClass(
-                      finding.severity,
+                      run.severity,
                     )}`}
                   >
                     <Info size={14} />
-                    {finding.severity || "Low"}
+                    {run.severity || "Low"}
                   </span>
                 </div>
 
                 <div className="min-w-0">
                   <h3 className="truncate text-[15px] font-semibold text-slate-950">
-                    {finding.feature_name || "Unknown feature"}
+                    Run #{run.runId}
                   </h3>
                   <p className="mt-1 text-[12px] text-slate-500">
-                    Drift detected: {finding.drift_detected ? "Yes" : "No"}
+                    {run.findings.length} findings, {run.drifted} drifting features
                   </p>
                 </div>
 
                 <div>
                   <div className="text-[11px] font-medium text-slate-500 lg:hidden">
-                    Drift score
+                    Max drift score
                   </div>
                   <span className="mt-1 inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700 lg:mt-0">
-                    {formatNumber(finding.drift_score)}
+                    {formatNumber(run.maxScore)}
                   </span>
                 </div>
 
                 <div>
                   <div className="text-[11px] font-medium text-slate-500 lg:hidden">
-                    PSI
+                    Run ID
                   </div>
-                  <span className="mt-1 inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700 lg:mt-0">
-                    {formatNumber(finding.psi_score, 4)}
+                  <span className="mt-1 inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-semibold text-blue-700 lg:mt-0">
+                    #{run.runId}
                   </span>
                 </div>
 
                 <div className="text-[12px] text-slate-600">
-                  <div>
-                    KS:{" "}
-                    <span className="font-mono font-semibold">
-                      {formatNumber(finding.ks_score, 4)}
-                    </span>
+                  <div className="text-[11px] font-medium text-slate-500 lg:hidden">
+                    Last detected
                   </div>
-                  <div>
-                    p-value:{" "}
-                    <span className="font-mono font-semibold">
-                      {formatNumber(finding.ks_pvalue, 4)}
-                    </span>
-                  </div>
+                  <span>{formatDate(run.latestAt)}</span>
                 </div>
 
-                <a
-                  href={`/pipelines?run=${finding.run_id}`}
-                  className="inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50 lg:justify-center"
-                >
-                  #{finding.run_id || "-"}
-                </a>
+                <div className="flex items-center justify-end">
+                  <button
+                    onClick={() => setSelectedRunId(run.runId)}
+                    className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <Eye size={14} />
+                    View details
+                  </button>
+                </div>
               </article>
             ))}
           </div>
         )}
       </section>
+
+      {selectedRun && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/30 backdrop-blur-sm">
+          <button
+            type="button"
+            aria-label="Close details backdrop"
+            className="absolute inset-0 cursor-default"
+            onClick={() => setSelectedRunId(null)}
+          />
+          <aside className="relative flex h-full w-full max-w-5xl flex-col border-l border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.25)]">
+            <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+              <div>
+                <h3 className="text-[18px] font-semibold text-slate-950">
+                  Run #{selectedRun.runId} drift details
+                </h3>
+                <p className="mt-1 text-[13px] text-slate-500">
+                  {selectedRun.findings.length} findings, {selectedRun.drifted} drifting features, max score {formatNumber(selectedRun.maxScore)}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedRunId(null)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                aria-label="Close details"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid gap-4 border-b border-slate-200 bg-slate-50 px-6 py-4 md:grid-cols-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Findings</p>
+                <p className="mt-1 text-[22px] font-semibold text-slate-950">{selectedRun.findings.length}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Drifting features</p>
+                <p className="mt-1 text-[22px] font-semibold text-orange-600">{selectedRun.drifted}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Max score</p>
+                <p className="mt-1 text-[22px] font-semibold text-slate-950">{formatNumber(selectedRun.maxScore)}</p>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-[13px] font-medium text-slate-500">
+                  Column-level drift metrics saved for this pipeline run.
+                </p>
+                <a
+                  href={`/pipelines?run=${selectedRun.runId}`}
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50"
+                >
+                  <ExternalLink size={14} />
+                  Open pipeline
+                </a>
+              </div>
+
+              <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+                <div className="grid gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid-cols-[140px_minmax(220px,1fr)_150px_140px_170px]">
+                  <span>Severity</span>
+                  <span>Feature</span>
+                  <span>Drift Score</span>
+                  <span>PSI</span>
+                  <span>KS / p-value</span>
+                </div>
+                {selectedRun.findings.map((finding) => (
+                  <div
+                    key={finding.id}
+                    className="grid gap-4 border-b border-slate-200 px-4 py-3 last:border-b-0 lg:grid-cols-[140px_minmax(220px,1fr)_150px_140px_170px]"
+                  >
+                    <div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${getSeverityClass(
+                          finding.severity,
+                        )}`}
+                      >
+                        <Info size={14} />
+                        {finding.severity || "Low"}
+                      </span>
+                    </div>
+
+                    <div className="min-w-0">
+                      <h4 className="truncate text-[14px] font-semibold text-slate-950">
+                        {finding.feature_name || "Unknown feature"}
+                      </h4>
+                      <p className="mt-1 text-[12px] text-slate-500">
+                        Drift detected: {finding.drift_detected ? "Yes" : "No"}
+                      </p>
+                    </div>
+
+                    <span className="inline-flex h-fit rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
+                      Score {formatNumber(finding.drift_score)}
+                    </span>
+
+                    <span className="inline-flex h-fit rounded-md border border-slate-200 bg-white px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
+                      PSI {formatNumber(finding.psi_score, 4)}
+                    </span>
+
+                    <div className="text-[12px] text-slate-600">
+                      <div>
+                        KS: <span className="font-mono font-semibold">{formatNumber(finding.ks_score, 4)}</span>
+                      </div>
+                      <div>
+                        p-value: <span className="font-mono font-semibold">{formatNumber(finding.ks_pvalue, 4)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Workflow, CheckCircle2, XCircle, AlertCircle, Clock, Download } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { getPipelineRuns } from "../../store/pipelineStore";
 
 export default function PipelinesPage() {
   const [runs, setRuns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
+  const [searchParams] = useSearchParams();
+  const highlightedRunId = searchParams.get("run");
 
   // ==========================================
   // LOAD PIPELINE RUNS
@@ -14,7 +17,7 @@ export default function PipelinesPage() {
     try {
       setLoading(true);
       const data = await getPipelineRuns();
-      setRuns(data);
+      setRuns(data || []);
     } catch (err) {
       console.log(err);
     } finally {
@@ -23,6 +26,7 @@ export default function PipelinesPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRuns();
   }, []);
 
@@ -104,38 +108,40 @@ export default function PipelinesPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* HEADER */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-[#111827]">
-            Pipeline Runs
-          </h1>
-          <p className="mt-2 max-w-[720px] text-[15px] leading-7 text-gray-500">
-            Monitor historical and active inference pipelines. Track performance,
-            drift evaluations, and quality checks across your deployed models.
-          </p>
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+        <div className="flex flex-col gap-5 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-[30px] font-semibold leading-tight text-slate-950">
+              Pipeline Runs
+            </h1>
+            <p className="mt-2 max-w-[720px] text-[14px] leading-6 text-slate-500">
+              Monitor historical and active inference pipelines. Track performance,
+              drift evaluations, and quality checks across your deployed models.
+            </p>
+          </div>
+          <button
+            onClick={loadRuns}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+          >
+            <Workflow size={16} />
+            Refresh Runs
+          </button>
         </div>
-        <button
-          onClick={loadRuns}
-          className="flex items-center gap-3 rounded-2xl border border-black/[0.05] bg-white px-5 py-3 text-[13px] font-medium text-[#111827] shadow-sm transition hover:bg-[#f7f8fb]"
-        >
-          <Workflow size={16} />
-          Refresh Runs
-        </button>
-      </div>
+      </section>
 
       {/* LOADING STATE */}
       {loading && (
-        <div className="rounded-3xl border border-black/[0.05] bg-white p-12 text-center text-[14px] text-gray-500 shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
+        <div className="rounded-lg border border-slate-200 bg-white p-12 text-center text-[14px] text-slate-500 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
           Loading Pipeline Runs...
         </div>
       )}
 
       {/* EMPTY STATE */}
       {!loading && runs.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-black/[0.08] bg-white p-16 text-center shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-50 mb-4">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-white p-16 text-center shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md border border-slate-200 bg-slate-50">
             <Workflow size={28} className="text-gray-400" />
           </div>
           <h3 className="text-[18px] font-semibold text-[#111827]">
@@ -149,9 +155,9 @@ export default function PipelinesPage() {
 
       {/* DATA TABLE */}
       {!loading && runs.length > 0 && (
-        <div className="overflow-hidden rounded-3xl border border-black/[0.05] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.03)]">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
           <table className="w-full text-left text-[14px]">
-            <thead className="bg-[#f7f8fb] text-[12px] font-medium uppercase tracking-[0.1em] text-gray-500">
+            <thead className="bg-slate-50 text-[12px] font-medium uppercase tracking-[0.1em] text-slate-500">
               <tr>
                 <th className="px-6 py-5">Run ID</th>
                 <th className="px-6 py-5">Model</th>
@@ -162,11 +168,15 @@ export default function PipelinesPage() {
                 <th className="px-6 py-5 text-right">Cleaned Data</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/[0.04]">
+            <tbody className="divide-y divide-slate-200">
               {runs.map((run) => (
                 <tr
                   key={run.id}
-                  className="transition hover:bg-[#f7f8fb]/50 group"
+                  className={`group transition ${
+                    String(run.id) === highlightedRunId
+                      ? "bg-blue-50/60 shadow-[inset_4px_0_0_#2563eb]"
+                      : "hover:bg-slate-50/70"
+                  }`}
                 >
                   <td className="px-6 py-5 font-medium text-[#111827]">
                     #{run.id}
@@ -189,7 +199,7 @@ export default function PipelinesPage() {
                   </td>
                   <td className="px-6 py-5">
                     {run.schema_changed ? (
-                      <span className="text-orange-600 font-medium text-xs bg-orange-50 px-2 py-1 rounded-full">Modified</span>
+                      <span className="rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">Modified</span>
                     ) : (
                       <span className="text-gray-500 text-xs">Unchanged</span>
                     )}
@@ -202,7 +212,7 @@ export default function PipelinesPage() {
                       <button
                         onClick={() => downloadCleaned(run.id)}
                         disabled={downloading === run.id}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-black/[0.05] bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:bg-green-50 hover:text-green-700 hover:border-green-200 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-green-200 hover:bg-green-50 hover:text-green-700 disabled:opacity-50"
                       >
                         <Download size={12} />
                         {downloading === run.id ? "Downloading..." : "Download CSV"}
