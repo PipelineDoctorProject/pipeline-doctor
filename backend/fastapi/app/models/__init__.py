@@ -8,6 +8,9 @@ from .tenant import Tenant
 from .user import User
 from app.models.baseline import Baseline
 from app.models.schema_change_event import SchemaChangeEvent
+from app.models.agent_run import AgentRun
+from app.models.agent_step_log import AgentStepLog
+
 __all__ = [
     "MLModel",
     "PipelineRun",
@@ -18,5 +21,7 @@ __all__ = [
     "Tenant",
     "User",
     "Baseline",
-    "SchemaChangeEvent"
+    "SchemaChangeEvent",
+    "AgentRun",
+    "AgentStepLog"
 ]
