@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 import { getIncidents } from "../../store/incidentStore";
+import { useSearchParams } from "react-router-dom";
+import useSelectedModelStore from "../../store/selectedModelStore";
 
 const severityConfig = {
   critical: {
@@ -106,16 +108,92 @@ function groupIncidentsByRun(incidents) {
   ).sort((a, b) => Number(b.runId) - Number(a.runId));
 }
 
+function humanizeType(value) {
+  return String(value || "unknown")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getIncidentGuidance(incident) {
+  if (incident.guidance?.cause || incident.guidance?.action) {
+    return {
+      cause: incident.guidance.cause || "No cause was returned for this incident.",
+      action: incident.guidance.action || "Review the related pipeline evidence.",
+      source: incident.guidance.source,
+      model: incident.guidance.model,
+    };
+  }
+
+  const type = String(incident.failure_type || "").toLowerCase();
+
+  if (type.includes("drift")) {
+    return {
+      cause: "The current batch distribution moved away from the baseline population.",
+      action: "Compare drift details with the source time window, campaign, region, or upstream feed before retraining or refreshing the baseline.",
+    };
+  }
+
+  if (type.includes("schema")) {
+    return {
+      cause: "The incoming contract changed, usually because columns were added, removed, renamed, or typed differently.",
+      action: "Approve schema changes only when expected; otherwise restore the upstream contract before using this run for decisions.",
+    };
+  }
+
+  if (type.includes("quality")) {
+    return {
+      cause: "Validation checks found missing values, invalid values, unseen categories, or out-of-range records.",
+      action: "Open Data Quality for row-level evidence, fix bad values upstream, then rerun validation.",
+    };
+  }
+
+  return {
+    cause: "The RCA pipeline escalated this run because one or more monitoring signals crossed severity thresholds.",
+    action: "Review Data Quality and Drift details together to decide whether this is bad data, expected change, or stale monitoring baseline.",
+  };
+}
+
+function buildIncidentRunSummary(run) {
+  if (!run) return [];
+
+  const types = Array.from(new Set(run.incidents.map((incident) => humanizeType(incident.failure_type))));
+  const rcaIncident = run.incidents.find((incident) => incident.rca_report);
+  const rcaReport = rcaIncident?.rca_report;
+
+  return [
+    {
+      label: "RCA status",
+      value: run.open > 0 ? `${run.open} open incident${run.open === 1 ? "" : "s"}` : "All incidents resolved",
+      detail: rcaReport
+        ? `Reasoning source: ${rcaReport.provider || "fallback"} / ${rcaReport.model || "deterministic-rules"}.`
+        : run.open > 0 ? "Triage the highest severity item first." : "No open action remains for this run.",
+    },
+    {
+      label: "Failure groups",
+      value: types.slice(0, 3).join(", ") || "Unknown",
+      detail: types.length > 3 ? `+${types.length - 3} additional type${types.length - 3 === 1 ? "" : "s"}.` : "Types are grouped from stored incident records.",
+    },
+    {
+      label: "Recommended path",
+      value: rcaReport?.recommendation ? "RCA recommendation" : "Use evidence pages together",
+      detail: rcaReport?.recommendation || "Open Data Quality for validation causes, Drift for distribution shift, and Pipelines for cleaned data.",
+    },
+  ];
+}
+
 export default function IncidentsPage() {
+  const [searchParams] = useSearchParams();
+  const runParam = searchParams.get("run");
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [selectedRunId, setSelectedRunId] = useState(null);
+  const [selectedRunId, setSelectedRunId] = useState(runParam);
+  const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
 
   async function loadIncidents() {
     try {
       setLoading(true);
-      const data = await getIncidents();
+      const data = await getIncidents(selectedModelId);
       setIncidents(data || []);
     } catch (err) {
       console.log(err);
@@ -127,7 +205,7 @@ export default function IncidentsPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadIncidents();
-  }, []);
+  }, [selectedModelId]);
 
   const filteredIncidents = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -161,6 +239,8 @@ export default function IncidentsPage() {
   const selectedRun = groupedRuns.find(
     (group) => String(group.runId) === String(selectedRunId),
   );
+  const selectedRcaIncident = selectedRun?.incidents.find((incident) => incident.rca_report);
+  const selectedRcaReport = selectedRcaIncident?.rca_report;
 
   return (
     <div className="flex flex-col gap-5">
@@ -385,10 +465,15 @@ export default function IncidentsPage() {
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-[13px] font-medium text-slate-500">
-                  Incidents raised from this pipeline run.
-                </p>
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-[14px] font-semibold text-slate-900">
+                    RCA triage summary
+                  </p>
+                  <p className="mt-1 text-[13px] leading-5 text-slate-500">
+                    Incidents are escalated signals created from drift, quality, and schema failures.
+                  </p>
+                </div>
                 <a
                   href={`/pipelines?run=${selectedRun.runId}`}
                   className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-blue-700 transition hover:bg-slate-50"
@@ -397,6 +482,60 @@ export default function IncidentsPage() {
                   Open pipeline
                 </a>
               </div>
+
+              <div className="mb-6 grid gap-3 lg:grid-cols-3">
+                {buildIncidentRunSummary(selectedRun).map((item) => (
+                  <div key={item.label} className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-[15px] font-semibold leading-6 text-slate-950">
+                      {item.value}
+                    </p>
+                    <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                      {item.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {selectedRcaReport && (
+                <div className="mb-6 rounded-md border border-blue-200 bg-blue-50 p-4">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-800">
+                        AI root cause report
+                      </p>
+                      <p className="mt-2 text-[15px] font-semibold leading-6 text-slate-950">
+                        {selectedRcaReport.summary || "No summary returned."}
+                      </p>
+                      <p className="mt-2 text-[13px] leading-6 text-blue-950">
+                        {selectedRcaReport.recommendation || "Review the evidence and fix the highest severity issue first."}
+                      </p>
+                    </div>
+                    <span className="inline-flex h-fit rounded-md border border-blue-200 bg-white px-2.5 py-1 font-mono text-[11px] font-semibold text-blue-800">
+                      {selectedRcaReport.provider || "fallback"} / {selectedRcaReport.model || "deterministic-rules"}
+                    </span>
+                  </div>
+                  {Array.isArray(selectedRcaReport.issues) && selectedRcaReport.issues.length > 0 && (
+                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                      {selectedRcaReport.issues.slice(0, 4).map((issue, index) => (
+                        <div key={`${issue.type}-${index}`} className="rounded-md border border-blue-100 bg-white p-3">
+                          <p className="text-[12px] font-semibold text-slate-900">
+                            {issue.title || humanizeType(issue.type)}
+                          </p>
+                          <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                            {issue.likely_root_cause || issue.summary}
+                          </p>
+                          <p className="mt-2 text-[12px] font-medium leading-5 text-blue-800">
+                            {issue.recommended_action}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
                 <div className="grid gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_170px]">
@@ -410,48 +549,67 @@ export default function IncidentsPage() {
                   const severity = getSeverityMeta(incident.severity);
                   const SeverityIcon = severity.icon;
                   const resolved = isResolved(incident.status);
+                  const guidance = getIncidentGuidance(incident);
 
                   return (
                     <div
                       key={incident.id}
-                      className="grid gap-4 border-b border-slate-200 px-4 py-3 last:border-b-0 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_170px]"
+                      className="border-b border-slate-200 px-4 py-3 last:border-b-0"
                     >
-                      <div>
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${severity.className}`}
-                        >
-                          <SeverityIcon size={14} />
-                          {incident.severity || "Unknown"}
+                      <div className="grid gap-4 lg:grid-cols-[150px_minmax(280px,1fr)_160px_130px_170px]">
+                        <div>
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold capitalize ${severity.className}`}
+                          >
+                            <SeverityIcon size={14} />
+                            {incident.severity || "Unknown"}
+                          </span>
+                        </div>
+
+                        <div className="min-w-0">
+                          <h4 className="truncate text-[14px] font-semibold text-slate-950">
+                            {incident.title || "Untitled incident"}
+                          </h4>
+                          <p className="mt-1 text-[12px] text-slate-500" title={incident.description}>
+                            {incident.description || "No incident description available."}
+                          </p>
+                        </div>
+
+                        <span className="inline-flex h-fit rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
+                          {humanizeType(incident.failure_type)}
                         </span>
+
+                        <span
+                          className={`inline-flex h-fit items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold ${
+                            resolved
+                              ? "border-slate-200 bg-slate-50 text-slate-600"
+                              : "border-red-200 bg-red-50 text-red-700"
+                          }`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${resolved ? "bg-slate-400" : "bg-red-500"}`} />
+                          {incident.status || "Open"}
+                        </span>
+
+                        <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500 lg:justify-end">
+                          <Clock3 size={14} />
+                          {formatDate(incident.created_at)}
+                        </div>
                       </div>
 
-                      <div className="min-w-0">
-                        <h4 className="truncate text-[14px] font-semibold text-slate-950">
-                          {incident.title || "Untitled incident"}
-                        </h4>
-                        <p className="mt-1 text-[12px] text-slate-500" title={incident.description}>
-                          {incident.description || "No incident description available."}
-                        </p>
-                      </div>
-
-                      <span className="inline-flex h-fit rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[12px] font-semibold text-slate-700">
-                        {incident.failure_type || "unknown"}
-                      </span>
-
-                      <span
-                        className={`inline-flex h-fit items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-semibold ${
-                          resolved
-                            ? "border-slate-200 bg-slate-50 text-slate-600"
-                            : "border-red-200 bg-red-50 text-red-700"
-                        }`}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${resolved ? "bg-slate-400" : "bg-red-500"}`} />
-                        {incident.status || "Open"}
-                      </span>
-
-                      <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500 lg:justify-end">
-                        <Clock3 size={14} />
-                        {formatDate(incident.created_at)}
+                      <div className="mt-3 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-2">
+                        <div>
+                          <p className="text-[12px] font-semibold text-slate-800">Likely cause</p>
+                          <p className="mt-1 text-[12px] leading-5 text-slate-600">{guidance.cause}</p>
+                          {guidance.source && (
+                            <p className="mt-1 font-mono text-[11px] text-slate-500">
+                              {guidance.source}{guidance.model ? ` / ${guidance.model}` : ""}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[12px] font-semibold text-blue-800">Next action</p>
+                          <p className="mt-1 text-[12px] leading-5 text-blue-900">{guidance.action}</p>
+                        </div>
                       </div>
                     </div>
                   );

@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
-import { Workflow, CheckCircle2, XCircle, AlertCircle, Clock, Download } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Database,
+  Download,
+  ExternalLink,
+  ShieldAlert,
+  Workflow,
+  XCircle,
+} from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { getPipelineRuns } from "../../store/pipelineStore";
 
 export default function PipelinesPage() {
@@ -131,6 +142,53 @@ export default function PipelinesPage() {
         </div>
       </section>
 
+      <section className="grid gap-4 lg:grid-cols-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600">
+              <Workflow size={17} />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-slate-950">1. Run created</p>
+              <p className="text-[12px] text-slate-500">CSV enters the backend pipeline.</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-600">
+              <Database size={17} />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-slate-950">2. Quality checked</p>
+              <p className="text-[12px] text-slate-500">Schema, nulls, ranges, categories.</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-amber-100 bg-amber-50 text-amber-700">
+              <Activity size={17} />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-slate-950">3. Drift measured</p>
+              <p className="text-[12px] text-slate-500">PSI and KS compare baseline/current.</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-red-100 bg-red-50 text-red-600">
+              <ShieldAlert size={17} />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-slate-950">4. RCA generated</p>
+              <p className="text-[12px] text-slate-500">LangGraph groups causes and actions.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* LOADING STATE */}
       {loading && (
         <div className="rounded-lg border border-slate-200 bg-white p-12 text-center text-[14px] text-slate-500 shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
@@ -165,7 +223,7 @@ export default function PipelinesPage() {
                 <th className="px-6 py-5">Baseline Version</th>
                 <th className="px-6 py-5">Schema Status</th>
                 <th className="px-6 py-5">Started At</th>
-                <th className="px-6 py-5 text-right">Cleaned Data</th>
+                <th className="px-6 py-5 text-right">Monitoring</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -207,19 +265,40 @@ export default function PipelinesPage() {
                   <td className="px-6 py-5 text-gray-500">
                     {new Date(run.created_at).toLocaleString()}
                   </td>
-                  <td className="px-6 py-5 text-right">
-                    {run.status === "success" ? (
-                      <button
-                        onClick={() => downloadCleaned(run.id)}
-                        disabled={downloading === run.id}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-green-200 hover:bg-green-50 hover:text-green-700 disabled:opacity-50"
+                  <td className="px-6 py-5">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <Link
+                        to={`/data-quality?run=${run.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                       >
-                        <Download size={12} />
-                        {downloading === run.id ? "Downloading..." : "Download CSV"}
-                      </button>
-                    ) : (
-                      <span className="text-xs text-gray-400">N/A</span>
-                    )}
+                        <Database size={12} />
+                        Quality
+                      </Link>
+                      <Link
+                        to={`/drift?run=${run.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                      >
+                        <Activity size={12} />
+                        Drift
+                      </Link>
+                      <Link
+                        to={`/incidents?run=${run.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <ExternalLink size={12} />
+                        RCA
+                      </Link>
+                      {run.status === "success" ? (
+                        <button
+                          onClick={() => downloadCleaned(run.id)}
+                          disabled={downloading === run.id}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-green-200 hover:bg-green-50 hover:text-green-700 disabled:opacity-50"
+                        >
+                          <Download size={12} />
+                          {downloading === run.id ? "..." : "CSV"}
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}

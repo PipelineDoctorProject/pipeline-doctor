@@ -20,6 +20,8 @@ class MLModelCreate(MLModelBase):
 class MLModelResponse(MLModelBase):
     id: int
     created_at: datetime
+    registry_status: Optional[str] = None
+    registry_message: Optional[str] = None
 
     class Config:
         orm_mode = True

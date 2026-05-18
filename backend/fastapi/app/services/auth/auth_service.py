@@ -5,7 +5,7 @@ from app.models.user import User
 from app.core.security import hash_password, verify_password
 from app.core.jwt import create_access_token, decode_token, create_refresh_token
 from app.utils.otp_utils import generate_otp
-from app.utils.email_utils import send_otp_email
+from app.tasks.email_tasks import send_otp_email_task
 
 
 def signup_user(db: Session, email: str, password: str):
@@ -26,7 +26,7 @@ def signup_user(db: Session, email: str, password: str):
     db.add(user)
     db.commit()
 
-    send_otp_email(email, otp)
+    send_otp_email_task.delay(email, otp)
 
     return {"message": "OTP sent"}
 

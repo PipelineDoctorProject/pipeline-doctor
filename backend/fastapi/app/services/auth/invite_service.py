@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 from app.models.user import User
-from app.utils.email_utils import send_invite_email
+from app.tasks.email_tasks import send_invite_email_task
 
 
 def invite_member(db: Session, admin_user, email: str):
@@ -30,6 +30,12 @@ def invite_member(db: Session, admin_user, email: str):
 
     db.add(user)
     db.commit()
+
+
+    send_invite_email_task.delay(
+        email,
+        f"http://localhost:8000/invite/accept?token={token}"
+    )
 
     send_invite_email(
     email,

@@ -123,6 +123,8 @@ class DataValidator:
     def validate_numeric_ranges(self):
 
         for col, rules in self.profile.items():
+            if col.startswith("_"):
+                continue
 
             if col not in self.df.columns:
                 continue
@@ -169,6 +171,9 @@ class DataValidator:
     # -----------------------------
     def validate_categorical(self):
         for col, rules in self.profile.items():
+            if col.startswith("_"):
+                continue
+
             if col not in self.df.columns:
                 continue
 

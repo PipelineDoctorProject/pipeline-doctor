@@ -45,3 +45,4 @@ def send_invite_email_task(
     send_invite_email(email, invite_link)
 
     logger.info(f"Invite email sent to {email}")
+    logger.info(f"Invite email sent to {email}")
