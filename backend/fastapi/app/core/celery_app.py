@@ -55,6 +55,7 @@ celery.conf.update(
         "doctor-monitoring-every-5-min": {
             "task": "app.tasks.scheduler_tasks.trigger_doctor_monitoring",
             "schedule": crontab(minute="*/5"),
+            "schedule": crontab(minute="*/1"),  # change to 1 min for demo
         },
     },
 )

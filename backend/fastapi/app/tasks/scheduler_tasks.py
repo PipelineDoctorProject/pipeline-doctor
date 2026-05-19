@@ -37,7 +37,7 @@ def trigger_doctor_monitoring():
 
             run_doctor_agent_task.delay(
                 latest_run.id,
-                latest_run.tenant_id,
+                model.tenant_id,
                 "doctor"
             )
 
