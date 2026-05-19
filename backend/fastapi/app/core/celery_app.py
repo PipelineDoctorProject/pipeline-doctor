@@ -55,7 +55,7 @@ celery.conf.update(
     beat_schedule={
         "doctor-monitoring-every-5-min": {
             "task": "app.tasks.scheduler_tasks.trigger_doctor_monitoring",
-            "schedule": crontab(minute="*/5"),  # change to 1 min for demo
+            "schedule": crontab(minute="*/1"),  # change to 1 min for demo
         },
     },
     timezone="UTC",
