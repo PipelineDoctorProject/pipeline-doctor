@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Any, Optional
 
 class IncidentCreate(BaseModel):
     run_id :int
@@ -18,6 +19,10 @@ class IncidentResponse(BaseModel):
     severity:str
     status:str
     created_at:datetime
+    finding_type: Optional[str] = None
+    finding_id: Optional[int] = None
+    guidance: Optional[dict[str, Any]] = None
+    rca_report: Optional[dict[str, Any]] = None
     
     class Config:
         from_attributes = True
