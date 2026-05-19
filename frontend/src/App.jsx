@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
 import AppLayout from "./layouts/AppLayout";
 import OnboardingRoute from "./routes/OnboardingRoute";
@@ -39,6 +40,21 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#0f172a",
+            color: "#f8fafc",
+            fontSize: "13px",
+            borderRadius: "10px",
+            padding: "12px 16px",
+          },
+          success: { iconTheme: { primary: "#10b981", secondary: "#f8fafc" } },
+          error:   { iconTheme: { primary: "#ef4444", secondary: "#f8fafc" } },
+        }}
+      />
       <Routes>
         <Route
           path="/"
