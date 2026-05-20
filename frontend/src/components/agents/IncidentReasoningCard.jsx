@@ -1,5 +1,10 @@
-import { Brain, AlertTriangle, Lightbulb, Wrench, ChevronDown, ChevronUp, BadgeCheck } from "lucide-react";
-import { useState } from "react";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  Brain,
+  Lightbulb,
+  Wrench,
+} from "lucide-react";
 
 const SEVERITY_STYLES = {
   critical: "border-red-200 bg-red-50 text-red-700",
@@ -9,55 +14,99 @@ const SEVERITY_STYLES = {
 };
 
 function SeverityBadge({ severity }) {
-  const s = String(severity || "low").toLowerCase();
-  const cls = SEVERITY_STYLES[s] || SEVERITY_STYLES.low;
+  const normalized = String(severity || "low").toLowerCase();
+  const className = SEVERITY_STYLES[normalized] || SEVERITY_STYLES.low;
+
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${cls}`}
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${className}`}
     >
       <AlertTriangle size={11} />
-      {s}
+      {normalized}
     </span>
   );
 }
 
-// ---------- Main component ----------
-// Props:
-//   rcaReport  — the rca_report object from the incident (may be null)
-//   guidance   — the guidance object from the incident
-//   agentRuns  — array of AgentRun objects fetched from GET /incidents/{id}/agent-runs
+function getReasoningSource(provider, model) {
+  if (provider === "fallback" || model === "deterministic-rules") {
+    return {
+      label: "Rule-based RCA",
+      detail: "Generated from stored drift, schema, and data quality signals.",
+    };
+  }
+
+  if (provider === "metric_interpreter" || provider === "deterministic") {
+    return {
+      label: "Structured RCA",
+      detail: model ? `${provider} / ${model}` : provider,
+    };
+  }
+
+  return {
+    label: "LLM RCA",
+    detail: model ? `${provider} / ${model}` : provider,
+  };
+}
+
+function OverviewBlock({ icon: Icon, title, tone, children }) {
+  const toneClass =
+    tone === "blue"
+      ? "border-blue-100 bg-blue-50/60"
+      : tone === "violet"
+        ? "border-violet-100 bg-violet-50/60"
+        : "border-slate-200 bg-slate-50";
+
+  const iconClass =
+    tone === "blue"
+      ? "bg-blue-100 text-blue-700"
+      : tone === "violet"
+        ? "bg-violet-100 text-violet-700"
+        : "bg-slate-200 text-slate-700";
+
+  return (
+    <div className={`rounded-lg border p-4 ${toneClass}`}>
+      <div className="flex items-center gap-2">
+        <div className={`flex h-7 w-7 items-center justify-center rounded-md ${iconClass}`}>
+          <Icon size={14} />
+        </div>
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-700">
+          {title}
+        </p>
+      </div>
+      <div className="mt-3 text-[13px] leading-6 text-slate-700">{children}</div>
+    </div>
+  );
+}
+
 export default function IncidentReasoningCard({ rcaReport, guidance, agentRuns = [] }) {
-  const [expanded, setExpanded] = useState(false);
   const latestRun = agentRuns[0] ?? null;
 
-  // Nothing to show
   if (!rcaReport && !guidance?.cause) return null;
 
+  const reportTitle = rcaReport?.title || "AI Root Cause Report";
   const summary = rcaReport?.summary || guidance?.cause || "No summary available.";
-  const recommendation = rcaReport?.recommendation || guidance?.action || "Review the evidence.";
+  const recommendation =
+    rcaReport?.recommendation || guidance?.action || "Review the evidence.";
   const severity = rcaReport?.severity || "low";
   const provider = rcaReport?.provider || guidance?.source || "fallback";
   const model = rcaReport?.model || guidance?.model || "deterministic-rules";
-  const failureTypes = Array.isArray(rcaReport?.failure_types) ? rcaReport.failure_types : [];
-  const issues = Array.isArray(rcaReport?.issues) ? rcaReport.issues : [];
-
-  const isLLMPowered = provider !== "fallback" && provider !== "deterministic" && provider !== "metric_interpreter";
+  const source = getReasoningSource(provider, model);
+  const isLLMPowered =
+    provider !== "fallback" &&
+    provider !== "deterministic" &&
+    provider !== "metric_interpreter";
 
   return (
     <div className="overflow-hidden rounded-xl border border-violet-200 bg-white shadow-[0_4px_20px_rgba(109,40,217,0.07)]">
-      {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
             <Brain size={18} />
           </div>
           <div>
-            <p className="text-[13px] font-semibold text-slate-900">
-              AI Root Cause Report
-            </p>
-            <p className="mt-0.5 font-mono text-[11px] text-slate-400">
-              {provider} / {model}
-            </p>
+            <p className="text-[13px] font-semibold text-slate-900">{reportTitle}</p>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-500">{source.label}</p>
+            <p className="mt-0.5 font-mono text-[11px] text-slate-400">{source.detail}</p>
           </div>
         </div>
 
@@ -72,98 +121,23 @@ export default function IncidentReasoningCard({ rcaReport, guidance, agentRuns =
         </div>
       </div>
 
-      {/* ── Body ── */}
       <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
-        {/* Summary */}
-        <div className="flex flex-col gap-1">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            <Lightbulb size={12} />
-            Root Cause Summary
-          </p>
-          <p className="text-[13px] leading-6 text-slate-700">{summary}</p>
+        <OverviewBlock icon={Lightbulb} title="What Happened" tone="violet">
+          {summary}
+        </OverviewBlock>
 
-          {/* Failure type pills */}
-          {failureTypes.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {failureTypes.map((type) => (
-                <span
-                  key={type}
-                  className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-600"
-                >
-                  {type}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recommendation */}
-        <div className="flex flex-col gap-1">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-blue-600">
-            <Wrench size={12} />
-            Recommended Action
-          </p>
-          <p className="text-[13px] leading-6 text-blue-900">{recommendation}</p>
-
+        <OverviewBlock icon={Wrench} title="What To Do Next" tone="blue">
+          {recommendation}
           {latestRun && (
-            <p className="mt-2 text-[11px] text-slate-400">
-              Agent run #{latestRun.id} ·{" "}
-              {latestRun.status === "completed" ? "✅ Completed" : `Status: ${latestRun.status}`}
+            <p className="mt-3 text-[11px] text-slate-500">
+              Agent run #{latestRun.id} -{" "}
+              {latestRun.status === "completed"
+                ? "Completed"
+                : `Status: ${latestRun.status}`}
             </p>
           )}
-        </div>
+        </OverviewBlock>
       </div>
-
-      {/* ── Expandable Evidence Issues ── */}
-      {issues.length > 0 && (
-        <div className="border-t border-slate-100">
-          <button
-            onClick={() => setExpanded((prev) => !prev)}
-            className="flex w-full items-center justify-between px-5 py-3 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-50"
-          >
-            <span>Evidence Issues ({issues.length})</span>
-            {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-          </button>
-
-          {expanded && (
-            <div className="grid gap-3 px-5 pb-5 pt-1 md:grid-cols-2">
-              {issues.map((issue, i) => (
-                <div
-                  key={`${issue.type}-${i}`}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-3"
-                >
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <p className="text-[12px] font-semibold text-slate-900">
-                      {issue.title || issue.type}
-                    </p>
-                    <SeverityBadge severity={issue.severity} />
-                  </div>
-                  <p className="text-[12px] leading-5 text-slate-600">
-                    {issue.likely_root_cause || issue.summary}
-                  </p>
-                  {issue.recommended_action && (
-                    <p className="mt-2 text-[12px] font-medium leading-5 text-blue-700">
-                      → {issue.recommended_action}
-                    </p>
-                  )}
-                  {Array.isArray(issue.affected_columns) && issue.affected_columns.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {issue.affected_columns.map((col) => (
-                        <span
-                          key={col}
-                          className="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-500"
-                        >
-                          {col}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

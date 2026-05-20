@@ -14,6 +14,7 @@ def save_drift_finding_and_incident(
     finding_type_name: str = "data_drift"
 ):
     drift_detected = drift_score > 0.2
+    incident = None
     
     finding = DriftFinding(
         run_id=run_id,
@@ -46,3 +47,5 @@ def save_drift_finding_and_incident(
             severity=severity
         )
         db.add(incident)
+
+    return incident

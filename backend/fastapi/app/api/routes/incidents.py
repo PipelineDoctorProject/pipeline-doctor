@@ -11,6 +11,7 @@ from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
 from app.models.drift_finding import DriftFinding
 from app.models.pipeline_run import PipelineRun
+from app.services.incidents.live_events import publish_incident_event
 
 from app.schemas.incident import (
     IncidentCreate,
@@ -44,6 +45,7 @@ def create_incident(
     db.commit()
 
     db.refresh(incident)
+    publish_incident_event("incident_created", incident)
 
     return incident
 

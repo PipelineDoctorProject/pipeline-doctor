@@ -18,6 +18,7 @@ import { getIncidentAgentRuns, getAgentRunSteps } from "../../store/agentStore";
 import { useSearchParams } from "react-router-dom";
 import useSelectedModelStore from "../../store/selectedModelStore";
 import useAgentWebSocket from "../../hooks/useAgentWebSocket";
+import useIncidentsWebSocket from "../../hooks/useIncidentsWebSocket";
 import AgentTraceStepper from "../../components/agents/AgentTraceStepper";
 import IncidentReasoningCard from "../../components/agents/IncidentReasoningCard";
 
@@ -282,6 +283,11 @@ export default function IncidentsPage() {
     connect: wsConnect,
     disconnect: wsDisconnect,
   } = useAgentWebSocket();
+  const {
+    lastMessage: lastIncidentMessage,
+    connect: connectIncidentsFeed,
+    disconnect: disconnectIncidentsFeed,
+  } = useIncidentsWebSocket();
 
   const loadIncidents = useCallback(
     async ({ silent = false, announceDelta = false } = {}) => {
@@ -383,6 +389,21 @@ export default function IncidentsPage() {
   useEffect(() => {
     loadIncidents({ announceDelta: false });
   }, [loadIncidents]);
+
+  useEffect(() => {
+    connectIncidentsFeed();
+
+    return () => {
+      disconnectIncidentsFeed();
+    };
+  }, [connectIncidentsFeed, disconnectIncidentsFeed]);
+
+  useEffect(() => {
+    if (!lastIncidentMessage) return;
+    if (!["incident_created", "incident_updated"].includes(lastIncidentMessage.event)) return;
+
+    loadIncidents({ silent: true, announceDelta: true });
+  }, [lastIncidentMessage, loadIncidents]);
 
   useEffect(() => {
     processedLiveEventRef.current.clear();

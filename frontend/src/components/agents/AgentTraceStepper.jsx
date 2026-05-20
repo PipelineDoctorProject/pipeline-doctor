@@ -25,13 +25,13 @@ export const AGENT_STEP_DEFS = [
 ];
 
 export default function AgentTraceStepper({ steps = [], isLive = false }) {
-  const statusMap = useMemo(() => resolveStatusMap(steps), [steps]);
+  const statusMap = useMemo(() => resolveStatusMap(steps, isLive), [steps, isLive]);
   const messageByIndex = useMemo(() => {
     const messages = new Map();
 
     steps.forEach((step) => {
       if (step?.step_index === undefined || !step?.message) return;
-      messages.set(step.step_index, step.message);
+      messages.set(Number(step.step_index), step.message);
     });
 
     return messages;
@@ -149,23 +149,25 @@ function StepIcon({ status }) {
   );
 }
 
-function resolveStatusMap(steps) {
+function resolveStatusMap(steps, isLive) {
   if (!Array.isArray(steps) || steps.length === 0) return {};
 
-  const isLiveFormat = steps.some((step) => step.status !== undefined);
-
-  if (isLiveFormat) {
+  if (isLive) {
     const map = {};
     steps.forEach((step) => {
-      const def = AGENT_STEP_DEFS[step.step_index];
-      if (def) map[def.key] = step.status;
+      const stepIndex = Number(step.step_index);
+      const def = AGENT_STEP_DEFS[stepIndex];
+      if (!def) return;
+
+      map[def.key] = step.status || "pending";
     });
     return map;
   }
 
   const map = {};
   steps.forEach((log) => {
-    const def = AGENT_STEP_DEFS[log.step_index];
+    const stepIndex = Number(log.step_index);
+    const def = AGENT_STEP_DEFS[stepIndex];
     if (!def) return;
     if (!map[def.key]) map[def.key] = "done";
     if (log.log_type === "error") map[def.key] = "error";
