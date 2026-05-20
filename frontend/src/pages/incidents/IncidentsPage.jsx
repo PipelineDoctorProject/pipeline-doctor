@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -17,6 +17,7 @@ import { getIncidents } from "../../store/incidentStore";
 import { getIncidentAgentRuns, getAgentRunSteps } from "../../store/agentStore";
 import { useSearchParams } from "react-router-dom";
 import useSelectedModelStore from "../../store/selectedModelStore";
+import useAgentWebSocket from "../../hooks/useAgentWebSocket";
 import AgentTraceStepper from "../../components/agents/AgentTraceStepper";
 import IncidentReasoningCard from "../../components/agents/IncidentReasoningCard";
 
@@ -159,32 +160,108 @@ function getIncidentGuidance(incident) {
 function buildIncidentRunSummary(run) {
   if (!run) return [];
 
-  const types = Array.from(new Set(run.incidents.map((incident) => humanizeType(incident.failure_type))));
+  const types = Array.from(
+    new Set(run.incidents.map((incident) => humanizeType(incident.failure_type))),
+  );
   const rcaIncident = run.incidents.find((incident) => incident.rca_report);
   const rcaReport = rcaIncident?.rca_report;
 
   return [
     {
       label: "RCA status",
-      value: run.open > 0 ? `${run.open} open incident${run.open === 1 ? "" : "s"}` : "All incidents resolved",
+      value:
+        run.open > 0
+          ? `${run.open} open incident${run.open === 1 ? "" : "s"}`
+          : "All incidents resolved",
       detail: rcaReport
         ? `Reasoning source: ${rcaReport.provider || "fallback"} / ${rcaReport.model || "deterministic-rules"}.`
-        : run.open > 0 ? "Triage the highest severity item first." : "No open action remains for this run.",
+        : run.open > 0
+          ? "Triage the highest severity item first."
+          : "No open action remains for this run.",
     },
     {
       label: "Failure groups",
       value: types.slice(0, 3).join(", ") || "Unknown",
-      detail: types.length > 3 ? `+${types.length - 3} additional type${types.length - 3 === 1 ? "" : "s"}.` : "Types are grouped from stored incident records.",
+      detail:
+        types.length > 3
+          ? `+${types.length - 3} additional type${types.length - 3 === 1 ? "" : "s"}.`
+          : "Types are grouped from stored incident records.",
     },
     {
       label: "Recommended path",
       value: rcaReport?.recommendation ? "RCA recommendation" : "Use evidence pages together",
-      detail: rcaReport?.recommendation || "Open Data Quality for validation causes, Drift for distribution shift, and Pipelines for cleaned data.",
+      detail:
+        rcaReport?.recommendation ||
+        "Open Data Quality for validation causes, Drift for distribution shift, and Pipelines for cleaned data.",
     },
   ];
 }
 
+function buildIncidentSnapshotMap(incidents = []) {
+  return incidents.reduce((snapshot, incident) => {
+    snapshot.set(String(incident.id), {
+      runId: incident.run_id,
+      severity: incident.severity,
+      status: incident.status,
+    });
+    return snapshot;
+  }, new Map());
+}
+
+function formatRunSummary(runIds = []) {
+  const uniqueRunIds = Array.from(
+    new Set(runIds.map((runId) => String(runId || "")).filter(Boolean)),
+  );
+
+  if (uniqueRunIds.length === 0) return "";
+
+  const preview = uniqueRunIds.slice(0, 3).map((runId) => `#${runId}`).join(", ");
+  return uniqueRunIds.length > 3
+    ? `${preview} +${uniqueRunIds.length - 3} more`
+    : preview;
+}
+
+function summarizeIncidentDelta(previousSnapshot, nextIncidents = []) {
+  const nextSnapshot = buildIncidentSnapshotMap(nextIncidents);
+  let newOpenCount = 0;
+  let newCriticalCount = 0;
+  let resolvedCount = 0;
+  const newRunIds = [];
+  const resolvedRunIds = [];
+
+  nextIncidents.forEach((incident) => {
+    const previousIncident = previousSnapshot.get(String(incident.id));
+    const nowResolved = isResolved(incident.status);
+    const wasResolved = previousIncident ? isResolved(previousIncident.status) : null;
+    const isCritical = String(incident.severity || "").toLowerCase() === "critical";
+
+    if ((!previousIncident || wasResolved) && !nowResolved) {
+      newOpenCount += 1;
+      newRunIds.push(incident.run_id);
+      if (isCritical) newCriticalCount += 1;
+    }
+
+    if (previousIncident && !wasResolved && nowResolved) {
+      resolvedCount += 1;
+      resolvedRunIds.push(incident.run_id);
+    }
+  });
+
+  return {
+    nextSnapshot,
+    newOpenCount,
+    newCriticalCount,
+    resolvedCount,
+    newRunIds,
+    resolvedRunIds,
+  };
+}
+
 export default function IncidentsPage() {
+  const connectedTraceRunIdRef = useRef(null);
+  const incidentSnapshotRef = useRef(new Map());
+  const hasBootstrappedIncidentsRef = useRef(false);
+  const processedLiveEventRef = useRef(new Set());
   const [searchParams] = useSearchParams();
   const runParam = searchParams.get("run");
   const [incidents, setIncidents] = useState([]);
@@ -197,51 +274,119 @@ export default function IncidentsPage() {
   const [agentSteps, setAgentSteps] = useState([]);
   const [agentLoading, setAgentLoading] = useState(false);
 
-  async function loadIncidents() {
-    try {
-      setLoading(true);
-      const data = await getIncidents(selectedModelId);
-      setIncidents(data || []);
-      // Toast alert for new critical incidents (PD-53)
-      const criticals = (data || []).filter(
-        (i) => String(i.severity || "").toLowerCase() === "critical" && i.status !== "resolved"
-      );
-      if (criticals.length > 0) {
-        toast.error(`⚠️ ${criticals.length} critical incident${criticals.length > 1 ? "s" : ""} detected`);
-      }
-    } catch (err) {
-      console.log(err);
-      toast.error("Failed to load incidents");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const {
+    steps: wsSteps,
+    isLive,
+    runStatus,
+    lastMessage,
+    connect: wsConnect,
+    disconnect: wsDisconnect,
+  } = useAgentWebSocket();
 
-  // Load agent runs + steps when a run is selected (PD-51, PD-52)
-  const loadAgentData = useCallback(async (incidentId) => {
-    if (!incidentId) return;
-    try {
-      setAgentLoading(true);
-      setAgentRuns([]);
-      setAgentSteps([]);
-      const runs = await getIncidentAgentRuns(incidentId);
-      setAgentRuns(runs || []);
-      if (runs && runs.length > 0) {
-        const steps = await getAgentRunSteps(runs[0].id);
-        setAgentSteps(steps || []);
+  const loadIncidents = useCallback(
+    async ({ silent = false, announceDelta = false } = {}) => {
+      try {
+        if (!silent) {
+          setLoading(true);
+        }
+
+        const data = await getIncidents(selectedModelId);
+        const nextIncidents = data || [];
+        const previousSnapshot = incidentSnapshotRef.current;
+
+        if (announceDelta && hasBootstrappedIncidentsRef.current) {
+          const delta = summarizeIncidentDelta(previousSnapshot, nextIncidents);
+          const newRunSummary = formatRunSummary(delta.newRunIds);
+          const resolvedRunSummary = formatRunSummary(delta.resolvedRunIds);
+
+          if (delta.newCriticalCount > 0) {
+            toast.error(
+              `${delta.newCriticalCount} new critical incident${delta.newCriticalCount === 1 ? "" : "s"} detected${newRunSummary ? ` in runs ${newRunSummary}` : ""}`,
+            );
+          } else if (delta.newOpenCount > 0) {
+            toast(
+              `${delta.newOpenCount} new incident${delta.newOpenCount === 1 ? "" : "s"} detected${newRunSummary ? ` in runs ${newRunSummary}` : ""}`,
+            );
+          }
+
+          if (delta.resolvedCount > 0) {
+            toast.success(
+              `${delta.resolvedCount} incident${delta.resolvedCount === 1 ? "" : "s"} resolved${resolvedRunSummary ? ` in runs ${resolvedRunSummary}` : ""}`,
+            );
+          }
+
+          incidentSnapshotRef.current = delta.nextSnapshot;
+        } else {
+          incidentSnapshotRef.current = buildIncidentSnapshotMap(nextIncidents);
+        }
+
+        hasBootstrappedIncidentsRef.current = true;
+        setIncidents(nextIncidents);
+      } catch (err) {
+        console.log(err);
+        toast.error("Failed to load incidents");
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
       }
-    } catch (err) {
-      console.log("Agent data load error:", err);
-    } finally {
-      setAgentLoading(false);
-    }
-  }, []);
+    },
+    [selectedModelId],
+  );
+
+  const loadAgentData = useCallback(
+    async (incidentId, { silent = false } = {}) => {
+      if (!incidentId) return;
+      try {
+        if (!silent) {
+          setAgentLoading(true);
+          setAgentRuns([]);
+          setAgentSteps([]);
+        }
+
+        const runs = await getIncidentAgentRuns(incidentId);
+        setAgentRuns(runs || []);
+
+        if (!runs || runs.length === 0) {
+          setAgentSteps([]);
+          if (connectedTraceRunIdRef.current !== null) {
+            wsDisconnect();
+            connectedTraceRunIdRef.current = null;
+          }
+          return;
+        }
+
+        const latestRun = runs[0];
+        const steps = await getAgentRunSteps(latestRun.id);
+        setAgentSteps(steps || []);
+
+        if (latestRun.status === "running") {
+          if (connectedTraceRunIdRef.current !== latestRun.pipeline_run_id) {
+            wsConnect(latestRun.pipeline_run_id);
+            connectedTraceRunIdRef.current = latestRun.pipeline_run_id;
+          }
+        } else if (connectedTraceRunIdRef.current !== null) {
+          wsDisconnect();
+          connectedTraceRunIdRef.current = null;
+        }
+      } catch (err) {
+        console.log("Agent data load error:", err);
+      } finally {
+        if (!silent) {
+          setAgentLoading(false);
+        }
+      }
+    },
+    [wsConnect, wsDisconnect],
+  );
 
   useEffect(() => {
-    loadIncidents();
-  }, [selectedModelId]);
+    loadIncidents({ announceDelta: false });
+  }, [loadIncidents]);
 
-
+  useEffect(() => {
+    processedLiveEventRef.current.clear();
+  }, [selectedRunId]);
 
   const filteredIncidents = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -275,59 +420,72 @@ export default function IncidentsPage() {
   const selectedRun = groupedRuns.find(
     (group) => String(group.runId) === String(selectedRunId),
   );
-  const selectedRcaIncident = selectedRun?.incidents.find((incident) => incident.rca_report) || selectedRun?.incidents[0];
-  
-  // If there is no real rca_report from the database, use a rich mock object for UI demonstration
-  const selectedRcaReport = selectedRun?.incidents.find((incident) => incident.rca_report)?.rca_report || {
-    summary: "The data pipeline experienced a severe shift in user demographics alongside multiple missing values in critical columns. This indicates an upstream API contract failure from the user acquisition service.",
-    recommendation: "Immediately pause retraining the customer churn model. Investigate the upstream acquisition service feed to determine why the 'age' and 'income' columns are violating expected thresholds.",
-    severity: "critical",
-    provider: "groq",
-    model: "llama3-70b-8192",
-    failure_types: ["Data Drift", "Data Quality"],
-    issues: [
-      {
-        type: "Data Drift",
-        title: "Severe shift in 'age' distribution",
-        summary: "The PSI score for 'age' exceeded the 0.25 critical threshold, shifting towards younger demographics.",
-        likely_root_cause: "The recent marketing campaign in region EU-West acquired a highly skewed demographic.",
-        recommended_action: "Do not adapt the baseline. This is a real-world shift that requires business review.",
-        severity: "critical",
-        affected_columns: ["age", "income"]
-      },
-      {
-        type: "Data Quality",
-        title: "Unexpected Nulls in 'income'",
-        summary: "5% of incoming rows had null values for 'income', violating the non-null constraint.",
-        likely_root_cause: "A recent change to the frontend signup form made income optional.",
-        recommended_action: "Revert the signup form change or update the pipeline to impute income.",
-        severity: "high",
-        affected_columns: ["income"]
-      }
-    ]
-  };
+  const selectedRcaIncident = selectedRun?.incidents.find((incident) => incident.rca_report);
+  const selectedRcaReport = selectedRcaIncident?.rca_report ?? null;
+  const displayAgentSteps = agentSteps;
+  const selectedRunIdLabel = String(selectedRun?.runId ?? "");
+  const liveTraceRunId = String(
+    lastMessage?.run_id ?? connectedTraceRunIdRef.current ?? "",
+  );
+  const hasLiveTraceSteps = wsSteps.some(
+    (step) => step.status !== "pending" || Boolean(step.message),
+  );
+  const shouldShowLiveTrace =
+    hasLiveTraceSteps &&
+    liveTraceRunId === selectedRunIdLabel &&
+    ["running", "complete", "failed"].includes(runStatus);
 
-  // Mock agent steps if none exist in the database
-  const displayAgentSteps = agentSteps.length > 0 ? agentSteps : [
-    { step_index: 0, log_type: "action", message: "Fetching drift and quality findings" },
-    { step_index: 1, log_type: "action", message: "LLM reasoning on root cause" },
-    { step_index: 2, log_type: "action", message: "Structuring RCA payload" },
-    { step_index: 3, log_type: "action", message: "Saving RCA to database" }
-  ];
+  useEffect(() => {
+    if (!selectedRun || !lastMessage) return;
+    if (!["run_complete", "run_failed"].includes(lastMessage.event)) return;
+    if (String(lastMessage.run_id) !== String(selectedRun.runId)) return;
 
-  // When a run is selected, load its agent trace data
+    const eventKey = `${lastMessage.event}:${lastMessage.run_id}:${lastMessage.message || ""}`;
+    if (processedLiveEventRef.current.has(eventKey)) return;
+    processedLiveEventRef.current.add(eventKey);
+
+    const firstIncident = selectedRun.incidents?.[0];
+
+    if (lastMessage.event === "run_complete") {
+      toast.success("AI Agent run completed. RCA is ready.");
+    } else {
+      toast.error("AI Agent run failed. Check the stored trace for the last completed step.");
+    }
+
+    loadIncidents({ silent: true, announceDelta: true });
+
+    if (firstIncident?.id) {
+      loadAgentData(firstIncident.id, { silent: true });
+    }
+  }, [lastMessage, selectedRun, loadAgentData, loadIncidents]);
+
   useEffect(() => {
     if (!selectedRun) {
       setAgentRuns([]);
       setAgentSteps([]);
+      connectedTraceRunIdRef.current = null;
+      wsDisconnect();
       return;
     }
-    // Load using the first incident ID of the selected run
-    const firstIncident = selectedRun?.incidents?.[0];
+
+    const firstIncident = selectedRun.incidents?.[0];
     if (firstIncident?.id) {
       loadAgentData(firstIncident.id);
+
+      const latestRunStatus = agentRuns[0]?.status;
+      const shouldPoll = agentRuns.length === 0 || latestRunStatus === "running";
+
+      if (!shouldPoll) return undefined;
+
+      const intervalId = window.setInterval(() => {
+        loadAgentData(firstIncident.id, { silent: true });
+      }, 2000);
+
+      return () => window.clearInterval(intervalId);
     }
-  }, [selectedRun, loadAgentData]);
+
+    return undefined;
+  }, [selectedRun, agentRuns, loadAgentData, wsDisconnect]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -345,7 +503,7 @@ export default function IncidentsPage() {
           </div>
 
           <button
-            onClick={loadIncidents}
+            onClick={() => loadIncidents({ announceDelta: false })}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-[13px] font-semibold text-white transition hover:bg-slate-800"
           >
             <RefreshCw size={15} />
@@ -538,16 +696,28 @@ export default function IncidentsPage() {
 
             <div className="grid gap-4 border-b border-slate-200 bg-slate-50 px-6 py-4 md:grid-cols-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Incidents</p>
-                <p className="mt-1 text-[22px] font-semibold text-slate-950">{selectedRun.incidents.length}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  Incidents
+                </p>
+                <p className="mt-1 text-[22px] font-semibold text-slate-950">
+                  {selectedRun.incidents.length}
+                </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Open</p>
-                <p className="mt-1 text-[22px] font-semibold text-red-600">{selectedRun.open}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  Open
+                </p>
+                <p className="mt-1 text-[22px] font-semibold text-red-600">
+                  {selectedRun.open}
+                </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Resolved</p>
-                <p className="mt-1 text-[22px] font-semibold text-slate-950">{selectedRun.resolved}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  Resolved
+                </p>
+                <p className="mt-1 text-[22px] font-semibold text-slate-950">
+                  {selectedRun.resolved}
+                </p>
               </div>
             </div>
 
@@ -572,7 +742,10 @@ export default function IncidentsPage() {
 
               <div className="mb-6 grid gap-3 lg:grid-cols-3">
                 {buildIncidentRunSummary(selectedRun).map((item) => (
-                  <div key={item.label} className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <div
+                    key={item.label}
+                    className="rounded-md border border-slate-200 bg-slate-50 p-4"
+                  >
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                       {item.label}
                     </p>
@@ -586,19 +759,29 @@ export default function IncidentsPage() {
                 ))}
               </div>
 
-              {/* ── Agent Trace Stepper (PD-51) ── */}
               <div className="mb-4">
                 {agentLoading ? (
                   <div className="rounded-xl border border-slate-200 bg-white p-5 text-center text-[13px] text-slate-400">
                     Loading agent trace...
                   </div>
-                ) : (
+                ) : shouldShowLiveTrace ? (
+                  <AgentTraceStepper
+                    steps={wsSteps}
+                    isLive={isLive && liveTraceRunId === selectedRunIdLabel}
+                  />
+                ) : displayAgentSteps.length > 0 ? (
                   <AgentTraceStepper steps={displayAgentSteps} isLive={false} />
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+                    <p className="text-[13px] font-medium text-slate-500">AI Agent Trace</p>
+                    <p className="mt-1 text-[12px] text-slate-400">
+                      No trace data yet. The AI agent will generate this when it processes the next pipeline run.
+                    </p>
+                  </div>
                 )}
               </div>
 
-              {/* ── AI Reasoning Card (PD-52) — replaces plain blue box ── */}
-              {(selectedRcaReport || selectedRcaIncident?.guidance) && (
+              {selectedRcaReport && (
                 <div className="mb-6">
                   <IncidentReasoningCard
                     rcaReport={selectedRcaReport}
@@ -641,7 +824,10 @@ export default function IncidentsPage() {
                           <h4 className="truncate text-[14px] font-semibold text-slate-950">
                             {incident.title || "Untitled incident"}
                           </h4>
-                          <p className="mt-1 text-[12px] text-slate-500" title={incident.description}>
+                          <p
+                            className="mt-1 text-[12px] text-slate-500"
+                            title={incident.description}
+                          >
                             {incident.description || "No incident description available."}
                           </p>
                         </div>
@@ -657,7 +843,9 @@ export default function IncidentsPage() {
                               : "border-red-200 bg-red-50 text-red-700"
                           }`}
                         >
-                          <span className={`h-1.5 w-1.5 rounded-full ${resolved ? "bg-slate-400" : "bg-red-500"}`} />
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${resolved ? "bg-slate-400" : "bg-red-500"}`}
+                          />
                           {incident.status || "Open"}
                         </span>
 
@@ -670,16 +858,21 @@ export default function IncidentsPage() {
                       <div className="mt-3 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-2">
                         <div>
                           <p className="text-[12px] font-semibold text-slate-800">Likely cause</p>
-                          <p className="mt-1 text-[12px] leading-5 text-slate-600">{guidance.cause}</p>
+                          <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                            {guidance.cause}
+                          </p>
                           {guidance.source && (
                             <p className="mt-1 font-mono text-[11px] text-slate-500">
-                              {guidance.source}{guidance.model ? ` / ${guidance.model}` : ""}
+                              {guidance.source}
+                              {guidance.model ? ` / ${guidance.model}` : ""}
                             </p>
                           )}
                         </div>
                         <div>
                           <p className="text-[12px] font-semibold text-blue-800">Next action</p>
-                          <p className="mt-1 text-[12px] leading-5 text-blue-900">{guidance.action}</p>
+                          <p className="mt-1 text-[12px] leading-5 text-blue-900">
+                            {guidance.action}
+                          </p>
                         </div>
                       </div>
                     </div>
