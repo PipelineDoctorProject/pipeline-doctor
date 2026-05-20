@@ -423,6 +423,7 @@ export default function IncidentsPage() {
   const selectedRcaIncident = selectedRun?.incidents.find((incident) => incident.rca_report);
   const selectedRcaReport = selectedRcaIncident?.rca_report ?? null;
   const displayAgentSteps = agentSteps;
+  const latestAgentRunStatus = agentRuns[0]?.status;
   const selectedRunIdLabel = String(selectedRun?.runId ?? "");
   const liveTraceRunId = String(
     lastMessage?.run_id ?? connectedTraceRunIdRef.current ?? "",
@@ -471,21 +472,25 @@ export default function IncidentsPage() {
     const firstIncident = selectedRun.incidents?.[0];
     if (firstIncident?.id) {
       loadAgentData(firstIncident.id);
-
-      const latestRunStatus = agentRuns[0]?.status;
-      const shouldPoll = agentRuns.length === 0 || latestRunStatus === "running";
-
-      if (!shouldPoll) return undefined;
-
-      const intervalId = window.setInterval(() => {
-        loadAgentData(firstIncident.id, { silent: true });
-      }, 2000);
-
-      return () => window.clearInterval(intervalId);
     }
+  }, [selectedRun, loadAgentData, wsDisconnect]);
 
-    return undefined;
-  }, [selectedRun, agentRuns, loadAgentData, wsDisconnect]);
+  useEffect(() => {
+    if (!selectedRun) return undefined;
+
+    const firstIncident = selectedRun.incidents?.[0];
+    if (!firstIncident?.id) return undefined;
+
+    const shouldPoll = agentRuns.length === 0 || latestAgentRunStatus === "running";
+
+    if (!shouldPoll) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      loadAgentData(firstIncident.id, { silent: true });
+    }, 2000);
+
+    return () => window.clearInterval(intervalId);
+  }, [selectedRun, agentRuns.length, latestAgentRunStatus, loadAgentData]);
 
   return (
     <div className="flex flex-col gap-5">
