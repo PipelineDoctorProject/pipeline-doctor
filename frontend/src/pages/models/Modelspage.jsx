@@ -62,15 +62,23 @@ export default function ModelsPage() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [query, setQuery] = useState("");
 
   async function loadModels() {
     try {
       setLoading(true);
+      setErrorMessage("");
       const data = await getModels();
       setModels(data || []);
     } catch (err) {
       console.log(err);
+      setModels([]);
+      setErrorMessage(
+        err?.detail ||
+        err?.message ||
+        "Unable to load registered models right now.",
+      );
     } finally {
       setLoading(false);
     }
@@ -202,7 +210,21 @@ export default function ModelsPage() {
             </div>
           )}
 
-          {!loading && filteredModels.length === 0 && (
+          {!loading && errorMessage && (
+            <div className="px-6 py-14 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-500">
+                <Brain size={22} />
+              </div>
+              <h3 className="mt-4 text-[17px] font-semibold text-slate-950">
+                Could not load models
+              </h3>
+              <p className="mx-auto mt-2 max-w-[500px] text-[14px] leading-6 text-slate-500">
+                {errorMessage}
+              </p>
+            </div>
+          )}
+
+          {!loading && !errorMessage && filteredModels.length === 0 && (
             <div className="px-6 py-14 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-400">
                 <Brain size={22} />
@@ -217,7 +239,7 @@ export default function ModelsPage() {
             </div>
           )}
 
-          {!loading && filteredModels.length > 0 && (
+          {!loading && !errorMessage && filteredModels.length > 0 && (
             <div className="divide-y divide-slate-200">
               {filteredModels.map((model, index) => {
                 const registry = getRegistryStatus(model);

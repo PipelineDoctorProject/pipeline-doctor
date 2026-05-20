@@ -118,7 +118,10 @@ def login_route(
     )
 
     return {
-        "message": "Login successful"
+        "message": "Login successful",
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "token_type": "bearer",
     }
 
 

@@ -7,6 +7,7 @@ const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   workspace: null,
+  dashboardData: null,
   loading: false,
   checkingAuth: true,
   onboardingStep: 1,
@@ -150,6 +151,7 @@ const useAuthStore = create((set, get) => ({
       user: null,
       isAuthenticated: false,
       workspace: null,
+      dashboardData: null,
       checkingAuth: false,
     });
 
@@ -172,6 +174,7 @@ const useAuthStore = create((set, get) => ({
       set({
         user: response.data.user,
         workspace: response.data.workspace,
+        dashboardData: response.data,
         isAuthenticated: true,
         checkingAuth: false,
       });
@@ -183,6 +186,7 @@ const useAuthStore = create((set, get) => ({
       set({
         user: null,
         workspace: null,
+        dashboardData: null,
         isAuthenticated: false,
         checkingAuth: false,
       });

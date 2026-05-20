@@ -830,6 +830,7 @@ export default function IncidentsPage() {
                   const SeverityIcon = severity.icon;
                   const resolved = isResolved(incident.status);
                   const guidance = getIncidentGuidance(incident);
+                  const hasDedicatedRcaCard = Boolean(incident.rca_report);
 
                   return (
                     <div
@@ -881,26 +882,28 @@ export default function IncidentsPage() {
                         </div>
                       </div>
 
-                      <div className="mt-3 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-2">
-                        <div>
-                          <p className="text-[12px] font-semibold text-slate-800">Likely cause</p>
-                          <p className="mt-1 text-[12px] leading-5 text-slate-600">
-                            {guidance.cause}
-                          </p>
-                          {guidance.source && (
-                            <p className="mt-1 font-mono text-[11px] text-slate-500">
-                              {guidance.source}
-                              {guidance.model ? ` / ${guidance.model}` : ""}
+                      {!hasDedicatedRcaCard && (
+                        <div className="mt-3 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-2">
+                          <div>
+                            <p className="text-[12px] font-semibold text-slate-800">Likely cause</p>
+                            <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                              {guidance.cause}
                             </p>
-                          )}
+                            {guidance.source && (
+                              <p className="mt-1 font-mono text-[11px] text-slate-500">
+                                {guidance.source}
+                                {guidance.model ? ` / ${guidance.model}` : ""}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-semibold text-blue-800">Next action</p>
+                            <p className="mt-1 text-[12px] leading-5 text-blue-900">
+                              {guidance.action}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[12px] font-semibold text-blue-800">Next action</p>
-                          <p className="mt-1 text-[12px] leading-5 text-blue-900">
-                            {guidance.action}
-                          </p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}

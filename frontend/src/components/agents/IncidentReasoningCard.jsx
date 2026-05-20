@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  BadgeCheck,
   Brain,
   Lightbulb,
   Wrench,
@@ -91,10 +90,6 @@ export default function IncidentReasoningCard({ rcaReport, guidance, agentRuns =
   const provider = rcaReport?.provider || guidance?.source || "fallback";
   const model = rcaReport?.model || guidance?.model || "deterministic-rules";
   const source = getReasoningSource(provider, model);
-  const isLLMPowered =
-    provider !== "fallback" &&
-    provider !== "deterministic" &&
-    provider !== "metric_interpreter";
 
   return (
     <div className="overflow-hidden rounded-xl border border-violet-200 bg-white shadow-[0_4px_20px_rgba(109,40,217,0.07)]">
@@ -111,12 +106,6 @@ export default function IncidentReasoningCard({ rcaReport, guidance, agentRuns =
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {isLLMPowered && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[11px] font-semibold text-violet-700">
-              <BadgeCheck size={11} />
-              LLM-powered
-            </span>
-          )}
           <SeverityBadge severity={severity} />
         </div>
       </div>

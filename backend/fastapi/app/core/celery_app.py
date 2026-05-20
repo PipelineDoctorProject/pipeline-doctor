@@ -2,12 +2,13 @@ import os
 
 from celery import Celery
 from celery.schedules import crontab
+from app.config.settings import REDIS_URL
 
 
 celery = Celery(
     "opssight",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0",
+    broker=REDIS_URL,
+    backend=REDIS_URL,
     include=[
         "app.tasks.email_tasks",
         "app.tasks.ai_tasks",

@@ -4,6 +4,7 @@ import json
 import redis.asyncio as aioredis
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.config.settings import REDIS_URL
 from app.services.websocket.connection_manager import manager
 from app.services.incidents.live_events import INCIDENTS_CHANNEL
 
@@ -11,7 +12,6 @@ router = APIRouter(tags=["WebSocket"])
 
 # ── Redis connection (async) ──────────────────────────────────────────────────
 # Matches the same broker URL used by Celery in celery_app.py
-REDIS_URL = "redis://localhost:6379/0"
 INCIDENTS_CONNECTION_KEY = "__incidents__"
 
 

@@ -1,8 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional
 from datetime import datetime
 
 class DriftResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     run_id: int
     feature_name: str
@@ -15,5 +17,3 @@ class DriftResponse(BaseModel):
     created_at: datetime
     interpretation: Optional[dict[str, Any]] = None
 
-    class Config:
-        orm_mode = True

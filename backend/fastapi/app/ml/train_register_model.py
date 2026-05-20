@@ -1,5 +1,6 @@
 import mlflow
 import mlflow.sklearn
+import os
 
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
@@ -9,7 +10,7 @@ from sklearn.metrics import accuracy_score
 from mlflow.models.signature import infer_signature
 
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000"))
 
 mlflow.set_experiment(
     "PipelineDoctor Demo Model"

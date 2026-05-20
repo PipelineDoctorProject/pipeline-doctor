@@ -2,8 +2,8 @@ import json
 from datetime import datetime
 
 import redis
+from app.config.settings import REDIS_URL
 
-REDIS_URL = "redis://localhost:6379/0"
 INCIDENTS_CHANNEL = "incidents"
 
 

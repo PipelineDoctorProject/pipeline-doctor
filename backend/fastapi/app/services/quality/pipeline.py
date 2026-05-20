@@ -23,9 +23,10 @@ from app.services.incidents.live_events import publish_incident_event
 import mlflow
 import mlflow.pyfunc
 from app.models.incident import Incident
+from app.config.settings import MLFLOW_TRACKING_URI, resolve_mlflow_tracking_uri
 
 # MLflow Config
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 _model_cache = {}
 
 def get_mlflow_model(db: Session, model_id: int):
@@ -39,10 +40,12 @@ def get_mlflow_model(db: Session, model_id: int):
         try:
             # Set the tracking URI dynamically based on the model's configuration
             if db_model.mlflow_tracking_uri:
-                mlflow.set_tracking_uri(db_model.mlflow_tracking_uri)
+                mlflow.set_tracking_uri(
+                    resolve_mlflow_tracking_uri(db_model.mlflow_tracking_uri)
+                )
             else:
-                # Default fallback
-                mlflow.set_tracking_uri("http://127.0.0.1:5000")
+                # Default fallback shared by local and container runs.
+                mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
                 
             uri = f"models:/{db_model.mlflow_model_name}@{db_model.mlflow_alias or 'champion'}"
             _model_cache[cache_key] = mlflow.pyfunc.load_model(uri)

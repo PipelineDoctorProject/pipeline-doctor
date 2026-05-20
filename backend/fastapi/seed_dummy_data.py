@@ -1,3 +1,4 @@
+import os
 import random
 from datetime import datetime, timedelta
 from app.db.session import SessionLocal
@@ -38,7 +39,7 @@ def seed_data(email: str):
                 mlflow_model_name="fraud-detect",
                 mlflow_alias="production",
                 mlflow_run_id="dummy-run-id-123",
-                mlflow_tracking_uri="http://localhost:5000"
+                mlflow_tracking_uri=os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
             )
             db.add(model)
             db.commit()

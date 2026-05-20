@@ -181,3 +181,30 @@ pipeline-doctor/
 ├── agents/                       ← AI reasoning agents (Stage 8)
 └── frontend/                     ← Frontend application
 ```
+
+---
+
+## Docker Backend Stack
+
+If you want the backend services in Docker while keeping the frontend outside Docker:
+
+1. Start the backend stack:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+- FastAPI API on `http://localhost:8000`
+- MLflow on `http://localhost:5000`
+- Celery worker
+- Celery beat
+- Redis
+
+2. Start the frontend separately from `frontend/`:
+
+```bash
+npm run dev
+```
+
+Airflow is included in the same root compose file, so the full non-frontend stack comes up together.

@@ -4,6 +4,7 @@ from datetime import datetime
 
 import redis
 
+from app.config.settings import REDIS_URL
 from app.core.celery_app import celery
 from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
@@ -15,8 +16,6 @@ from app.services.ai_orchestration.supervisor import run_root_cause_analysis
 from app.models.pipeline_run import PipelineRun
 
 logger = get_task_logger(__name__)
-
-REDIS_URL = "redis://localhost:6379/0"
 
 STEP_NAMES = {
     0: "detection",
