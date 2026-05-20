@@ -15,8 +15,8 @@ x-airflow-common: &airflow-common
     OPSSIGHT_API_URL: "http://host.docker.internal:8000"
 
 
-    OPSSIGHT_MODEL_ID: "2"
-    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTI5NGQ5OTctY2VhZS00YjFjLTkwYTUtZTQ1MzdhOTAyNGE4IiwiZXhwIjoxNzc4NzM4OTY5LCJ0eXBlIjoiYWNjZXNzIn0.DsUHVmLO5V7LXrD68EFajiESgMx7zL8apv_dMAn4-pI"
+    OPSSIGHT_MODEL_ID: "1"
+    OPSSIGHT_API_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYWM3N2Q3OTEtZWRjZi00Y2UyLTkwYjktYWYwNWZlYTkyMTk3IiwiZW1haWwiOiJ0aGFic2hlZXJwb3J1dGhpeWlsQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsInRlbmFudF9pZCI6ImJkZjA3ZTFhLWZhM2UtNDFiMS05NjEzLWVlMGY1NjFmZWE2YSIsImV4cCI6MTc3OTE4NjI3OCwidHlwZSI6ImFjY2VzcyJ9.VvAlnZKpQkMJwDm34UlcHJoeMCBOzdp5lE7ADORky5Q"
 
  
 
@@ -47,15 +47,7 @@ services:
   # ---- Airflow DB Init (runs once) ----
   airflow-init:
     <<: *airflow-common
-    command: >
-      bash -c "airflow db migrate &&
-               airflow users create
-               --username admin
-               --password admin
-               --firstname Admin
-               --lastname User
-               --role Admin
-               --email admin@opssight.ai"
+    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@opssight.ai"
     restart: "no"
 
   # ---- Airflow Webserver (UI at :8080) ----

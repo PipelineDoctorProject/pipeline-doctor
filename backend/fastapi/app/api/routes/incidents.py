@@ -50,17 +50,15 @@ def create_incident(
 
 @router.get("/", response_model=list[IncidentResponse])
 def list_incidents(
+    model_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
 
-    incidents = (
-        db.query(Incident)
-        .order_by(Incident.id.desc())
-        .all()
+    return _serialized_incidents(
+        db,
+        model_id=model_id,
     )
-
-    return incidents
 
 
 @router.get("/filtered")
@@ -70,40 +68,10 @@ def filter_incidents(
     current_user=Depends(require_tenant_user)
 ):
 
-    query = db.query(Incident)
-
-    if model_id is not None:
-        query = (
-            query
-            .join(PipelineRun, Incident.run_id == PipelineRun.id)
-            .filter(PipelineRun.model_id == model_id)
-        )
-
-    incidents = query.order_by(Incident.id.desc()).all()
-
-    drift_ids = [
-        incident.finding_id
-        for incident in incidents
-        if incident.finding_type == "drift" and incident.finding_id
-    ]
-
-    drift_by_id = {}
-
-    if drift_ids:
-        drift_by_id = {
-            finding.id: finding
-            for finding in db.query(DriftFinding)
-            .filter(DriftFinding.id.in_(drift_ids))
-            .all()
-        }
-
-    return [
-        _serialize_incident(
-            incident,
-            drift_by_id.get(incident.finding_id)
-        )
-        for incident in incidents
-    ]
+    return _serialized_incidents(
+        db,
+        model_id=model_id,
+    )
 
 
 @router.get("/{incident_id}", response_model=IncidentResponse)
@@ -210,6 +178,47 @@ def _serialize_incident(
         ),
         "rca_report": rca_report,
     }
+
+
+def _serialized_incidents(
+    db: Session,
+    model_id: int | None = None,
+):
+
+    query = db.query(Incident)
+
+    if model_id is not None:
+        query = (
+            query
+            .join(PipelineRun, Incident.run_id == PipelineRun.id)
+            .filter(PipelineRun.model_id == model_id)
+        )
+
+    incidents = query.order_by(Incident.id.desc()).all()
+
+    drift_ids = [
+        incident.finding_id
+        for incident in incidents
+        if incident.finding_type == "drift" and incident.finding_id
+    ]
+
+    drift_by_id: dict[int, DriftFinding] = {}
+
+    if drift_ids:
+        drift_by_id = {
+            finding.id: finding
+            for finding in db.query(DriftFinding)
+            .filter(DriftFinding.id.in_(drift_ids))
+            .all()
+        }
+
+    return [
+        _serialize_incident(
+            incident,
+            drift_by_id.get(incident.finding_id)
+        )
+        for incident in incidents
+    ]
 
 
 def _parse_rca_report(description: str):

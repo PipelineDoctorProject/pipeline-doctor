@@ -4,6 +4,24 @@ from app.models.data_quality import DataQualityFinding
 from app.models.schema_change_event import SchemaChangeEvent
 
 
+def _serialize_schema_change(event: SchemaChangeEvent):
+    entries = []
+
+    for column in event.new_columns or []:
+        entries.append({
+            "column": column,
+            "change_type": "new_column",
+        })
+
+    for column in event.missing_columns or []:
+        entries.append({
+            "column": column,
+            "change_type": "missing_column",
+        })
+
+    return entries
+
+
 def build_pipeline_context(db, pipeline_run_id: int):
 
     pipeline_run = (
@@ -55,10 +73,8 @@ def build_pipeline_context(db, pipeline_run_id: int):
         ],
 
         "schema_changes": [
-            {
-                "column": s.column_name,
-                "change_type": s.change_type,
-            }
-            for s in schema_changes
+            item
+            for change in schema_changes
+            for item in _serialize_schema_change(change)
         ]
     }

@@ -1,3 +1,5 @@
+import os
+
 from celery import Celery
 from celery.schedules import crontab
 
@@ -11,7 +13,6 @@ celery = Celery(
         "app.tasks.ai_tasks",
         "app.tasks.scheduler_tasks",
     ],
-    include=["app.tasks.email_tasks"],
 )
 
 celery.conf.update(
@@ -50,30 +51,23 @@ celery.conf.update(
     },
 
     # =========================
-    # CELERY BEAT (SCHEDULER)
+    # CELERY BEAT
     # =========================
     beat_schedule={
-        "doctor-monitoring-every-5-min": {
+        "doctor-monitoring-every-minute": {
             "task": "app.tasks.scheduler_tasks.trigger_doctor_monitoring",
             "schedule": crontab(minute="*/1"),  # change to 1 min for demo
+            "options": {"expires": 50},
+        },
+        "beat-heartbeat-every-minute": {
+            "task": "app.tasks.scheduler_tasks.record_beat_heartbeat",
+            "schedule": crontab(minute="*/1"),
+            "options": {"expires": 50},
         },
     },
-    timezone="UTC",
-    enable_utc=True,
-
-    task_track_started=True,
-
-    broker_connection_retry_on_startup=True,
-
-    task_routes={
-        "app.tasks.email_tasks.*": {
-            "queue": "emails"
-        }
-    },
-
-    worker_prefetch_multiplier=1,
-
-    task_acks_late=True,
-
-    task_reject_on_worker_lost=True,
 )
+
+
+if os.name == "nt":
+    celery.conf.worker_pool = "solo"
+    celery.conf.worker_concurrency = 1
