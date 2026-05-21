@@ -1,58 +1,73 @@
-# PipelineDoctor — Project Documentation
+# PipelineDoctor Documentation
 
-> **An MLOps Observability Platform** for monitoring AI model health, detecting data drift, and escalating production incidents automatically.
+PipelineDoctor is an MLOps observability platform for:
 
----
-
-## 👥 Team
-
-| Member | Role | Responsibility |
-|---|---|---|
-| Member 1 | Backend Lead | Authentication, Multi-Tenancy, Database Design |
-| Member 2 | ML Engineer | MLflow Integration, Drift Detection, Pipeline Orchestration |
-| Member 3 | Backend Engineer | Data Quality Checks, Schema Validation, API Development |
+- data quality validation
+- drift detection
+- automated incident creation
+- AI-based root cause analysis
+- live execution trace in the incident UI
 
 ---
 
-## 📅 Week 1 — Completed Features
-
-| Feature | Status |
-|---|---|
-| JWT Authentication (Signup / Login / OTP) | ✅ Done |
-| Multi-Tenant Architecture (Schema Isolation) | ✅ Done |
-| Team Invite System (Admin → Member) | ✅ Done |
-| Baseline Upload & Profiling | ✅ Done |
-| Schema Evolution Detection | ✅ Done |
-| Data Quality Checks (Nulls, Ranges, Categorical) | ✅ Done |
-| MLflow Dynamic Model Loading & Caching | ✅ Done |
-| Data Drift Detection (PSI + KS) | ✅ Done |
-| Concept Drift Detection | ✅ Done |
-| Automated Incident Creation | ✅ Done |
-
----
-
-## 📁 Documentation Index
+## Documentation Index
 
 | File | Description |
 |---|---|
-| [authentication.md](./authentication.md) | JWT auth, OTP flow, multi-tenant architecture |
-| [data_quality.md](./data_quality.md) | Baseline profiling, schema validation, quality checks |
-| [drift_detection.md](./drift_detection.md) | PSI, KS test, concept drift, incident escalation |
-| [ml_integration.md](./ml_integration.md) | MLflow connection, dynamic model loading, feature filtering |
-| [api_reference.md](./api_reference.md) | Full REST API reference for all endpoints |
-| [database_schema.md](./database_schema.md) | All database tables and relationships |
-| [setup.md](./setup.md) | Local development setup guide |
+| [setup.md](./setup.md) | Local setup and Docker runtime guide |
+| [authentication.md](./authentication.md) | JWT auth, OTP flow, and multi-tenant access |
+| [data_quality.md](./data_quality.md) | Baselines, schema checks, and validation rules |
+| [drift_detection.md](./drift_detection.md) | PSI, KS, drift severity, and incident escalation |
+| [ml_integration.md](./ml_integration.md) | MLflow registration, loading, and feature filtering |
+| [api_reference.md](./api_reference.md) | REST and WebSocket endpoint reference |
+| [database_schema.md](./database_schema.md) | Core tables and relationships |
+| [ai_orchestration.md](./ai_orchestration.md) | LangGraph-style RCA flow and supervisor design |
+| [realtime_tracing.md](./realtime_tracing.md) | WebSocket architecture for live RCA trace and incident refresh |
+| [automation_and_scheduler.md](./automation_and_scheduler.md) | Celery, Redis, doctor monitoring sweep, and Airflow integration |
 
 ---
 
-## 🏗️ Tech Stack
+## Week 1 Summary
+
+Completed foundation work:
+
+- JWT authentication with OTP verification
+- schema-based multi-tenancy
+- invite-based team onboarding
+- baseline upload and profiling
+- schema evolution tracking
+- data quality checks
+- MLflow model registration and loading
+- drift detection and incident creation
+
+---
+
+## Week 2 Summary
+
+Completed RCA and realtime work:
+
+- LangGraph-style 4-step RCA supervisor
+- structured agent state, prompt, parser, and fallback handling
+- persisted `agent_runs` and `agent_step_logs`
+- Celery + Redis AI execution pipeline
+- scheduled doctor monitoring sweep
+- incident RCA retrieval endpoints
+- live WebSocket trace for RCA execution
+- live incident feed for automatic incident refresh
+- incident drawer RCA card and stepper UI
+
+---
+
+## Current Runtime Stack
 
 | Layer | Technology |
 |---|---|
-| Backend | FastAPI (Python) |
-| Database | PostgreSQL (Supabase) |
+| Backend API | FastAPI |
+| Database | PostgreSQL / Supabase |
 | ORM & Migrations | SQLAlchemy + Alembic |
 | ML Registry | MLflow |
-| Statistical Testing | SciPy, Evidently AI |
-| Auth | JWT (PyJWT) + Bcrypt + OTP Email |
-| Email | SMTP (Gmail) |
+| AI RCA | LangGraph-style supervisor + Groq / fallback |
+| Background Jobs | Celery + Redis |
+| Realtime Layer | FastAPI WebSockets + Redis Pub/Sub |
+| Workflow Orchestration | Airflow |
+| Frontend | React + Vite |
