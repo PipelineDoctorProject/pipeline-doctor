@@ -7,6 +7,7 @@ from app.services.drift.utils import get_baseline_file_for_model
 from app.services.drift.data_drift import check_data_drift, check_profile_drift
 from app.services.drift.concept_drift import check_concept_drift
 from app.services.drift.storage import save_drift_finding_and_incident
+from app.services.incidents.live_events import publish_incident_event
 from app.services.quality.baseline_service import get_active_baseline
 
 def run_drift_checks(db: Session, run: PipelineRun):
@@ -57,8 +58,9 @@ def run_drift_checks(db: Session, run: PipelineRun):
         print(message)
         return {"saved": 0, "reason": message}
 
+    created_incidents = []
     for res in all_results:
-        save_drift_finding_and_incident(
+        incident = save_drift_finding_and_incident(
             db=db,
             run_id=run.id,
             feature_name=res["feature_name"],
@@ -69,6 +71,12 @@ def run_drift_checks(db: Session, run: PipelineRun):
             severity=res["severity"],
             finding_type_name=res["type"]
         )
+        if incident:
+            created_incidents.append(incident)
 
     db.commit()
+
+    for incident in created_incidents:
+        publish_incident_event("incident_created", incident)
+
     return {"saved": len(all_results), "reason": None}

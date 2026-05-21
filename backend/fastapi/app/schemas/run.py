@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 # #Runs
@@ -9,14 +9,15 @@ class RunCreate(BaseModel):
 from typing import Optional
 
 class MLModelSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     version: str
 
-    class Config:
-        orm_mode = True
-
 class RunResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     model_id: int
     baseline_version: int
@@ -25,10 +26,6 @@ class RunResponse(BaseModel):
     schema_changed: Optional[bool] = False
     model: Optional[MLModelSummary] = None
 
-    class Config:
-        orm_mode = True
-    
-    
 class PipeLineCreate(BaseModel):
     model_id:int
     mode:str

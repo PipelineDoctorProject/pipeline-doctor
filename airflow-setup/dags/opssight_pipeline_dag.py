@@ -27,9 +27,53 @@ from airflow.operators.python import PythonOperator
 OPSSIGHT_API_URL = os.environ.get("OPSSIGHT_API_URL", "http://host.docker.internal:8000")
 OPSSIGHT_MODEL_ID = int(os.environ.get("OPSSIGHT_MODEL_ID", "1"))
 OPSSIGHT_API_TOKEN = os.environ.get("OPSSIGHT_API_TOKEN", "")
+OPSSIGHT_API_EMAIL = os.environ.get("OPSSIGHT_API_EMAIL", "")
+OPSSIGHT_API_PASSWORD = os.environ.get("OPSSIGHT_API_PASSWORD", "")
 
 # Directory inside the container where CSV files are placed
 DATA_DIR = "/opt/airflow/data"
+
+
+def build_auth_headers():
+    # Preferred path for Airflow: log in per run and use a fresh access token.
+    if OPSSIGHT_API_EMAIL and OPSSIGHT_API_PASSWORD:
+        login_url = f"{OPSSIGHT_API_URL}/auth/login"
+        response = requests.post(
+            login_url,
+            json={
+                "email": OPSSIGHT_API_EMAIL,
+                "password": OPSSIGHT_API_PASSWORD,
+            },
+            headers={"Accept": "application/json"},
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            raise Exception(
+                f"OpsSight login failed with {response.status_code}: {response.text}"
+            )
+
+        access_token = response.json().get("access_token")
+
+        if not access_token:
+            raise Exception("OpsSight login succeeded but no access_token was returned.")
+
+        return {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/json",
+        }
+
+    # Backward-compatible fallback, but this will expire.
+    if OPSSIGHT_API_TOKEN and OPSSIGHT_API_TOKEN != "REPLACE_WITH_YOUR_JWT_TOKEN":
+        return {
+            "Authorization": f"Bearer {OPSSIGHT_API_TOKEN}",
+            "Accept": "application/json",
+        }
+
+    raise ValueError(
+        "OpsSight credentials are not configured. "
+        "Set OPSSIGHT_API_EMAIL and OPSSIGHT_API_PASSWORD in docker-compose.yml."
+    )
 
 
 # =============================================
@@ -78,17 +122,8 @@ def push_to_opssight(**kwargs):
     print("TASK 2: Pushing to OpsSight backend for processing...")
     print("=" * 60)
 
-    if not OPSSIGHT_API_TOKEN or OPSSIGHT_API_TOKEN == "REPLACE_WITH_YOUR_JWT_TOKEN":
-        raise ValueError(
-            "OPSSIGHT_API_TOKEN is not set! "
-            "Update it in docker-compose.yml and restart Docker."
-        )
-
     url = f"{OPSSIGHT_API_URL}/data-quality/validate?model_id={OPSSIGHT_MODEL_ID}"
-    headers = {
-        "Authorization": f"Bearer {OPSSIGHT_API_TOKEN}",
-        "Accept": "application/json",
-    }
+    headers = build_auth_headers()
 
     print(f"  -> URL      : {url}")
     print(f"  -> Model ID : {OPSSIGHT_MODEL_ID}")

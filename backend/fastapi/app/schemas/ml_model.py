@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 import mlflow
@@ -18,13 +18,12 @@ class MLModelCreate(MLModelBase):
     pass
 
 class MLModelResponse(MLModelBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
     registry_status: Optional[str] = None
     registry_message: Optional[str] = None
-
-    class Config:
-        orm_mode = True
 
 
 class DiscoverModelsRequest(BaseModel):

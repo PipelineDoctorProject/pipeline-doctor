@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 import redis
 from fastapi import APIRouter
 
+from app.config.settings import REDIS_URL
 from app.core.celery_app import celery
 
 router = APIRouter()
-REDIS_URL = "redis://localhost:6379/0"
 INSPECT_TIMEOUT_SECONDS = 5
 
 @router.get("/health")

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from mlflow.tracking import MlflowClient
+from app.config.settings import resolve_mlflow_tracking_uri
 
 from app.models.ml_model import MLModel
 
@@ -29,16 +30,26 @@ router = APIRouter(
 )
 
 
-def _mlflow_registry_status(model: MLModel):
+def _default_registry_status(model: MLModel):
     if not model.mlflow_model_name:
         return {
             "registry_status": "local_only",
             "registry_message": "This model is registered only in Pipeline Doctor."
         }
 
+    return {
+        "registry_status": "available",
+        "registry_message": "MLflow registry metadata is configured for this model."
+    }
+
+
+def _mlflow_registry_status(model: MLModel):
+    if not model.mlflow_model_name:
+        return _default_registry_status(model)
+
     try:
         client = MlflowClient(
-            tracking_uri=model.mlflow_tracking_uri
+            tracking_uri=resolve_mlflow_tracking_uri(model.mlflow_tracking_uri)
         )
 
         if model.version:
@@ -64,7 +75,7 @@ def _mlflow_registry_status(model: MLModel):
         }
 
 
-def _serialize_model(model: MLModel):
+def _serialize_model(model: MLModel, include_live_registry_status: bool = False):
     data = {
         "id": model.id,
         "name": model.name,
@@ -77,12 +88,15 @@ def _serialize_model(model: MLModel):
         "expected_features": model.expected_features,
         "created_at": model.created_at,
     }
-    data.update(_mlflow_registry_status(model))
+    if include_live_registry_status:
+        data.update(_mlflow_registry_status(model))
+    else:
+        data.update(_default_registry_status(model))
     return data
 
 
 # =====================================================
-# LIST MODEL
+# LIST MODELS
 # =====================================================
 @router.get("/", response_model=List[MLModelResponse])
 def list_models(
@@ -107,6 +121,7 @@ def list_models(
         .all()
     )
 
+    # Keep the list endpoint fast and independent from live MLflow availability.
     return [_serialize_model(model) for model in models]
 
 
@@ -150,40 +165,6 @@ def register_model(
 
     return db_model
 
-
-# =====================================================
-# LIST MODELS
-# =====================================================
-@router.get(
-    "/",
-    response_model=List[MLModelResponse]
-)
-def list_models(
-    request: Request,
-    skip: int = 0,
-    limit: int = 100,
-    current_user=Depends(require_tenant_user)
-):
-
-    db: Session = request.state.db
-
-    if not db:
-        raise HTTPException(
-            status_code=401,
-            detail="Tenant database not found"
-        )
-
-    models = (
-        db.query(MLModel)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
-
-    return [_serialize_model(model) for model in models]
-
-
-# =====================================================
 # GET SINGLE MODEL
 # =====================================================
 @router.get(
@@ -216,7 +197,10 @@ def get_model(
             detail="Model not found"
         )
 
-    return _serialize_model(db_model)
+    return _serialize_model(
+        db_model,
+        include_live_registry_status=True
+    )
 
 
 # =====================================================

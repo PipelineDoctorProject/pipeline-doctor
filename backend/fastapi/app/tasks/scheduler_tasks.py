@@ -5,6 +5,7 @@ import redis
 from sqlalchemy import text
 from celery.utils.log import get_task_logger
 
+from app.config.settings import REDIS_URL
 from app.core.celery_app import celery
 from app.db.session import SessionLocal
 
@@ -16,7 +17,6 @@ from app.tasks.ai_tasks import run_doctor_agent_task
 from app.utils.schema_utils import set_schema
 
 logger = get_task_logger(__name__)
-REDIS_URL = "redis://localhost:6379/0"
 
 
 def _set_public_schema(db):
