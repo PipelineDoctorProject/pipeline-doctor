@@ -1,0 +1,54 @@
+id,name,artist,genres,danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,liveness,valence,tempo,duration_ms,time_signature,cluster,cluster_label
+BAD000,Corrupted Track 0,Unknown,death-metal,2.3,12.7,,,5.0,,-2.0,2.5,-100.0,,fast,unknown,,,BrokenCluster
+BAD001,Corrupted Track 1,BotSinger,cyberpunk-noise,2.3,-5,99.0,-999.0,-1.0,-0.5,,unknown,999.0,-1.2,-50,999999999,12.0,-1.0,InvalidState
+BAD002,Corrupted Track 2,Fake Artist,hyperpop,2.3,-5,-10.0,-999.0,,-0.5,-2.0,unknown,,,9999,999999999,12.0,-1.0,InvalidState
+BAD003,Corrupted Track 3,Unknown,glitch-hop,high,12.7,-10.0,500.0,,,,2.5,999.0,2.5,-50,999999999,,99.0,InvalidState
+BAD004,Corrupted Track 4,Unknown,glitch-hop,,,99.0,-999.0,5.0,3.5,5.0,unknown,,-1.2,-50,-1000,,99.0,InvalidState
+BAD005,Corrupted Track 5,Unknown,cyberpunk-noise,,-5,-10.0,500.0,5.0,-0.5,5.0,2.5,,,fast,unknown,,,DriftedData
+BAD006,Corrupted Track 6,Fake Artist,glitch-hop,2.3,-5,99.0,-999.0,,3.5,-2.0,unknown,,2.5,9999,unknown,,,BrokenCluster
+BAD007,Corrupted Track 7,Fake Artist,alien-core,,,-10.0,500.0,5.0,,-2.0,2.5,999.0,2.5,-50,unknown,12.0,,InvalidState
+BAD008,Corrupted Track 8,Fake Artist,hyperpop,,-5,99.0,,5.0,-0.5,5.0,,,-1.2,fast,unknown,-3.0,99.0,BrokenCluster
+BAD009,Corrupted Track 9,Fake Artist,hyperpop,-1.5,-5,-10.0,-999.0,5.0,3.5,-2.0,unknown,,-1.2,9999,999999999,12.0,,BrokenCluster
+BAD010,Corrupted Track 10,Fake Artist,synthetic-chaos,2.3,,-10.0,,5.0,3.5,-2.0,,999.0,2.5,9999,unknown,12.0,99.0,DriftedData
+BAD011,Corrupted Track 11,Fake Artist,cyberpunk-noise,high,-5,,-999.0,-1.0,3.5,,,,-1.2,-50,999999999,,99.0,DriftedData
+BAD012,Corrupted Track 12,Fake Artist,death-metal,,-5,,-999.0,-1.0,,,,,-1.2,9999,unknown,,-1.0,InvalidState
+BAD013,Corrupted Track 13,BotSinger,death-metal,-1.5,extreme,-10.0,,-1.0,,5.0,,999.0,-1.2,fast,-1000,12.0,-1.0,DriftedData
+BAD014,Corrupted Track 14,Fake Artist,cyberpunk-noise,-1.5,extreme,-10.0,500.0,,3.5,-2.0,,,,-50,-1000,12.0,-1.0,BrokenCluster
+BAD015,Corrupted Track 15,Unknown,synthetic-chaos,-1.5,extreme,,,,-0.5,,unknown,-100.0,,-50,999999999,,99.0,DriftedData
+BAD016,Corrupted Track 16,BotSinger,death-metal,high,12.7,-10.0,,5.0,-0.5,5.0,unknown,999.0,2.5,fast,-1000,-3.0,-1.0,InvalidState
+BAD017,Corrupted Track 17,BotSinger,glitch-hop,high,-5,-10.0,-999.0,5.0,3.5,5.0,,-100.0,2.5,9999,999999999,12.0,,InvalidState
+BAD018,Corrupted Track 18,Unknown,hyperpop,-1.5,12.7,-10.0,,5.0,-0.5,,2.5,,-1.2,-50,999999999,12.0,-1.0,InvalidState
+BAD019,Corrupted Track 19,Unknown,hyperpop,high,-5,-10.0,,5.0,3.5,-2.0,2.5,,-1.2,fast,unknown,12.0,-1.0,InvalidState
+BAD020,Corrupted Track 20,BotSinger,alien-core,-1.5,,,-999.0,5.0,-0.5,5.0,2.5,,2.5,fast,unknown,-3.0,,InvalidState
+BAD021,Corrupted Track 21,BotSinger,hyperpop,high,,99.0,-999.0,5.0,,,2.5,,2.5,fast,-1000,12.0,,DriftedData
+BAD022,Corrupted Track 22,BotSinger,glitch-hop,-1.5,12.7,99.0,500.0,5.0,,,unknown,999.0,,9999,unknown,-3.0,-1.0,BrokenCluster
+BAD023,Corrupted Track 23,Unknown,glitch-hop,high,-5,99.0,500.0,-1.0,3.5,,2.5,,,-50,unknown,-3.0,-1.0,InvalidState
+BAD024,Corrupted Track 24,Unknown,glitch-hop,-1.5,12.7,99.0,-999.0,,-0.5,-2.0,,999.0,-1.2,fast,unknown,12.0,-1.0,BrokenCluster
+BAD025,Corrupted Track 25,Fake Artist,cyberpunk-noise,,extreme,,500.0,,,,unknown,,2.5,-50,unknown,12.0,,DriftedData
+BAD026,Corrupted Track 26,Unknown,cyberpunk-noise,2.3,extreme,-10.0,500.0,5.0,-0.5,5.0,,,-1.2,-50,999999999,-3.0,99.0,BrokenCluster
+BAD027,Corrupted Track 27,Unknown,glitch-hop,,,,-999.0,5.0,,5.0,2.5,-100.0,-1.2,fast,-1000,12.0,-1.0,InvalidState
+BAD028,Corrupted Track 28,BotSinger,hyperpop,high,,99.0,,-1.0,,-2.0,2.5,,-1.2,9999,unknown,,99.0,DriftedData
+BAD029,Corrupted Track 29,Unknown,glitch-hop,2.3,12.7,99.0,-999.0,,,,unknown,-100.0,-1.2,fast,999999999,,,InvalidState
+BAD030,Corrupted Track 30,BotSinger,alien-core,2.3,-5,,,,,,,,,-50,999999999,-3.0,99.0,BrokenCluster
+BAD031,Corrupted Track 31,Fake Artist,hyperpop,-1.5,,99.0,-999.0,5.0,,,2.5,-100.0,-1.2,fast,unknown,,,BrokenCluster
+BAD032,Corrupted Track 32,BotSinger,cyberpunk-noise,high,12.7,99.0,500.0,-1.0,,-2.0,2.5,,,9999,unknown,12.0,-1.0,InvalidState
+BAD033,Corrupted Track 33,BotSinger,synthetic-chaos,-1.5,extreme,-10.0,500.0,,3.5,-2.0,unknown,,,-50,999999999,12.0,-1.0,DriftedData
+BAD034,Corrupted Track 34,BotSinger,synthetic-chaos,high,-5,-10.0,,,,5.0,2.5,999.0,-1.2,fast,999999999,,-1.0,BrokenCluster
+BAD035,Corrupted Track 35,Unknown,death-metal,high,12.7,-10.0,,5.0,3.5,-2.0,,,-1.2,9999,-1000,12.0,99.0,InvalidState
+BAD036,Corrupted Track 36,Fake Artist,alien-core,,,-10.0,500.0,,3.5,5.0,unknown,999.0,2.5,fast,999999999,12.0,99.0,BrokenCluster
+BAD037,Corrupted Track 37,Unknown,glitch-hop,2.3,,99.0,-999.0,-1.0,,-2.0,2.5,,,-50,-1000,12.0,99.0,InvalidState
+BAD038,Corrupted Track 38,BotSinger,hyperpop,,-5,-10.0,-999.0,,3.5,5.0,,999.0,,9999,-1000,-3.0,-1.0,InvalidState
+BAD039,Corrupted Track 39,BotSinger,synthetic-chaos,-1.5,-5,,-999.0,-1.0,-0.5,,unknown,999.0,2.5,9999,999999999,12.0,-1.0,InvalidState
+BAD040,Corrupted Track 40,BotSinger,synthetic-chaos,high,extreme,,,,,-2.0,2.5,999.0,,9999,-1000,,-1.0,InvalidState
+BAD041,Corrupted Track 41,Unknown,alien-core,2.3,-5,,-999.0,-1.0,-0.5,,,999.0,-1.2,9999,unknown,-3.0,99.0,DriftedData
+BAD042,Corrupted Track 42,BotSinger,death-metal,-1.5,extreme,99.0,-999.0,-1.0,-0.5,5.0,2.5,-100.0,,fast,unknown,,99.0,BrokenCluster
+BAD043,Corrupted Track 43,BotSinger,hyperpop,,-5,,,,3.5,,unknown,999.0,,fast,-1000,,,DriftedData
+BAD044,Corrupted Track 44,Unknown,synthetic-chaos,,,,500.0,,3.5,-2.0,unknown,-100.0,-1.2,-50,unknown,12.0,99.0,InvalidState
+BAD045,Corrupted Track 45,Unknown,hyperpop,-1.5,12.7,99.0,-999.0,-1.0,,,2.5,-100.0,-1.2,fast,999999999,-3.0,-1.0,InvalidState
+BAD046,Corrupted Track 46,Fake Artist,cyberpunk-noise,-1.5,,,,-1.0,3.5,5.0,unknown,-100.0,2.5,-50,999999999,,99.0,InvalidState
+BAD047,Corrupted Track 47,BotSinger,cyberpunk-noise,high,12.7,99.0,-999.0,5.0,,5.0,2.5,-100.0,,fast,unknown,-3.0,99.0,InvalidState
+BAD048,Corrupted Track 48,Unknown,glitch-hop,,extreme,,,-1.0,,5.0,2.5,,2.5,9999,999999999,12.0,,BrokenCluster
+BAD049,Corrupted Track 49,BotSinger,glitch-hop,high,,-10.0,-999.0,,3.5,5.0,,999.0,,fast,unknown,12.0,-1.0,DriftedData
+BAD000,Corrupted Track 0,Unknown,death-metal,2.3,12.7,,,5.0,,-2.0,2.5,-100.0,,fast,unknown,,,BrokenCluster
+BAD001,Corrupted Track 1,BotSinger,cyberpunk-noise,2.3,-5,99.0,-999.0,-1.0,-0.5,,unknown,999.0,-1.2,-50,999999999,12.0,-1.0,InvalidState
+BAD002,Corrupted Track 2,Fake Artist,hyperpop,2.3,-5,-10.0,-999.0,,-0.5,-2.0,unknown,,,9999,999999999,12.0,-1.0,InvalidState

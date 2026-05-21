@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
@@ -7,6 +7,8 @@ from app.models.pipeline_run import PipelineRun
 from app.services.drift.drift_service import run_drift_checks
 
 from app.schemas.drift import DriftResponse
+from app.schemas.explanations import InsightExplanationResponse
+from app.services.ai_explanations import build_drift_explanation
 
 router = APIRouter(prefix="/drift-findings", tags=["Drift Findings"])
 
@@ -63,6 +65,25 @@ def backfill_drift_findings(
         "run_id": run_id,
         **(result or {"saved": 0, "reason": "Drift did not return a result"}),
     }
+
+
+@router.get("/explain", response_model=InsightExplanationResponse)
+def explain_drift_run(
+    run_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    findings = (
+        db.query(DriftFinding)
+        .filter(DriftFinding.run_id == run_id)
+        .order_by(DriftFinding.id.asc())
+        .all()
+    )
+
+    if not findings:
+        raise HTTPException(status_code=404, detail="No drift findings found for this run")
+
+    return build_drift_explanation(run_id, findings)
 
 
 def _serialize_drift_finding(finding: DriftFinding):

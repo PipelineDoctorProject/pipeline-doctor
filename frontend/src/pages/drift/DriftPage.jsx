@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -12,9 +12,14 @@ import {
   X,
 } from "lucide-react";
 
-import { getDriftFindings, getDriftFindingsByRun } from "../../store/driftStore";
+import {
+  getDriftExplanation,
+  getDriftFindings,
+  getDriftFindingsByRun,
+} from "../../store/driftStore";
 import { useSearchParams } from "react-router-dom";
 import useSelectedModelStore from "../../store/selectedModelStore";
+import InsightExplanationCard from "../../components/common/InsightExplanationCard";
 
 const severityStyles = {
   critical: "border-red-200 bg-red-50 text-red-700",
@@ -350,9 +355,11 @@ export default function DriftPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [selectedRunId, setSelectedRunId] = useState(runParam);
+  const [explanation, setExplanation] = useState(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
   const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
 
-  async function loadFindings() {
+  const loadFindings = useCallback(async () => {
     try {
       setLoading(true);
       const data = runParam
@@ -364,12 +371,12 @@ export default function DriftPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [runParam, selectedModelId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFindings();
-  }, [runParam, selectedModelId]);
+  }, [loadFindings]);
 
   const filteredFindings = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -414,6 +421,38 @@ export default function DriftPage() {
   const selectedRun = groupedRuns.find(
     (group) => String(group.runId) === String(selectedRunId),
   );
+
+  useEffect(() => {
+    if (!selectedRun) return undefined;
+
+    let isActive = true;
+
+    const loadExplanation = async () => {
+      try {
+        setExplanationLoading(true);
+        setExplanation(null);
+        const data = await getDriftExplanation(selectedRun.runId);
+        if (isActive) {
+          setExplanation(data);
+        }
+      } catch (err) {
+        console.log(err);
+        if (isActive) {
+          setExplanation(null);
+        }
+      } finally {
+        if (isActive) {
+          setExplanationLoading(false);
+        }
+      }
+    };
+
+    loadExplanation();
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedRun]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -681,6 +720,24 @@ export default function DriftPage() {
                   Open pipeline
                 </a>
               </div>
+
+              {explanationLoading && (
+                <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-[13px] text-slate-500">
+                  Generating AI explanation from stored drift findings...
+                </div>
+              )}
+
+              {!explanationLoading && explanation && (
+                <div className="mb-6">
+                  <InsightExplanationCard
+                    title={explanation.title}
+                    summary={explanation.summary}
+                    sections={explanation.sections}
+                    provider={explanation.provider}
+                    model={explanation.model}
+                  />
+                </div>
+              )}
 
               <div className="mb-6 grid gap-3 lg:grid-cols-3">
                 {buildRunDriftSummary(selectedRun).map((item) => (

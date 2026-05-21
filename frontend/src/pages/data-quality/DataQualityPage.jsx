@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Database,
@@ -12,8 +12,9 @@ import {
   Info,
   ListChecks,
 } from "lucide-react";
-import { getDataQualityFindings } from "../../store/dataQualityStore";
+import { getDataQualityExplanation, getDataQualityFindings } from "../../store/dataQualityStore";
 import useSelectedModelStore from "../../store/selectedModelStore";
+import InsightExplanationCard from "../../components/common/InsightExplanationCard";
 
 function formatDate(value) {
   if (!value) return "Not available";
@@ -236,12 +237,14 @@ export default function DataQualityPage() {
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRunId, setSelectedRunId] = useState(runParam);
+  const [explanation, setExplanation] = useState(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
   const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
 
   // ==========================================
   // LOAD DATA QUALITY FINDINGS
   // ==========================================
-  const loadFindings = async () => {
+  const loadFindings = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getDataQualityFindings(selectedModelId);
@@ -251,12 +254,12 @@ export default function DataQualityPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedModelId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFindings();
-  }, [selectedModelId]);
+  }, [loadFindings]);
 
   const groupedRuns = useMemo(() => groupFindingsByRun(findings), [findings]);
   const selectedRun = groupedRuns.find((group) => String(group.runId) === String(selectedRunId));
@@ -264,6 +267,38 @@ export default function DataQualityPage() {
     () => (selectedRun ? buildIssueGroups(selectedRun.findings) : []),
     [selectedRun],
   );
+
+  useEffect(() => {
+    if (!selectedRun) return undefined;
+
+    let isActive = true;
+
+    const loadExplanation = async () => {
+      try {
+        setExplanationLoading(true);
+        setExplanation(null);
+        const data = await getDataQualityExplanation(selectedRun.runId);
+        if (isActive) {
+          setExplanation(data);
+        }
+      } catch (err) {
+        console.log(err);
+        if (isActive) {
+          setExplanation(null);
+        }
+      } finally {
+        if (isActive) {
+          setExplanationLoading(false);
+        }
+      }
+    };
+
+    loadExplanation();
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedRun]);
 
   return (
     <div className="space-y-5">
@@ -468,6 +503,24 @@ export default function DataQualityPage() {
                   Open pipeline
                 </a>
               </div>
+
+              {explanationLoading && (
+                <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-[13px] text-slate-500">
+                  Generating AI explanation from stored data quality findings...
+                </div>
+              )}
+
+              {!explanationLoading && explanation && (
+                <div className="mb-6">
+                  <InsightExplanationCard
+                    title={explanation.title}
+                    summary={explanation.summary}
+                    sections={explanation.sections}
+                    provider={explanation.provider}
+                    model={explanation.model}
+                  />
+                </div>
+              )}
 
               {selectedIssueGroups.length > 0 ? (
                 <div className="mb-6 grid gap-3">
