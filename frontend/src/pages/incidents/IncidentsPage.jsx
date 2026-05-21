@@ -209,6 +209,52 @@ function buildIncidentSnapshotMap(incidents = []) {
   }, new Map());
 }
 
+function getReportingStepStatus(steps = []) {
+  if (!Array.isArray(steps) || steps.length === 0) return null;
+
+  const reportingByIndex = steps.find((step) => Number(step?.step_index) === 3);
+  if (reportingByIndex?.status) {
+    return String(reportingByIndex.status).toLowerCase();
+  }
+
+  const reportingByName = steps.find(
+    (step) => String(step?.step_name || "").toLowerCase() === "reporting",
+  );
+  if (reportingByName?.status) {
+    return String(reportingByName.status).toLowerCase();
+  }
+
+  // Stored log rows often omit status and only indicate that the step exists.
+  if (reportingByIndex || reportingByName) {
+    return "done";
+  }
+
+  return null;
+}
+
+function isRcaReportReady({
+  latestAgentRunStatus,
+  shouldShowLiveTrace,
+  liveSteps,
+  storedSteps,
+  liveRunStatus,
+}) {
+  const normalizedLatestStatus = String(latestAgentRunStatus || "").toLowerCase();
+  const normalizedLiveRunStatus = String(liveRunStatus || "").toLowerCase();
+
+  if (shouldShowLiveTrace) {
+    const liveReportingStatus = getReportingStepStatus(liveSteps);
+    if (liveReportingStatus === "done") return true;
+    if (normalizedLiveRunStatus === "complete") return true;
+    return false;
+  }
+
+  const storedReportingStatus = getReportingStepStatus(storedSteps);
+  if (storedReportingStatus === "done") return true;
+
+  return normalizedLatestStatus === "completed" || normalizedLatestStatus === "complete";
+}
+
 function formatRunSummary(runIds = []) {
   const uniqueRunIds = Array.from(
     new Set(runIds.map((runId) => String(runId || "")).filter(Boolean)),
@@ -456,6 +502,15 @@ export default function IncidentsPage() {
     hasLiveTraceSteps &&
     liveTraceRunId === selectedRunIdLabel &&
     ["running", "complete", "failed"].includes(runStatus);
+  const shouldShowRcaReport =
+    Boolean(selectedRcaReport) &&
+    isRcaReportReady({
+      latestAgentRunStatus,
+      shouldShowLiveTrace,
+      liveSteps: wsSteps,
+      storedSteps: displayAgentSteps,
+      liveRunStatus: runStatus,
+    });
 
   useEffect(() => {
     if (!selectedRun || !lastMessage) return;
@@ -807,13 +862,24 @@ export default function IncidentsPage() {
                 )}
               </div>
 
-              {selectedRcaReport && (
+              {shouldShowRcaReport && (
                 <div className="mb-6">
                   <IncidentReasoningCard
                     rcaReport={selectedRcaReport}
                     guidance={selectedRcaIncident?.guidance}
                     agentRuns={agentRuns}
                   />
+                </div>
+              )}
+
+              {selectedRcaReport && !shouldShowRcaReport && (
+                <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
+                  <p className="text-[13px] font-semibold text-slate-800">
+                    AI Root Cause Analysis
+                  </p>
+                  <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                    The report will appear here after the reporting step finishes saving the final RCA output.
+                  </p>
                 </div>
               )}
 

@@ -6,21 +6,29 @@ export const AGENT_STEP_DEFS = [
     key: "detection",
     label: "Detection",
     description: "Loading drift and data quality findings from the database",
+    runningDescription: "System is detecting drift, schema, and data quality signals.",
+    pendingDescription: "Waiting to start evidence detection.",
   },
   {
     key: "reasoning",
     label: "AI Reasoning",
     description: "LLM is analyzing the root cause of the failure",
+    runningDescription: "System is reasoning over the detected failure signals.",
+    pendingDescription: "Waiting for evidence detection to finish.",
   },
   {
     key: "parser",
     label: "Parsing",
     description: "Structuring the AI response into failure types and severity",
+    runningDescription: "System is parsing the AI response into structured RCA fields.",
+    pendingDescription: "Waiting for AI reasoning to finish.",
   },
   {
     key: "reporting",
     label: "Reporting",
     description: "Writing the final incident report to the database",
+    runningDescription: "System is finalizing and saving the RCA report.",
+    pendingDescription: "Waiting for parsing to finish before saving the report.",
   },
 ];
 
@@ -69,6 +77,7 @@ export default function AgentTraceStepper({ steps = [], isLive = false }) {
           const status = statusMap[stepDef.key] ?? "pending";
           const isLast = index === AGENT_STEP_DEFS.length - 1;
           const liveMsg = messageByIndex.get(index) || "";
+          const bodyCopy = resolveStepCopy(stepDef, status, liveMsg);
 
           return (
             <li key={stepDef.key} className="flex gap-4">
@@ -103,7 +112,7 @@ export default function AgentTraceStepper({ steps = [], isLive = false }) {
                   {stepDef.label}
                 </p>
                 <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                  {liveMsg || stepDef.description}
+                  {bodyCopy}
                 </p>
               </div>
             </li>
@@ -173,4 +182,11 @@ function resolveStatusMap(steps, isLive) {
     if (log.log_type === "error") map[def.key] = "error";
   });
   return map;
+}
+
+function resolveStepCopy(stepDef, status, liveMsg) {
+  if (liveMsg) return liveMsg;
+  if (status === "running") return stepDef.runningDescription || stepDef.description;
+  if (status === "pending") return stepDef.pendingDescription || stepDef.description;
+  return stepDef.description;
 }
