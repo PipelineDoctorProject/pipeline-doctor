@@ -57,6 +57,19 @@ Completed RCA and realtime work:
 - incident drawer RCA card and stepper UI
 - AI explanation cards for Data Quality and Drift detail drawers
 - unified doctor-task RCA creation so new reports always have trace logs
+- Airflow request timeout tuning for login and validate/upload calls
+- lighter Airflow scheduler/webserver settings for more stable local Docker runs
+
+---
+
+## Latest Operational Notes
+
+Recent runtime fixes changed how troubleshooting should be understood:
+
+- new RCA reports are expected to come through the doctor task and produce trace logs
+- older incidents may still exist without trace because they were created before that change
+- Airflow task retries can happen if backend login or validation calls exceed the configured timeout
+- Airflow UI may briefly look stale if the scheduler temporarily loses access to `airflow-db`
 
 ---
 

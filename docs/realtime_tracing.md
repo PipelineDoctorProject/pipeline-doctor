@@ -185,11 +185,29 @@ If live trace is not working:
 3. confirm `step_update` frames arrive
 4. confirm the stepper changes in the drawer
 
+If the incident drawer shows RCA summary but no trace:
+
+1. check `GET /incidents/{incident_id}/agent-runs`
+2. check backend API logs for doctor-task queueing errors
+3. check whether the run was created before the unified doctor-task flow
+
+One important queueing error seen during development was:
+
+- `Tenant id could not be resolved for the doctor agent task`
+
+When that happened, the incident could still exist, but no `AgentRun` was created.
+
 If incident auto-refresh is not working:
 
 1. confirm `/ws/incidents` appears in browser Network > Socket
 2. confirm Redis publish is happening
 3. confirm the frontend reloads incidents on `incident_created` / `incident_updated`
+
+If the incident drawer looks stuck on an old Airflow run state:
+
+1. check the Airflow task log, not only the graph color
+2. confirm whether the task actually ended `success`, `failed`, or `up_for_retry`
+3. remember that Airflow UI can look stale when the DAG is temporarily deactivated by scheduler instability
 
 ---
 
