@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import json
 from sqlalchemy.orm import Session
 import numpy
 from app.services.quality.baseline_service import get_active_baseline
@@ -14,15 +13,13 @@ from app.services.quality.pipeline_run_service import (
 from app.services.quality.storage import store_findings
 from app.services.quality.transformer import DataTransformer
 from app.models.schema_change_event import SchemaChangeEvent
+from app.models.ml_model import MLModel
 from app.services.quality.data_loader import load_dataset
 from app.services.drift.drift_service import run_drift_checks
-from app.services.ai_orchestration.supervisor import run_root_cause_analysis
 from app.models.pipeline_run import PipelineRun
 from app.models.prediction_log import PredictionLog
-from app.services.incidents.live_events import publish_incident_event
 import mlflow
 import mlflow.pyfunc
-from app.models.incident import Incident
 from app.config.settings import MLFLOW_TRACKING_URI, resolve_mlflow_tracking_uri
 
 # MLflow Config
@@ -85,58 +82,6 @@ def to_python_types(obj):
         return float(obj)
     else:
         return obj
-
-
-def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
-    report = root_cause_state.get("report") or {}
-    failure_types = report.get("failure_types") or []
-
-    if not failure_types:
-        return None
-
-    payload = {
-        "title": report.get("title") or "AI Root Cause Analysis",
-        "provider": root_cause_state.get("llm_provider"),
-        "model": root_cause_state.get("llm_model"),
-        "summary": report.get("summary"),
-        "recommendation": report.get("recommendation"),
-        "failure_types": failure_types,
-        "severity": report.get("severity"),
-        "issues": report.get("issues", []),
-        "evidence": report.get("evidence", []),
-        "reasoning": root_cause_state.get("llm_reasoning"),
-    }
-
-    incident = (
-        db.query(Incident)
-        .filter(
-            Incident.run_id == run_id,
-            Incident.failure_type == "ai_root_cause",
-            Incident.finding_type == "root_cause",
-        )
-        .first()
-    )
-
-    if not incident:
-        incident = Incident(
-            run_id=run_id,
-            title="AI Root Cause Analysis",
-            description="",
-            failure_type="ai_root_cause",
-            finding_type="root_cause",
-            finding_id=None,
-            severity=report.get("severity", "medium"),
-            status="open",
-        )
-        db.add(incident)
-
-    incident.title = "AI Root Cause Analysis"
-    incident.description = json.dumps(payload, default=str)
-    incident.severity = report.get("severity", "medium")
-    db.commit()
-    db.refresh(incident)
-    publish_incident_event("incident_updated", incident)
-    return incident
 
 
 # --------------------------------------------------
@@ -320,30 +265,33 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
             print(f"Drift checks encountered an error: {drift_e}")
             traceback.print_exc()
 
-        root_cause_report = None
+        root_cause_status = None
         try:
-            print(f"Running AI root cause analysis for run {run_id}...")
-            run_for_rca = db.get(PipelineRun, run_id, populate_existing=True)
-            if not run_for_rca:
-                raise Exception("Pipeline run not found for RCA")
-            root_cause_state = run_root_cause_analysis(
-                db=db,
-                run=run_for_rca,
-                validation_result=result,
-                schema_change_detected=bool(extra_cols or missing_cols),
-                extra_columns=extra_cols,
-                missing_columns=missing_cols,
+            print(f"Queueing doctor agent RCA for run {run_id}...")
+            model_record = (
+                db.query(MLModel)
+                .filter(MLModel.id == model_id)
+                .first()
             )
-            root_cause_report = {
-                "failure_types": root_cause_state.get("parsed_failure_types", []),
-                "severity": root_cause_state.get("severity"),
-                "report": root_cause_state.get("report"),
+            tenant_id = model_record.tenant_id if model_record else None
+            if not tenant_id:
+                raise Exception("Tenant id could not be resolved for the doctor agent task")
+
+            # Import locally to avoid startup-order issues with Celery task registration.
+            from app.tasks.ai_tasks import run_doctor_agent_task
+
+            run_doctor_agent_task.apply_async(
+                args=(run_id, tenant_id, "doctor"),
+                expires=300,
+            )
+            root_cause_status = {
+                "status": "queued",
+                "message": "Doctor agent RCA has been queued and will generate trace logs.",
             }
-            persist_root_cause_incident(db, run_id, root_cause_state)
-            print("AI root cause analysis completed.")
+            print("Doctor agent RCA queued.")
         except Exception as ai_e:
             db.rollback()
-            print(f"AI root cause analysis encountered an error: {ai_e}")
+            print(f"Doctor agent RCA queue encountered an error: {ai_e}")
 
         # --------------------------------------------------
         # 8. SAFE RESPONSE (CRITICAL FIX)
@@ -359,7 +307,7 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
             "missing_columns": missing_cols,
             "schema_event_id": int(schema_event.id) if schema_event else None,
             "action": "awaiting_approval" if schema_event else "none",
-            "root_cause_analysis": root_cause_report,
+            "root_cause_analysis": root_cause_status,
         }
 
         return to_python_types(response)
