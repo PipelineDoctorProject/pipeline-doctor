@@ -102,6 +102,19 @@ The Airflow DAG in `airflow-setup/dags/opssight_pipeline_dag.py`:
 2. authenticates with the OpsSight backend
 3. sends the file to `/data-quality/validate?model_id=...`
 
+### Request Timeout Behavior
+
+The DAG uses explicit HTTP timeouts so long backend work does not hang forever:
+
+- login request timeout is longer than the old 30-second default
+- validate/upload request timeout is longer because validation, drift, and RCA queueing can take noticeably longer
+
+If Airflow cannot finish the backend request in time, the task usually becomes:
+
+- `up_for_retry`
+
+rather than staying permanently running.
+
 ---
 
 ## Important Auth Rule for Airflow
@@ -129,6 +142,16 @@ The DAG now prefers:
 
 This makes scheduled runs stable across time.
 
+### Common Airflow Failure Pattern
+
+If `push_to_opssight` enters `up_for_retry`, check the Airflow task log first.
+
+Typical reasons:
+
+- backend login request timed out
+- backend validate request timed out
+- temporary backend or Docker network instability
+
 ---
 
 ## Docker Runtime Notes
@@ -150,6 +173,20 @@ It includes:
 The old `airflow-setup/docker-compose.yml` is no longer used.
 
 Frontend still runs separately outside Docker.
+
+### Current Airflow Stability Notes
+
+The root `docker-compose.yml` now includes a lighter Airflow runtime profile to reduce instability in local Docker environments:
+
+- webserver workers reduced to `1`
+- scheduler parsing processes reduced to `1`
+- SQLAlchemy pre-ping enabled for Airflow DB connections
+
+These changes help avoid stale UI states caused by:
+
+- intermittent `airflow-db` name-resolution failures
+- webserver worker OOM kills
+- temporary DAG deactivation in the Airflow UI
 
 ---
 

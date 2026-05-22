@@ -166,6 +166,17 @@ This prevents users from seeing a premature RCA card before persistence is compl
 
 Because RCA creation is now routed through the doctor task, new incidents should no longer end up with a saved RCA report but no trace logs.
 
+### Important Run Boundary
+
+This guarantee applies to new runs created after the unified doctor-task flow was deployed.
+
+Older runs may still show one of these legacy states:
+
+- RCA summary exists but no `AgentRun`
+- RCA report exists but no `AgentStepLog`
+
+That mismatch is historical data, not the intended current design.
+
 ---
 
 ## Related Docs
