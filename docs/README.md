@@ -56,6 +56,7 @@ Completed RCA and realtime work:
 - live incident feed for automatic incident refresh
 - incident drawer RCA card and stepper UI
 - AI explanation cards for Data Quality and Drift detail drawers
+- unified doctor-task RCA creation so new reports always have trace logs
 
 ---
 

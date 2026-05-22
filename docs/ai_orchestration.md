@@ -4,6 +4,12 @@ This document explains the AI root cause analysis system added this week.
 
 The goal of the orchestration layer is to convert failed monitoring evidence into a structured RCA report that users can read directly in the incident drawer.
 
+The important runtime rule now is:
+
+- the main validation pipeline does **not** persist RCA directly
+- it queues the doctor agent task
+- the doctor agent task runs the 4-step RCA flow, writes `agent_runs` / `agent_step_logs`, and then persists the final RCA incident report
+
 ---
 
 ## What It Does
@@ -13,7 +19,7 @@ For a monitored pipeline run, the AI layer:
 1. loads drift, schema, and data quality evidence
 2. asks the RCA model to reason about the likely cause
 3. parses the response into a structured report
-4. marks the report ready for the frontend
+4. persists the report during the reporting step so trace logs and RCA output stay in sync
 
 ---
 
@@ -24,6 +30,7 @@ For a monitored pipeline run, the AI layer:
 | `backend/fastapi/app/services/ai_orchestration/supervisor.py` | Main RCA graph and step definitions |
 | `backend/fastapi/app/services/ai/context_builder.py` | Builds run-specific monitoring context |
 | `backend/fastapi/app/tasks/ai_tasks.py` | Celery task that executes the doctor agent |
+| `backend/fastapi/app/services/incidents/rca_persistence.py` | Persists the final RCA incident payload |
 | `backend/fastapi/app/services/ai_orchestration/prompts.py` | RCA prompt builder |
 | `backend/fastapi/app/services/ai_orchestration/parser.py` | Structured output parsing |
 | `backend/fastapi/app/services/ai_orchestration/llm_client.py` | LLM provider integration |
@@ -68,7 +75,15 @@ The parser also guards against under-reporting by comparing parsed severity with
 
 ### Reporting
 
-The system creates the final RCA payload that is attached to the incident and later shown in the frontend.
+The system creates the final RCA payload and persists it to the incident during the doctor task's reporting step.
+
+That means a completed RCA now has:
+
+- a saved RCA report
+- an `AgentRun`
+- stored `AgentStepLog` rows
+
+from the same execution flow.
 
 ---
 
@@ -148,6 +163,8 @@ The incident drawer now follows the real RCA lifecycle:
 3. reveal the final RCA report only after the `Reporting` step finishes
 
 This prevents users from seeing a premature RCA card before persistence is complete.
+
+Because RCA creation is now routed through the doctor task, new incidents should no longer end up with a saved RCA report but no trace logs.
 
 ---
 

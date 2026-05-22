@@ -169,6 +169,20 @@ This keeps the page safe for production use:
 
 ---
 
+## RCA Handoff
+
+The Data Quality pipeline no longer writes the final RCA report directly.
+
+After validation, cleaned-data generation, prediction, and drift checks:
+
+1. the run is saved normally
+2. the backend queues the doctor agent task
+3. the doctor task generates RCA, trace logs, and the final incident report
+
+This keeps RCA persistence aligned with the incident trace shown in the drawer.
+
+---
+
 ## Related Files
 
 - `backend/fastapi/app/api/routes/data_quality.py`

@@ -13,6 +13,7 @@ from app.models.tenant import Tenant
 from app.utils.schema_utils import set_schema
 from app.services.ai.context_builder import build_pipeline_context
 from app.services.ai_orchestration.supervisor import run_root_cause_analysis
+from app.services.incidents import persist_root_cause_incident
 from app.models.pipeline_run import PipelineRun
 
 logger = get_task_logger(__name__)
@@ -260,6 +261,8 @@ def run_doctor_agent_task(
         )
         db.add(step_4)
         db.commit()
+
+        persist_root_cause_incident(db, pipeline_run_id, analysis_state)
 
         # ==========================================
         # COMPLETE AGENT RUN
