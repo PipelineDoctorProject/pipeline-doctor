@@ -11,6 +11,26 @@ The doctor task is now the single source of RCA creation for new runs, so the sa
 
 ---
 
+## Realtime Architecture Diagram
+
+```mermaid
+flowchart LR
+    A[Celery Doctor Task] --> B[(Redis Pub/Sub)]
+    B --> C[FastAPI WebSocket Endpoints]
+    C --> D[React Hooks]
+    D --> E[Incident Drawer Stepper]
+    D --> F[Incidents Page Live Refresh]
+```
+
+### What This Diagram Means
+
+- Celery produces live execution events.
+- Redis is used as the realtime bridge.
+- FastAPI subscribes to Redis and forwards events through WebSockets.
+- React listens through hooks and updates the UI immediately.
+
+---
+
 ## Why This Exists
 
 Without realtime updates:
@@ -60,6 +80,26 @@ Used by the incident drawer to watch one RCA execution.
 - `run_complete`
 - `run_failed`
 
+### Agent Trace WebSocket Flow
+
+```mermaid
+sequenceDiagram
+    participant W as Celery Worker
+    participant R as Redis channel agent_trace:{run_id}
+    participant F as FastAPI WS /ws/agent-trace/{run_id}
+    participant U as React useAgentWebSocket
+    participant S as AgentTraceStepper
+
+    W->>R: publish step_update
+    F->>R: subscribe
+    R-->>F: step_update event
+    F-->>U: websocket message
+    U-->>S: update step state
+    W->>R: publish run_complete / run_failed
+    R-->>F: terminal event
+    F-->>U: terminal websocket message
+```
+
 ### Incidents Feed
 
 `WS /ws/incidents`
@@ -72,6 +112,24 @@ Used by the incidents page to react to incident changes.
 - `ping`
 - `incident_created`
 - `incident_updated`
+
+### Incident Feed WebSocket Flow
+
+```mermaid
+sequenceDiagram
+    participant B as Backend Incident Service
+    participant R as Redis channel incidents
+    participant F as FastAPI WS /ws/incidents
+    participant U as React useIncidentsWebSocket
+    participant P as Incidents Page
+
+    B->>R: publish incident_created / incident_updated
+    F->>R: subscribe
+    R-->>F: incident event
+    F-->>U: websocket message
+    U-->>P: reload incidents
+    P-->>P: show toast / refresh rows
+```
 
 ---
 
@@ -106,6 +164,23 @@ Frontend hook receives event
 AgentTraceStepper updates live
 ```
 
+### Detailed RCA Trace Pipeline
+
+```mermaid
+flowchart TD
+    A[Validation + Drift Done] --> B[Queue run_doctor_agent_task]
+    B --> C[Create AgentRun]
+    C --> D[Detection Step]
+    D --> E[Publish step_update to Redis]
+    E --> F[FastAPI agent trace socket]
+    F --> G[useAgentWebSocket hook]
+    G --> H[AgentTraceStepper]
+    H --> I[User sees live progress]
+    D --> J[AI Reasoning]
+    J --> K[Parsing]
+    K --> L[Reporting]
+```
+
 ### Step Names
 
 | Step Index | Name |
@@ -131,6 +206,19 @@ FastAPI WebSocket forwards event
 Incidents page silently reloads data
         |
 UI updates and can show toast notifications
+```
+
+### Detailed Incident Refresh Pipeline
+
+```mermaid
+flowchart TD
+    A[Incident Created / Updated] --> B[publish_incident_event]
+    B --> C[Redis incidents channel]
+    C --> D[FastAPI websocket route]
+    D --> E[useIncidentsWebSocket]
+    E --> F[IncidentsPage refresh logic]
+    F --> G[Updated rows]
+    F --> H[Toast notification]
 ```
 
 ---
