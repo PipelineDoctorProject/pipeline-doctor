@@ -163,10 +163,12 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
       AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
+      AIRFLOW__WEBSERVER__WORKERS: "1"
       OPSSIGHT_API_URL: "http://api:8000"
       OPSSIGHT_MODEL_ID: "2"
       OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
@@ -202,10 +204,13 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
       AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
+      AIRFLOW__SCHEDULER__PARSING_PROCESSES: "1"
+      AIRFLOW__SCHEDULER__STANDALONE_DAG_PROCESSOR: "false"
       OPSSIGHT_API_URL: "http://api:8000"
       OPSSIGHT_MODEL_ID: "2"
       OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"

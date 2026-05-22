@@ -45,7 +45,7 @@ def build_auth_headers():
                 "password": OPSSIGHT_API_PASSWORD,
             },
             headers={"Accept": "application/json"},
-            timeout=30,
+            timeout=(15, 120),
         )
 
         if response.status_code != 200:
@@ -132,7 +132,7 @@ def push_to_opssight(**kwargs):
 
     with open(file_path, "rb") as f:
         files = {"file": (os.path.basename(file_path), f, "text/csv")}
-        response = requests.post(url, headers=headers, files=files, timeout=120)
+        response = requests.post(url, headers=headers, files=files, timeout=(30, 300))
 
     print(f"  -> HTTP Status: {response.status_code}")
 
