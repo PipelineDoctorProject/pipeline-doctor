@@ -115,7 +115,12 @@ async def validate_data(
 ):
     file_path = await save_upload(file)
 
-    result = run_data_quality_pipeline(db, model_id, file_path)
+    result = run_data_quality_pipeline(
+        db,
+        model_id,
+        file_path,
+        current_tenant_id=current_user.tenant_id,
+    )
 
     return result
 
@@ -128,7 +133,12 @@ async def validate_data_auto(
 ):
     file_path = await save_upload(file)
     match = infer_model_from_active_baselines(db, file_path)
-    result = run_data_quality_pipeline(db, match["model_id"], file_path)
+    result = run_data_quality_pipeline(
+        db,
+        match["model_id"],
+        file_path,
+        current_tenant_id=current_user.tenant_id,
+    )
 
     return {
         "matched_model_id": match["model_id"],

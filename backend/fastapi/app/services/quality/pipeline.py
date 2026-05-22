@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 import numpy
 from app.services.quality.baseline_service import get_active_baseline
@@ -87,7 +88,38 @@ def to_python_types(obj):
 # --------------------------------------------------
 # 🚀 MAIN PIPELINE
 # --------------------------------------------------
-def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
+def _resolve_doctor_tenant_id(
+    db: Session,
+    model_id: int,
+    current_tenant_id: str | None = None,
+):
+    if current_tenant_id:
+        return current_tenant_id
+
+    # Resolve from the shared public model registry instead of relying on the
+    # current tenant schema search_path.
+    tenant_id = db.execute(
+        text("SELECT tenant_id FROM public.ml_models WHERE id = :model_id"),
+        {"model_id": model_id},
+    ).scalar()
+
+    if tenant_id:
+        return tenant_id
+
+    model_record = (
+        db.query(MLModel)
+        .filter(MLModel.id == model_id)
+        .first()
+    )
+    return model_record.tenant_id if model_record else None
+
+
+def run_data_quality_pipeline(
+    db: Session,
+    model_id: int,
+    file_path: str,
+    current_tenant_id: str | None = None,
+):
 
     baseline = get_active_baseline(db, model_id)
 
@@ -268,12 +300,11 @@ def run_data_quality_pipeline(db: Session, model_id: int, file_path: str):
         root_cause_status = None
         try:
             print(f"Queueing doctor agent RCA for run {run_id}...")
-            model_record = (
-                db.query(MLModel)
-                .filter(MLModel.id == model_id)
-                .first()
+            tenant_id = _resolve_doctor_tenant_id(
+                db=db,
+                model_id=model_id,
+                current_tenant_id=current_tenant_id,
             )
-            tenant_id = model_record.tenant_id if model_record else None
             if not tenant_id:
                 raise Exception("Tenant id could not be resolved for the doctor agent task")
 
