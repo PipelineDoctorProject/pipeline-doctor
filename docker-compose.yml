@@ -1,0 +1,243 @@
+services:
+  api:
+    build:
+      context: ./backend/fastapi
+    image: pipeline-doctor-backend:local
+    container_name: pipeline-doctor-api
+    env_file:
+      - ./backend/fastapi/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_cleaned:/app/cleaned
+      - backend_mlartifacts:/app/mlartifacts
+    restart: unless-stopped
+
+  celery-worker:
+    image: pipeline-doctor-backend:local
+    container_name: pipeline-doctor-celery-worker
+    env_file:
+      - ./backend/fastapi/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    command: celery -A app.core.celery_app:celery worker -Q ai,scheduler,emails -l info
+    depends_on:
+      redis:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_cleaned:/app/cleaned
+      - backend_mlartifacts:/app/mlartifacts
+    restart: unless-stopped
+
+  celery-beat:
+    image: pipeline-doctor-backend:local
+    container_name: pipeline-doctor-celery-beat
+    env_file:
+      - ./backend/fastapi/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    command: celery -A app.core.celery_app:celery beat -l info --schedule /app/celerybeat/celerybeat-schedule
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - celerybeat_state:/app/celerybeat
+    restart: unless-stopped
+
+  mlflow:
+    image: pipeline-doctor-backend:local
+    container_name: pipeline-doctor-mlflow
+    env_file:
+      - ./backend/fastapi/.env
+    command: >
+      sh -c "mkdir -p /app/mlartifacts &&
+             mlflow server --backend-store-uri postgresql+psycopg2://mlflow:mlflow@mlflow-db/mlflow --default-artifact-root /app/mlartifacts --workers 1 --host 0.0.0.0 --port 5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - backend_mlartifacts:/app/mlartifacts
+    depends_on:
+      mlflow-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mlflow-db:
+    image: postgres:15
+    container_name: pipeline-doctor-mlflow-db
+    environment:
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow
+      POSTGRES_DB: mlflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "mlflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mlflow_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: pipeline-doctor-redis
+    command: redis-server --appendonly yes --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - backend_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-db:
+    image: postgres:15
+    container_name: pipeline-doctor-airflow-db
+    hostname: airflow-db
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  airflow-init:
+    image: apache/airflow:2.8.0
+    container_name: pipeline-doctor-airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
+      OPSSIGHT_API_URL: "http://api:8000"
+      OPSSIGHT_MODEL_ID: "2"
+      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
+      OPSSIGHT_API_PASSWORD: "1234"
+      OPSSIGHT_API_TOKEN: ""
+    command: >
+      bash -c "airflow db migrate &&
+               airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@opssight.ai ||
+               echo Airflow admin user already exists"
+    volumes:
+      - ./airflow-setup/dags:/opt/airflow/dags
+      - ./airflow-setup/data:/opt/airflow/data
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    restart: "no"
+
+  airflow-webserver:
+    image: apache/airflow:2.8.0
+    container_name: pipeline-doctor-airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
+      AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
+      AIRFLOW__WEBSERVER__WORKERS: "1"
+      OPSSIGHT_API_URL: "http://api:8000"
+      OPSSIGHT_MODEL_ID: "2"
+      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
+      OPSSIGHT_API_PASSWORD: "1234"
+      OPSSIGHT_API_TOKEN: ""
+    command: >
+      bash -c "rm -f /opt/airflow/airflow-webserver.pid &&
+               exec airflow webserver"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow-setup/dags:/opt/airflow/dags
+      - ./airflow-setup/data:/opt/airflow/data
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: apache/airflow:2.8.0
+    container_name: pipeline-doctor-airflow-scheduler
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
+      AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
+      AIRFLOW__SCHEDULER__PARSING_PROCESSES: "1"
+      AIRFLOW__SCHEDULER__STANDALONE_DAG_PROCESSOR: "false"
+      OPSSIGHT_API_URL: "http://api:8000"
+      OPSSIGHT_MODEL_ID: "2"
+      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
+      OPSSIGHT_API_PASSWORD: "1234"
+      OPSSIGHT_API_TOKEN: ""
+    command: scheduler
+    volumes:
+      - ./airflow-setup/dags:/opt/airflow/dags
+      - ./airflow-setup/data:/opt/airflow/data
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+    depends_on:
+      airflow-db:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  backend_uploads:
+  backend_cleaned:
+  backend_mlartifacts:
+  backend_redis_data:
+  celerybeat_state:
+  airflow_db_data:
+  mlflow_db_data:
+  airflow_logs:
+  airflow_plugins:

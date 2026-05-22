@@ -153,9 +153,11 @@ activemq-data/
 .venv
 env/
 venv/
+env1/
 ENV/
 env.bak/
 venv.bak/
+
 
 # Spyder project settings
 .spyderproject
@@ -166,6 +168,13 @@ venv.bak/
 
 # mkdocs documentation
 /site
+
+# MLflow
+*.db
+mlruns/
+mlartifacts/
+mlflow.db
+
 
 # mypy
 .mypy_cache/
@@ -216,3 +225,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+#ml
+mlartifacts
+mlfow.db
+mlflow_backup.db/backend/fastapi/mlflow.db
+mlflow_backup.db/backend/fastapi/mlflow.db
