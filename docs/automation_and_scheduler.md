@@ -4,6 +4,8 @@ This document explains the background automation added this week.
 
 The project now uses Celery, Redis, and Airflow together to keep monitoring and RCA execution automatic.
 
+New RCA creation is now centralized through the doctor task. The main validation pipeline queues the task, and the task itself persists the final RCA incident after writing the trace steps.
+
 ---
 
 ## What Was Added
@@ -13,6 +15,7 @@ The project now uses Celery, Redis, and Airflow together to keep monitoring and 
 - doctor RCA execution in background workers
 - Redis-backed task and realtime transport
 - Airflow ingestion path into the backend
+- unified RCA persistence through `run_doctor_agent_task`
 
 ---
 
@@ -37,6 +40,12 @@ Runs:
 - RCA doctor agent
 - scheduled monitoring jobs
 - email jobs
+
+The doctor agent is now responsible for:
+
+- creating `AgentRun`
+- writing `AgentStepLog`
+- persisting the final RCA incident/report
 
 ### Celery Beat
 
@@ -68,6 +77,8 @@ The periodic doctor-monitoring task:
 5. queues `run_doctor_agent_task(...)` only when needed
 
 This avoids duplicate RCA executions for the same latest run.
+
+In addition to the scheduled sweep, the main validation pipeline now also queues the doctor task immediately after drift processing for the current run. That gives new runs a trace-backed RCA without waiting for the next sweep.
 
 ---
 

@@ -7,6 +7,8 @@ The project now supports:
 - live RCA step updates while the doctor agent runs
 - automatic incident page refresh when incidents are created or updated
 
+The doctor task is now the single source of RCA creation for new runs, so the saved RCA report and the live trace come from the same flow.
+
 ---
 
 ## Why This Exists
@@ -89,6 +91,10 @@ This is important because Celery and FastAPI do not share memory. Redis carries 
 ## Live RCA Step Flow
 
 ```text
+Validation and drift finish
+        |
+Queue run_doctor_agent_task(...)
+        |
 Celery doctor task starts
         |
 Publish step_update to Redis
@@ -139,6 +145,8 @@ It now waits until:
 
 - the reporting step is `done`, or
 - the stored agent run clearly finished reporting
+
+For older runs created before the unified doctor-task flow, a saved RCA report may still exist without any trace logs. New runs should not have that mismatch.
 
 ### Dynamic Step Messaging
 
