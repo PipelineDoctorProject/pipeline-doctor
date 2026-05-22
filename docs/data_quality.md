@@ -1,148 +1,178 @@
 # Data Quality Checks
 
-The Data Quality layer is the first line of defense. It processes every incoming CSV file and validates it against the stored **Baseline** before allowing it to reach the ML model.
+The Data Quality layer is the first line of defense. It validates each incoming CSV against the active baseline before the batch is trusted for prediction, drift analysis, or RCA.
 
 ---
 
-## 🔄 Overall Flow
+## Overall Flow
 
-```
+```text
 Incoming CSV
-    ↓
-Load Active Baseline  ←─ (DB: baselines table)
-    ↓
-Schema Evolution Check  ←─ detects new/missing columns
-    ↓
-DataValidator runs 4 checks:
-   1. Type Validation
-   2. Null Ratio Check
-   3. Numeric Range Check
-   4. Categorical Value Check
-    ↓
-Store DataQualityFindings  ←─ (DB: data_quality_findings)
-    ↓
-Pass cleaned CSV to Prediction Layer
+    |
+Save uploaded file
+    |
+Load active baseline
+    |
+Schema evolution check
+    |
+Run validation rules
+    |
+Transform and align cleaned data
+    |
+Store DataQualityFindings
+    |
+Optionally trigger prediction, drift, and RCA
 ```
 
 ---
 
-## 📊 Baseline System
+## Baseline System
 
-A **Baseline** is a statistical profile extracted from your training/reference CSV. It acts as the "source of truth" for all future validation.
+A baseline is a stored reference profile created from a known-good dataset.
 
-### What gets stored per column?
+### What gets stored
+
 | Field | Example | Description |
 |---|---|---|
-| `schema` | `{"age": "int64"}` | Column name → data type map |
-| `profile.min` | `25` | Minimum observed value |
-| `profile.max` | `65` | Maximum observed value |
-| `profile.null_ratio` | `0.02` | % of nulls in training data |
-| `profile.unique_values` | `["A", "B", "C"]` | For categorical columns |
+| `schema` | `{"age": "int64"}` | Column name to data type map |
+| `profile.min` | `25` | Minimum observed numeric value |
+| `profile.max` | `65` | Maximum observed numeric value |
+| `profile.null_ratio` | `0.02` | Null percentage in baseline |
+| `profile.unique_values` | `["A", "B", "C"]` | Allowed values for categorical columns |
 
-### Baseline Versioning
-- Every new upload creates a new **version** (v1, v2, v3...).
-- The **first** upload is auto-approved and set as `active`.
-- Subsequent uploads start as `draft` and require manual approval.
-- Only **one** baseline can be `active` at a time per model.
+### Baseline versioning
 
-### API
-```
-POST /baseline/upload?model_id=1   ← Upload a CSV as baseline
-```
+- every upload creates a new version
+- the first baseline is auto-approved and active
+- later uploads start as draft
+- only one baseline can be active per model
 
 ---
 
-## 🧪 Check 1 — Schema Type Validation
+## Validation Rules
 
-**File:** `app/services/quality/validator.py → validate_schema()`
+### 1. Schema type validation
 
-Compares the data type of each column in the incoming CSV against the baseline schema.
+**File:** `backend/fastapi/app/services/quality/validator.py`
 
-| Scenario | Example | Result |
-|---|---|---|
-| Types match | Baseline: `int64`, CSV: `int64` | ✅ PASS |
-| Type mismatch | Baseline: `int64`, CSV: `object` | ❌ Schema Error logged |
-
-> Schema errors do **not** stop the pipeline. They are logged and the file continues processing.
-
----
-
-## 🧪 Check 2 — Null Ratio Validation
-
-**File:** `app/services/quality/validator.py → validate_nulls()`
-
-Calculates the percentage of `NaN` / `null` values per column.
-
-**Default Threshold:** `30%` (0.3)
-
-| Null % | Result |
-|---|---|
-| 0% – 30% | ✅ PASS |
-| > 30% | ❌ FAIL — Finding saved |
-
-**Example output:**
-```json
-{ "column": "age", "check": "null_ratio", "success": true, "details": "0.00 (threshold=0.3)" }
-```
-
----
-
-## 🧪 Check 3 — Numeric Range Validation
-
-**File:** `app/services/quality/validator.py → validate_numeric_ranges()`
-
-Checks that all numeric values in the CSV fall within the min-max range observed in the Baseline.
+Compares incoming column types with the baseline schema.
 
 | Scenario | Result |
 |---|---|
-| CSV range within baseline | ✅ PASS |
-| CSV has values outside baseline range | ❌ FAIL |
+| baseline type matches incoming type | pass |
+| type mismatch | failure stored as `schema_type_mismatch` |
 
-**Example output:**
-```json
-{ "column": "age", "check": "range", "success": false, "details": "29.0-55.0 vs 25.0-51.0" }
-```
-> Here, the production data has an age range of 29–55, but the baseline was 25–51. The maximum is out of range — `FAIL`.
+### 2. Null ratio validation
 
----
+Calculates the percentage of nulls per column.
 
-## 🧪 Check 4 — Categorical Value Validation
+| Null ratio | Result |
+|---|---|
+| within threshold | pass |
+| above threshold | failure stored as `null_ratio` |
 
-**File:** `app/services/quality/validator.py → validate_categorical()`
+### 3. Numeric range validation
 
-For columns with a known set of allowed values (e.g., `["A", "B", "C"]`), this check flags any "unseen" categories.
+Checks whether numeric values stay within the baseline min and max range.
 
 | Scenario | Result |
 |---|---|
-| All values are in the allowed set | ✅ PASS |
-| New value not in training data appears | ❌ FAIL — `unseen=['D']` |
+| value range stays inside baseline | pass |
+| values move outside baseline range | failure stored as `range` |
+
+### 4. Categorical value validation
+
+Checks whether incoming categorical values were already seen in the baseline.
+
+| Scenario | Result |
+|---|---|
+| all values are known | pass |
+| new category appears | failure stored as `categorical` |
 
 ---
 
-## 🔍 Schema Evolution Detection
+## Schema Evolution
 
-**File:** `app/services/quality/schema_handler.py`
+**File:** `backend/fastapi/app/services/quality/schema_handler.py`
 
-Before running the checks, the pipeline performs a schema diff:
+Before validation, the system compares the incoming schema with the active baseline:
 
-- **Extra columns**: Columns in the CSV that are **not** in the baseline. These are flagged as `schema_change_events` with status `pending`.
-- **Missing columns**: Columns in the baseline that are **missing** from the CSV. Filled with `None` to avoid crashes.
+- extra columns are flagged as schema change events
+- missing columns are added back as `None` to avoid crashes
+- the cleaned dataframe is reordered to match the baseline contract
 
-The pipeline then drops extra columns and reorders the CSV to match the baseline exactly before further processing.
+### Approval flow
 
-### Schema Approval Workflow
-1. A new column arrives → `schema_change_events` record created (status: `pending`).
-2. Admin reviews and **approves** via `POST /schema/approve/{id}`.
-3. Data Scientist retrains model → uploads new baseline including the new column.
-4. System now monitors the new column for drift.
+1. new or missing columns are detected
+2. a `schema_change_events` record is stored with `pending` status
+3. an admin can review and approve the change
+4. a new baseline can later be uploaded to make the change official
 
 ---
 
-## 💾 Storage
+## Cleaned Output
 
-All check results are saved to the **`data_quality_findings`** table with:
-- `run_id`: Which pipeline run triggered this.
-- `column_name`: Which column was checked.
-- `check_type`: `null_ratio`, `range`, or `categorical`.
-- `success`: `true` / `false`.
-- `details`: Human-readable explanation.
+**File:** `backend/fastapi/app/services/quality/pipeline.py`
+
+After validation and transformation, the pipeline writes a cleaned CSV:
+
+- saved as `cleaned/{run_id}.csv`
+- stored on the run as `cleaned_data_path`
+- later used by drift detection
+
+When running in Docker, `/app/cleaned` is backed by the Docker volume `backend_cleaned`, so the file may exist in the container volume instead of the local repo folder unless a bind mount is used.
+
+---
+
+## Stored Findings
+
+Failures are stored in `data_quality_findings` with fields such as:
+
+- `pipeline_run_id`
+- `column_name`
+- `check_type`
+- `success`
+- `details`
+- `created_at`
+
+These stored findings are the source of truth for the Data Quality page.
+
+---
+
+## AI Explanation Layer
+
+The Data Quality page now includes an optional explanation layer for a selected run.
+
+### What it does
+
+It does not decide whether a check failed. The deterministic validators already do that.
+
+Instead, it explains:
+
+- `Why This Matters`
+- `Suggested Remediation`
+
+### Endpoint
+
+`GET /data-quality/explain?run_id=<run_id>`
+
+### Behavior
+
+- if a live LLM is configured, the backend generates a short explanation from the stored failed findings
+- if no LLM is available, the backend returns a structured deterministic fallback explanation
+- the validation table and grouped issue cards remain the source of truth
+
+This keeps the page safe for production use:
+
+- rules detect
+- AI explains
+
+---
+
+## Related Files
+
+- `backend/fastapi/app/api/routes/data_quality.py`
+- `backend/fastapi/app/services/quality/pipeline.py`
+- `backend/fastapi/app/services/quality/validator.py`
+- `backend/fastapi/app/services/ai_explanations/insight_explainer.py`
+- `frontend/src/pages/data-quality/DataQualityPage.jsx`

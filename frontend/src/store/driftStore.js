@@ -13,3 +13,10 @@ export const getDriftFindingsByRun = async (runId) => {
   });
   return response.data;
 };
+
+export const getDriftExplanation = async (runId) => {
+  const response = await api.get("/drift-findings/explain", {
+    params: { run_id: runId },
+  });
+  return response.data;
+};

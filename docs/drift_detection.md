@@ -1,160 +1,152 @@
 # Drift Detection
 
-The Drift Detection layer runs after the Data Quality checks and ML predictions. Its job is to answer: **"Has the real-world data shifted away from what the model was trained on?"**
+The Drift Detection layer runs after validation and cleaned-data generation. Its job is to answer:
 
-There are two types of drift monitored:
-1. **Data Drift** — Did the input features change?
-2. **Concept Drift** — Did the model's output pattern change?
+**Has the current production batch shifted away from the baseline population?**
 
----
+There are two monitored categories:
 
-## 🔄 Execution Flow
-
-```
-Cleaned CSV (from Data Quality Layer)
-        ↓
-drift_service.py → run_drift_checks()
-        ↓
-  ┌─────────────────────┐
-  │ 1. Data Drift       │ ← data_drift.py   → PSI + KS per feature
-  │ 2. Concept Drift    │ ← concept_drift.py → PSI + KS on predictions
-  └─────────────────────┘
-        ↓
-save_drift_finding_and_incident()
-        ↓
-drift_findings table ← Always saved
-incidents table      ← Only if severity is "high" or "critical"
-```
+1. data drift on input features
+2. concept drift on prediction output
 
 ---
 
-## 📊 Test 1 — PSI (Population Stability Index)
+## Execution Flow
 
-**File:** `app/services/drift/metrics.py → calculate_psi()`
-
-PSI is the industry-standard test used in banking and finance to detect whether a population has changed.
-
-### How it works:
-1. Divide the **Baseline** data into 10 equal-frequency buckets (percentile bins).
-2. Calculate what % of the **Baseline** falls in each bucket (e.g., 10% per bucket).
-3. Calculate what % of the **Production** data falls in the same buckets.
-4. Measure the divergence between these two distributions.
-
-**Formula:**
+```text
+Cleaned CSV
+    |
+run_drift_checks(...)
+    |
+Data drift per feature
+Concept drift on predictions
+    |
+Store drift findings
+    |
+Create incidents for high/critical signals
 ```
-PSI = Σ (current_% - reference_%) × ln(current_% / reference_%)
-```
-
-### Score Interpretation:
-
-| PSI Score | Severity | Meaning |
-|---|---|---|
-| `< 0.1` | `low` | No significant drift. Model is stable. |
-| `0.1 – 0.2` | `medium` | Moderate drift. Monitor closely. |
-| `0.2 – 0.3` | `medium` | Warning. Revalidation recommended. |
-| `0.3 – 0.5` | `high` | Significant shift. Consider retraining. |
-| `> 0.5` | `critical` | Major shift. Model likely invalid. **Incident created.** |
-
-### Implementation Note:
-- Zero-values in bins are replaced with `0.0001` to avoid `log(0)` errors.
-- Breakpoints are deduplicated to handle constant-value columns.
 
 ---
 
-## 📊 Test 2 — KS Test (Kolmogorov-Smirnov)
+## Main Metrics
 
-**File:** `app/services/drift/metrics.py → calculate_ks()`
+### PSI
 
-The KS test is a non-parametric statistical test that measures the maximum distance between two cumulative distribution functions (CDFs).
+**File:** `backend/fastapi/app/services/drift/metrics.py`
 
-### How it works:
-- Compares the **shape** of the Baseline curve vs the Production curve.
-- Returns a `statistic` (distance) and a `p-value` (probability that the shift is random noise).
+Population Stability Index compares the baseline distribution with the current batch distribution.
 
-**Interpretation:**
-- **`ks_score`**: Distance between distributions (0.0 = identical, 1.0 = completely different).
-- **`ks_pvalue`**: If `< 0.05`, the shift is statistically significant (95% confidence it's real drift, not noise).
+Typical interpretation:
 
-### Combined Drift Score:
-The final `drift_score` is the **maximum** of PSI and KS scores:
+| PSI | Meaning |
+|---|---|
+| `< 0.1` | stable |
+| `0.1 - 0.2` | monitor |
+| `0.2 - 0.3` | warning |
+| `0.3 - 0.5` | significant drift |
+| `> 0.5` | major drift |
+
+### KS
+
+Also computed in `metrics.py`, the Kolmogorov-Smirnov test compares the shape of the cumulative distributions.
+
+The result includes:
+
+- `ks_score`
+- `ks_pvalue`
+
+### Final drift score
+
+The stored `drift_score` is the maximum of PSI and KS:
+
 ```python
 drift_score = max(psi_score, ks_score)
 ```
-This takes the worst-case signal from either test.
 
 ---
 
-## 📊 Test 3 — Concept Drift
+## Concept Drift
 
-**File:** `app/services/drift/concept_drift.py`
+**File:** `backend/fastapi/app/services/drift/concept_drift.py`
 
-Concept drift monitors the **AI's output**, not its input. Even if the input data looks fine, the model may start behaving differently.
+Concept drift is based on prediction behavior rather than only input features.
 
-### How it works:
-1. Retrieves the current run's **prediction logs** from the DB.
-2. Looks for a `target` / `prediction` column in the **Baseline** CSV.
-3. Runs **PSI + KS** on Baseline predictions vs Current predictions.
-4. Saves the result as a `concept_drift` finding.
+It compares:
 
-### Example:
-If your fraud model used to flag 5% of transactions as fraudulent, but now it flags 40%, that is concept drift — the model's "opinion" has shifted, even if the transactions look normal.
+- baseline prediction distribution
+- current run prediction distribution
+
+This catches cases where the model output changes even when the feature inputs look relatively normal.
 
 ---
 
-## 🚨 Severity Classification
+## Severity and Incidents
 
-**File:** `app/services/drift/utils.py → classify_drift_severity()`
+**File:** `backend/fastapi/app/services/drift/utils.py`
 
-| Drift Score | Severity |
+| Drift score | Severity |
 |---|---|
-| `< 0.2` | `low` |
-| `0.2 – 0.3` | `medium` |
-| `0.3 – 0.5` | `high` |
-| `>= 0.5` | `critical` |
+| `< 0.2` | low |
+| `0.2 - 0.3` | medium |
+| `0.3 - 0.5` | high |
+| `>= 0.5` | critical |
+
+High and critical drift findings can create incidents that later appear in the Incidents page and feed the RCA pipeline.
 
 ---
 
-## 🚨 Incident Escalation
+## Stored Findings
 
-**File:** `app/services/drift/storage.py`
+Each row in `drift_findings` contains:
 
-An **Incident** is automatically created if severity is `high` or `critical`.
+- `run_id`
+- `feature_name`
+- `psi_score`
+- `ks_score`
+- `ks_pvalue`
+- `drift_score`
+- `drift_detected`
+- `severity`
+- `created_at`
 
-| Drift Type | Incident Title |
-|---|---|
-| `data_drift` | `"Data Drift Detected: {feature_name}"` |
-| `concept_drift` | `"Concept Drift Detected: Prediction Output"` |
-
-The incident record contains:
-- `title`: Human-readable name.
-- `description`: PSI and KS scores with severity.
-- `failure_type`: `data_drift` or `concept_drift`.
-- `finding_id`: Link back to the specific `DriftFinding` row.
-- `severity`: `high` or `critical`.
-- `status`: Starts as `open`.
+These stored values are the source of truth for the Drift page.
 
 ---
 
-## 💾 Database Tables
+## AI Explanation Layer
 
-### `drift_findings`
-| Column | Type | Description |
-|---|---|---|
-| `run_id` | FK | Which pipeline run produced this |
-| `feature_name` | String | Column name (or `prediction_output`) |
-| `psi_score` | Float | PSI result |
-| `ks_score` | Float | KS statistic |
-| `ks_pvalue` | Float | KS p-value |
-| `drift_score` | Float | Max of PSI and KS |
-| `drift_detected` | Boolean | True if drift_score > 0.2 |
-| `severity` | String | `low` / `medium` / `high` / `critical` |
+The Drift page now includes an optional explanation layer for a selected run.
 
-### `incidents`
-| Column | Type | Description |
-|---|---|---|
-| `run_id` | FK | The pipeline run that triggered this |
-| `title` | String | Short description |
-| `description` | String | Full details with scores |
-| `failure_type` | String | `data_drift` or `concept_drift` |
-| `severity` | String | `high` or `critical` |
-| `status` | String | `open` (default) |
+### What it does
+
+It does not detect drift or override severity.
+
+Instead, it explains:
+
+- `Possible Business Interpretation`
+- `What Changed Compared To Baseline`
+
+### Endpoint
+
+`GET /drift-findings/explain?run_id=<run_id>`
+
+### Behavior
+
+- if a live LLM is configured, the backend summarizes the stored drift findings into business-friendly language
+- if no LLM is available, the backend returns a structured deterministic explanation
+- the metric table, PSI, KS, and drift score remain the source of truth
+
+This follows the same product rule as Data Quality:
+
+- metrics detect
+- AI explains
+
+---
+
+## Related Files
+
+- `backend/fastapi/app/api/routes/drift_findings.py`
+- `backend/fastapi/app/services/drift/drift_service.py`
+- `backend/fastapi/app/services/drift/metrics.py`
+- `backend/fastapi/app/services/ai_explanations/insight_explainer.py`
+- `frontend/src/pages/drift/DriftPage.jsx`

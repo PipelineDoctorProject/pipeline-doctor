@@ -1,205 +1,165 @@
 # API Reference
 
-Base URL: `http://127.0.0.1:8000`
+Base URL: `http://127.0.0.1:8000`  
 Interactive Docs: `http://127.0.0.1:8000/docs`
 
-All protected endpoints require a `Bearer` JWT token in the `Authorization` header.
+All protected endpoints require a Bearer JWT token in the `Authorization` header.
 
 ---
 
-## 🔐 Auth
+## Auth
 
 ### `POST /auth/signup`
-Register a new user account. Sends an OTP to the provided email.
 
-**Body:**
-```json
-{ "email": "user@example.com", "password": "yourpassword" }
-```
-**Response:** `{ "message": "OTP sent" }`
-
----
+Register a new user account and send OTP.
 
 ### `POST /auth/verify-otp`
-Verify the OTP received by email. Returns JWT tokens.
 
-**Body:**
-```json
-{ "email": "user@example.com", "otp": "482910" }
-```
-**Response:**
+Verify OTP and return JWT tokens.
+
+### `POST /auth/login`
+
+Login with email and password.
+
+**Response**
+
 ```json
 {
   "access_token": "...",
   "refresh_token": "...",
-  "onboarding_required": true
+  "token_type": "bearer"
 }
 ```
-
----
-
-### `POST /auth/login`
-Login with email and password. Returns JWT tokens.
-
-**Body:**
-```json
-{ "email": "user@example.com", "password": "yourpassword" }
-```
-**Response:**
-```json
-{ "access_token": "...", "refresh_token": "..." }
-```
-
----
 
 ### `POST /auth/refresh`
-Get a new access token using a valid refresh token.
 
-**Body:**
-```json
-{ "refresh_token": "..." }
-```
-**Response:**
-```json
-{ "access_token": "...", "token_type": "bearer" }
-```
+Refresh the access token from a valid refresh token.
 
 ---
 
-## 🏢 Onboarding & Team Management
-
-### `POST /onboarding/company`
-Create a company (Tenant). Assigns the user to an isolated PostgreSQL schema.
-
-**Body:**
-```json
-{ "company_name": "Acme Corp" }
-```
-**Response:**
-```json
-{
-  "message": "Company created",
-  "tenant_id": "uuid...",
-  "schema_name": "tenant_acme_corp_a1b2c3",
-  "access_token": "...",
-  "refresh_token": "..."
-}
-```
-
----
-
-### `POST /invite/send`
-*(Admin only)* Send an email invitation to a new team member.
-
-**Body:**
-```json
-{ "email": "newmember@example.com" }
-```
-
----
-
-### `POST /invite/accept`
-Accept a team invitation using the token from the invite email.
-
-**Query param:** `?token=<invite_token>`
-
----
-
-## 🤖 ML Models
+## ML Models
 
 ### `POST /ml-models/`
-Register a new ML model from MLflow.
 
-**Body:**
-```json
-{
-  "name": "My Production Model",
-  "version": "1.0",
-  "framework": "sklearn",
-  "mlflow_model_name": "PipelineDoctorDemoModel",
-  "mlflow_alias": "champion",
-  "mlflow_tracking_uri": "http://127.0.0.1:5000",
-  "expected_features": ["age", "salary", "bonus"]
-}
-```
-
----
+Register a new model from MLflow metadata.
 
 ### `GET /ml-models/`
-List all registered ML models.
+
+List registered models.
 
 ---
 
-## 📊 Baselines
+## Baselines
 
-### `POST /baseline/upload`
-Upload a CSV to create a Baseline profile for a model.
+### `POST /baseline/upload?model_id=<id>`
 
-**Query param:** `?model_id=1`
-**Body:** `multipart/form-data` with `file` field (CSV).
+Upload a CSV to create a baseline.
 
 ---
 
-## 🔍 Schema Management
+## Pipeline Runs
 
-### `GET /schema-change-events`
-List all detected schema evolution events (new/missing columns).
+### `GET /runs/`
 
----
+List pipeline runs.
 
-### `POST /schema/approve/{id}`
-Approve a schema change event, allowing the new column structure.
+### `GET /runs/{run_id}/download-cleaned`
 
----
-
-## 🏃 Pipeline Runs
-
-### `GET /runs`
-List all pipeline run records.
-
-**Response fields:** `id`, `model_id`, `status`, `baseline_version`, `cleaned_data_path`, `created_at`
+Download the cleaned CSV for a specific run.
 
 ---
 
-## 📈 Predictions
+## Data Quality
 
-### `GET /predictions`
-List all prediction logs.
+### `GET /data-quality/`
 
-**Response fields:** `id`, `run_id`, `input_data`, `prediction`, `created_at`
+List stored data quality findings.
 
----
+Optional query params:
 
-## 🌊 Drift Findings
+- `model_id`
 
-### `GET /drift-findings`
-List all drift analysis results.
+### `POST /data-quality/validate?model_id=<id>`
 
-**Response fields:** `id`, `run_id`, `feature_name`, `psi_score`, `ks_score`, `ks_pvalue`, `drift_score`, `drift_detected`, `severity`
+Upload a CSV and run validation for a specific model.
 
----
+### `POST /data-quality/validate-auto`
 
-## 🚨 Incidents
+Upload a CSV and let the backend infer the matching active model from the schema.
 
-### `GET /incidents`
-List all auto-generated production incidents.
+### `GET /data-quality/explain?run_id=<run_id>`
 
-**Response fields:** `id`, `run_id`, `title`, `description`, `failure_type`, `severity`, `status`, `created_at`
+Return the explanation layer for a specific run.
 
----
+This endpoint does not decide whether checks passed or failed. It summarizes stored failed findings into:
 
-## 🔎 Data Quality Findings
-
-### `GET /data-quality-findings`
-List all data quality check results.
-
-**Response fields:** `id`, `run_id`, `column_name`, `check_type`, `success`, `details`
+- `summary`
+- `Why This Matters`
+- `Suggested Remediation`
 
 ---
 
-## ❤️ Health
+## Drift Findings
+
+### `GET /drift-findings/`
+
+List stored drift findings.
+
+Optional query params:
+
+- `model_id`
+- `run_id`
+
+### `POST /drift-findings/backfill/{run_id}`
+
+Backfill drift findings for an existing run if they do not already exist.
+
+### `GET /drift-findings/explain?run_id=<run_id>`
+
+Return the explanation layer for a specific run.
+
+This endpoint does not decide whether drift exists. It explains stored findings using:
+
+- `summary`
+- `Possible Business Interpretation`
+- `What Changed Compared To Baseline`
+
+---
+
+## Incidents
+
+### `GET /incidents/`
+
+List stored incidents.
+
+### `GET /incidents/{incident_id}/agent-runs`
+
+List agent runs for one incident.
+
+### `GET /incidents/agent-runs/{agent_run_id}/steps`
+
+List stored step logs for an agent run.
+
+---
+
+## WebSockets
+
+### `WS /ws/agent-trace/{run_id}`
+
+Live RCA execution trace for the incident drawer.
+
+### `WS /ws/incidents`
+
+Live incident feed for automatic incident page refresh.
+
+---
+
+## Health
 
 ### `GET /health`
-Ping endpoint to verify the server is running.
 
-**Response:** `{ "status": "ok" }`
+Basic API health check.
+
+### `GET /health/celery`
+
+Celery and scheduler health status.

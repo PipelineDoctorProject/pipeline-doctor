@@ -55,6 +55,7 @@ Completed RCA and realtime work:
 - live WebSocket trace for RCA execution
 - live incident feed for automatic incident refresh
 - incident drawer RCA card and stepper UI
+- AI explanation cards for Data Quality and Drift detail drawers
 
 ---
 

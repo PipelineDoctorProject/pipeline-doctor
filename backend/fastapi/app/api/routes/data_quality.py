@@ -8,7 +8,9 @@ from app.services.quality.pipeline import run_data_quality_pipeline
 from app.models.data_quality import DataQualityFinding
 from app.models.baseline import Baseline
 from app.schemas.data_quality import DataQualityResponse
+from app.schemas.explanations import InsightExplanationResponse
 from app.services.quality.data_loader import load_dataset
+from app.services.ai_explanations import build_data_quality_explanation
 
 router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
 
@@ -134,3 +136,22 @@ async def validate_data_auto(
         "match_score": match["score"],
         "result": result,
     }
+
+
+@router.get("/explain", response_model=InsightExplanationResponse)
+def explain_data_quality_run(
+    run_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    findings = (
+        db.query(DataQualityFinding)
+        .filter(DataQualityFinding.pipeline_run_id == run_id)
+        .order_by(DataQualityFinding.id.asc())
+        .all()
+    )
+
+    if not findings:
+        raise HTTPException(status_code=404, detail="No data quality findings found for this run")
+
+    return build_data_quality_explanation(run_id, findings)
