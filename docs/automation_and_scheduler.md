@@ -8,6 +8,31 @@ New RCA creation is now centralized through the doctor task. The main validation
 
 ---
 
+## Automation Architecture Diagram
+
+```mermaid
+flowchart LR
+    A[Airflow DAG] --> B[FastAPI /data-quality/validate]
+    B --> C[Validation + Cleaning]
+    C --> D[Drift Detection]
+    D --> E[Queue Doctor Agent Task]
+    E --> F[Celery Worker]
+    G[Celery Beat] --> H[Doctor Monitoring Sweep]
+    H --> F
+    F --> I[(Redis)]
+    F --> J[(Database)]
+```
+
+### What This Diagram Means
+
+- Airflow is one entry path into the backend.
+- The backend pipeline performs deterministic monitoring first.
+- Doctor RCA is queued after that monitoring phase.
+- Celery Beat also triggers periodic sweeps as a safety automation layer.
+- Redis supports queue transport and heartbeat/tracing communication.
+
+---
+
 ## What Was Added
 
 - scheduled doctor-agent monitoring sweep
@@ -62,6 +87,20 @@ Used for:
 - Celery result backend
 - WebSocket Pub/Sub
 
+### Celery + Redis Role Diagram
+
+```mermaid
+flowchart TD
+    A[Celery Beat] --> B[Redis Broker]
+    C[FastAPI API] --> B
+    B --> D[Celery Worker]
+    D --> E[Doctor RCA]
+    D --> F[Heartbeat Task]
+    D --> G[Monitoring Sweep]
+    D --> H[Redis Pub/Sub]
+    H --> I[WebSocket Layer]
+```
+
 ---
 
 ## Doctor Monitoring Sweep
@@ -80,6 +119,18 @@ This avoids duplicate RCA executions for the same latest run.
 
 In addition to the scheduled sweep, the main validation pipeline now also queues the doctor task immediately after drift processing for the current run. That gives new runs a trace-backed RCA without waiting for the next sweep.
 
+### Monitoring Sweep Diagram
+
+```mermaid
+flowchart TD
+    A[trigger_doctor_monitoring] --> B[Load Tenants]
+    B --> C[Enter Tenant Schema]
+    C --> D[Find Latest Pipeline Run]
+    D --> E{Existing AgentRun?}
+    E -- Yes --> F[Skip Duplicate]
+    E -- No --> G[Queue run_doctor_agent_task]
+```
+
 ---
 
 ## Beat Heartbeat
@@ -92,6 +143,15 @@ Redis key:
 
 This is useful for operational health checks.
 
+### Heartbeat Flow Diagram
+
+```mermaid
+flowchart LR
+    A[Celery Beat Schedule] --> B[record_beat_heartbeat]
+    B --> C[Write payload to Redis]
+    C --> D[Backend health check can read heartbeat]
+```
+
 ---
 
 ## Airflow Integration
@@ -101,6 +161,24 @@ The Airflow DAG in `airflow-setup/dags/opssight_pipeline_dag.py`:
 1. loads the newest CSV from `airflow-setup/data/`
 2. authenticates with the OpsSight backend
 3. sends the file to `/data-quality/validate?model_id=...`
+
+### Airflow Execution Diagram
+
+```mermaid
+sequenceDiagram
+    participant A as Airflow load_data
+    participant D as Airflow push_to_opssight
+    participant B as FastAPI Backend
+    participant C as Validation Pipeline
+    participant W as Celery Worker
+
+    A->>D: pass CSV file path through XCom
+    D->>B: POST /auth/login
+    D->>B: POST /data-quality/validate
+    B->>C: run validation + cleaning + drift
+    C->>W: queue doctor agent RCA
+    W->>W: create AgentRun + step logs + final RCA
+```
 
 ### Request Timeout Behavior
 

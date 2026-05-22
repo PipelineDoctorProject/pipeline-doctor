@@ -10,6 +10,34 @@ PipelineDoctor is an MLOps observability platform for:
 
 ---
 
+## System Overview Diagram
+
+```mermaid
+flowchart LR
+    A[Airflow DAG] --> B[FastAPI API]
+    U[React Frontend] --> B
+    B --> D[(PostgreSQL / Supabase)]
+    B --> E[Celery Queue]
+    E --> F[Celery Worker]
+    F --> D
+    F --> G[(Redis Pub/Sub)]
+    H[FastAPI WebSocket Layer] --> G
+    U --> H
+    B --> I[MLflow]
+    F --> I
+```
+
+### Reading The Diagram
+
+- Airflow sends monitoring files into the backend.
+- FastAPI handles API requests from the frontend and Airflow.
+- Celery executes heavy RCA work in the background.
+- Redis is the bridge for queueing and live websocket events.
+- WebSocket endpoints stream realtime agent progress and incident updates to React.
+- MLflow is used for model loading and related inference integration.
+
+---
+
 ## Documentation Index
 
 | File | Description |
