@@ -1,4 +1,3 @@
-
 from .live_events import publish_incident_event
 from .rca_persistence import persist_root_cause_incident
 
