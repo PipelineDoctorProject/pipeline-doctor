@@ -17,6 +17,7 @@ from app.api.routes import (
     dashboard,
     tenant,
     agent_trace,
+    remediation,
 )
 
 from app.middleware.auth_middleware import AuthMiddleware
@@ -75,6 +76,7 @@ app.include_router(upload_baseline.router)
 app.include_router(schema.router)
 app.include_router(tenant.router)
 app.include_router(agent_trace.router)  # WS /ws/agent-trace/{run_id}
+app.include_router(remediation.router)
 
 
 # ==========================================

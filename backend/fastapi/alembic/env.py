@@ -24,7 +24,9 @@ from app.models import (
     Tenant,
     User,
     AgentRun,
-    AgentStepLog
+    AgentStepLog,
+    RemediationRun,
+    RemediationActionLog,
 )
 
 # Load environment variables

@@ -19,3 +19,8 @@ class Incident(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     run = relationship("PipelineRun", back_populates="incidents")
+    remediation_runs = relationship(
+        "RemediationRun",
+        back_populates="incident",
+        cascade="all, delete-orphan",
+    )

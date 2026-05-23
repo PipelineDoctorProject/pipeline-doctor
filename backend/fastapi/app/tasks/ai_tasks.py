@@ -13,8 +13,10 @@ from app.models.tenant import Tenant
 from app.utils.schema_utils import set_schema
 from app.services.ai.context_builder import build_pipeline_context
 from app.services.ai_orchestration.supervisor import run_root_cause_analysis
+from app.services.incidents.report_builder import build_final_incident_report
 from app.services.incidents import persist_root_cause_incident
 from app.models.pipeline_run import PipelineRun
+from app.services.remediation import decide_remediation
 
 logger = get_task_logger(__name__)
 
@@ -249,6 +251,15 @@ def run_doctor_agent_task(
 
         logger.info(f"Logged RCA result for AgentRun {agent_run.id}")
 
+        remediation_policy = decide_remediation(
+            analysis_state.get("report", {}),
+            analysis_state,
+        )
+        final_report = build_final_incident_report(
+            analysis_state,
+            remediation_policy,
+        )
+
         step_4 = AgentStepLog(
             agent_run_id=agent_run.id,
             step_index=3,
@@ -257,6 +268,9 @@ def run_doctor_agent_task(
             payload={
                 "run_id": pipeline_run_id,
                 "status": "completed",
+                "report_status": final_report.get("report_status"),
+                "action_type": remediation_policy.get("action_type"),
+                "requires_approval": remediation_policy.get("requires_approval"),
             }
         )
         db.add(step_4)
