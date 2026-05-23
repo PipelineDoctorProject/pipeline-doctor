@@ -1,7 +1,6 @@
 from celery import Celery
 from celery.schedules import crontab
 
-
 celery = Celery(
     "opssight",
     broker="redis://localhost:6379/0",
@@ -11,7 +10,6 @@ celery = Celery(
         "app.tasks.ai_tasks",
         "app.tasks.scheduler_tasks",
     ],
-    include=["app.tasks.email_tasks"],
 )
 
 celery.conf.update(
@@ -58,22 +56,4 @@ celery.conf.update(
             "schedule": crontab(minute="*/1"),  # change to 1 min for demo
         },
     },
-    timezone="UTC",
-    enable_utc=True,
-
-    task_track_started=True,
-
-    broker_connection_retry_on_startup=True,
-
-    task_routes={
-        "app.tasks.email_tasks.*": {
-            "queue": "emails"
-        }
-    },
-
-    worker_prefetch_multiplier=1,
-
-    task_acks_late=True,
-
-    task_reject_on_worker_lost=True,
 )
