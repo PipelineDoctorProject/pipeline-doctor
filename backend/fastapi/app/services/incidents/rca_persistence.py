@@ -3,7 +3,9 @@ import json
 from sqlalchemy.orm import Session
 
 from app.models.incident import Incident
+from app.services.incidents.report_builder import build_final_incident_report
 from app.services.incidents.live_events import publish_incident_event
+from app.services.remediation import decide_remediation
 from app.services.slack_service import send_incident_notification
 
 
@@ -13,6 +15,9 @@ def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
 
     if not failure_types:
         return None
+
+    remediation = decide_remediation(report, root_cause_state)
+    final_report = build_final_incident_report(root_cause_state, remediation)
 
     payload = {
         "title": report.get("title") or "AI Root Cause Analysis",
@@ -25,6 +30,8 @@ def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
         "issues": report.get("issues", []),
         "evidence": report.get("evidence", []),
         "reasoning": root_cause_state.get("llm_reasoning"),
+        "remediation": remediation,
+        "final_report": final_report,
     }
 
     incident = (

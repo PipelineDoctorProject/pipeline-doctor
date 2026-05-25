@@ -13,6 +13,7 @@ celery = Celery(
         "app.tasks.email_tasks",
         "app.tasks.ai_tasks",
         "app.tasks.scheduler_tasks",
+        "app.tasks.remediation_tasks",
     ],
 )
 
@@ -48,6 +49,7 @@ celery.conf.update(
     task_routes={
         "app.tasks.email_tasks.*": {"queue": "emails"},
         "app.tasks.ai_tasks.*": {"queue": "ai"},
+        "app.tasks.remediation_tasks.*": {"queue": "ai"},
         "app.tasks.scheduler_tasks.*": {"queue": "scheduler"},
     },
 

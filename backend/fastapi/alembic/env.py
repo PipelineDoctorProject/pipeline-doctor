@@ -25,6 +25,8 @@ from app.models import (
     User,
     AgentRun,
     AgentStepLog,
+    RemediationRun,
+    RemediationActionLog,
     SlackWorkspace,
     SlackChannel,
 )
