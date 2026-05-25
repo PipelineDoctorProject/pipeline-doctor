@@ -1,9 +1,34 @@
 import axios from "axios";
 
+const ACCESS_TOKEN_KEY = "opssight_access_token";
+
+export function setAccessToken(token) {
+  if (token) {
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
+  } else {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
+}
+
+function getAccessToken() {
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
 const api = axios.create({
   baseURL: "http://localhost:8000",
   withCredentials: true,
   timeout: 15000,
+});
+
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 api.interceptors.response.use(
@@ -41,7 +66,10 @@ api.interceptors.response.use(
     try {
 
       // try refresh token
-      await api.post("/auth/refresh");
+      const refreshResponse = await api.post("/auth/refresh");
+      if (refreshResponse.data?.access_token) {
+        setAccessToken(refreshResponse.data.access_token);
+      }
 
       // retry original request
       return api(originalRequest);
@@ -49,6 +77,7 @@ api.interceptors.response.use(
     } catch (refreshError) {
 
       console.log("Refresh token expired");
+      setAccessToken(null);
 
       // avoid redirect loop
       if (window.location.pathname !== "/login") {

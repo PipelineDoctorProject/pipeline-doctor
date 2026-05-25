@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "../api/client";
+import api, { setAccessToken } from "../api/client";
 import { inviteMemberApi } from "../api/invite";
 
 const useAuthStore = create((set, get) => ({
@@ -60,6 +60,8 @@ const useAuthStore = create((set, get) => ({
         otp,
       });
 
+      setAccessToken(response.data?.access_token);
+
       await get().me();
 
       set({
@@ -89,6 +91,8 @@ const useAuthStore = create((set, get) => ({
         password,
       });
 
+      setAccessToken(response.data?.access_token);
+
       await get().me();
 
       set({
@@ -99,6 +103,7 @@ const useAuthStore = create((set, get) => ({
 
     } catch (error) {
 
+      setAccessToken(null);
       set({
         loading: false,
       });
@@ -147,6 +152,7 @@ const useAuthStore = create((set, get) => ({
       console.log(error);
     }
 
+    setAccessToken(null);
     set({
       user: null,
       isAuthenticated: false,

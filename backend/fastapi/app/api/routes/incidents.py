@@ -98,7 +98,15 @@ def get_incident(
             detail="Incident not found"
         )
 
-    return incident
+    drift_finding = None
+    if incident.finding_type == "drift" and incident.finding_id:
+        drift_finding = (
+            db.query(DriftFinding)
+            .filter(DriftFinding.id == incident.finding_id)
+            .first()
+        )
+
+    return _serialize_incident(incident, drift_finding)
 
 
 @router.get("/{incident_id}/agent-runs")
@@ -160,6 +168,8 @@ def _serialize_incident(
 ):
 
     rca_report = _parse_rca_report(incident.description)
+    remediation = _parse_remediation(rca_report)
+    final_report = _parse_final_report(rca_report)
 
     return {
         "id": incident.id,
@@ -181,6 +191,8 @@ def _serialize_incident(
             rca_report
         ),
         "rca_report": rca_report,
+        "remediation": remediation,
+        "final_report": final_report,
     }
 
 
@@ -331,3 +343,23 @@ def _build_guidance(
             "before retraining or approving a new baseline."
         ),
     }
+
+
+def _parse_remediation(
+    rca_report: dict | None,
+):
+    if not rca_report:
+        return None
+
+    remediation = rca_report.get("remediation")
+    return remediation if isinstance(remediation, dict) else None
+
+
+def _parse_final_report(
+    rca_report: dict | None,
+):
+    if not rca_report:
+        return None
+
+    final_report = rca_report.get("final_report")
+    return final_report if isinstance(final_report, dict) else None

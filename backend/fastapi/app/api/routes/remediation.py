@@ -15,6 +15,7 @@ from app.models.pipeline_run import PipelineRun
 from app.models.remediation_run import RemediationRun
 from app.schemas.remediation import (
     RemediationActionLogResponse,
+    RemediationDecisionResponse,
     RemediationRunResponse,
 )
 from app.services.remediation import decide_remediation
@@ -35,6 +36,23 @@ def list_remediation_runs_for_incident(
         .order_by(RemediationRun.id.desc())
         .all()
     )
+
+
+@router.get("/{remediation_run_id}", response_model=RemediationRunResponse)
+def get_remediation_run(
+    remediation_run_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    remediation_run = (
+        db.query(RemediationRun)
+        .filter(RemediationRun.id == remediation_run_id)
+        .first()
+    )
+    if not remediation_run:
+        raise HTTPException(status_code=404, detail="Remediation run not found.")
+
+    return remediation_run
 
 
 @router.get("/{remediation_run_id}/logs", response_model=list[RemediationActionLogResponse])
@@ -59,7 +77,7 @@ def list_remediation_logs(
     )
 
 
-@router.post("/incident/{incident_id}/approve")
+@router.post("/incident/{incident_id}/approve", response_model=RemediationDecisionResponse)
 def approve_retraining_for_incident(
     incident_id: int,
     target_column: str,
@@ -101,6 +119,24 @@ def approve_retraining_for_incident(
         target_column=target_column,
     )
 
+    existing_active_run = (
+        db.query(RemediationRun)
+        .filter(
+            RemediationRun.incident_id == incident.id,
+            RemediationRun.status.in_(["approved", "running"]),
+        )
+        .order_by(RemediationRun.id.desc())
+        .first()
+    )
+    if existing_active_run:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "A remediation run is already active for this incident. "
+                f"Existing run id={existing_active_run.id}, status={existing_active_run.status}."
+            ),
+        )
+
     remediation_run = RemediationRun(
         incident_id=incident.id,
         run_id=pipeline_run.id,
@@ -125,7 +161,7 @@ def approve_retraining_for_incident(
     }
 
 
-@router.post("/{remediation_run_id}/reject")
+@router.post("/{remediation_run_id}/reject", response_model=RemediationDecisionResponse)
 def reject_remediation_run(
     remediation_run_id: int,
     db: Session = Depends(get_db),
@@ -141,6 +177,12 @@ def reject_remediation_run(
     )
     if not remediation_run:
         raise HTTPException(status_code=404, detail="Remediation run not found.")
+
+    if remediation_run.status in {"completed", "failed", "blocked", "rejected"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Remediation run is already in terminal status '{remediation_run.status}'.",
+        )
 
     remediation_run.status = "rejected"
     remediation_run.finished_at = datetime.utcnow()
