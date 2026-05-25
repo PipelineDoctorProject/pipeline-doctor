@@ -12,6 +12,7 @@ from app.models.agent_step_log import AgentStepLog
 from app.models.drift_finding import DriftFinding
 from app.models.pipeline_run import PipelineRun
 from app.services.incidents.live_events import publish_incident_event
+from app.services.slack_service import send_incident_notification
 
 from app.schemas.incident import (
     IncidentCreate,
@@ -46,6 +47,7 @@ def create_incident(
 
     db.refresh(incident)
     publish_incident_event("incident_created", incident)
+    send_incident_notification(db, tenant_id=current_user.tenant_id, incident=incident)
 
     return incident
 
