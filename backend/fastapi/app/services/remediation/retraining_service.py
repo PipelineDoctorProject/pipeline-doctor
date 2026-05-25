@@ -41,20 +41,21 @@ def run_retraining(
             f"Target column '{target_column}' was not found in cleaned data for run {run_id}."
         )
 
+    if not model_record.expected_features:
+        raise ValueError(
+            "Model expected_features is empty. Configure the model feature list before approving retraining."
+        )
+
     feature_columns = [
         column
-        for column in (model_record.expected_features or [])
+        for column in model_record.expected_features
         if column in df.columns and column != target_column
     ]
-    if not feature_columns:
-        feature_columns = [
-            column
-            for column in df.columns
-            if column != target_column
-        ]
 
     if not feature_columns:
-        raise ValueError("No feature columns are available for retraining.")
+        raise ValueError(
+            "No configured feature columns are available in the cleaned dataset for retraining."
+        )
 
     X = df[feature_columns].copy()
     y = df[target_column].copy()
