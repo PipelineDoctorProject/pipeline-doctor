@@ -20,6 +20,13 @@ class RemediationRunResponse(BaseModel):
     created_at: datetime
 
 
+class RemediationDecisionResponse(BaseModel):
+    id: int
+    status: str
+    action_type: str | None = None
+    message: str
+
+
 class RemediationActionLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

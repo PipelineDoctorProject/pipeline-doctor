@@ -1,17 +1,21 @@
 from datetime import datetime
 import json
+import os
 
 from fastapi import APIRouter, Depends, HTTPException
+import pandas as pd
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies.auth import require_tenant_user
 from app.models.incident import Incident
+from app.models.ml_model import MLModel
 from app.models.remediation_action_log import RemediationActionLog
 from app.models.pipeline_run import PipelineRun
 from app.models.remediation_run import RemediationRun
 from app.schemas.remediation import (
     RemediationActionLogResponse,
+    RemediationDecisionResponse,
     RemediationRunResponse,
 )
 from app.services.remediation import decide_remediation
@@ -32,6 +36,23 @@ def list_remediation_runs_for_incident(
         .order_by(RemediationRun.id.desc())
         .all()
     )
+
+
+@router.get("/{remediation_run_id}", response_model=RemediationRunResponse)
+def get_remediation_run(
+    remediation_run_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    remediation_run = (
+        db.query(RemediationRun)
+        .filter(RemediationRun.id == remediation_run_id)
+        .first()
+    )
+    if not remediation_run:
+        raise HTTPException(status_code=404, detail="Remediation run not found.")
+
+    return remediation_run
 
 
 @router.get("/{remediation_run_id}/logs", response_model=list[RemediationActionLogResponse])
@@ -56,7 +77,7 @@ def list_remediation_logs(
     )
 
 
-@router.post("/incident/{incident_id}/approve")
+@router.post("/incident/{incident_id}/approve", response_model=RemediationDecisionResponse)
 def approve_retraining_for_incident(
     incident_id: int,
     target_column: str,
@@ -74,6 +95,10 @@ def approve_retraining_for_incident(
     if not pipeline_run:
         raise HTTPException(status_code=404, detail="Pipeline run not found.")
 
+    model_record = db.query(MLModel).filter(MLModel.id == pipeline_run.model_id).first()
+    if not model_record:
+        raise HTTPException(status_code=404, detail="ML model not found for remediation.")
+
     failure_types = _extract_failure_types(incident.description)
     policy = decide_remediation(
         {
@@ -86,6 +111,30 @@ def approve_retraining_for_incident(
         raise HTTPException(
             status_code=400,
             detail=policy.get("reason") or "This incident is not eligible for retraining.",
+        )
+
+    _validate_retraining_preconditions(
+        pipeline_run=pipeline_run,
+        model_record=model_record,
+        target_column=target_column,
+    )
+
+    existing_active_run = (
+        db.query(RemediationRun)
+        .filter(
+            RemediationRun.incident_id == incident.id,
+            RemediationRun.status.in_(["approved", "running"]),
+        )
+        .order_by(RemediationRun.id.desc())
+        .first()
+    )
+    if existing_active_run:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "A remediation run is already active for this incident. "
+                f"Existing run id={existing_active_run.id}, status={existing_active_run.status}."
+            ),
         )
 
     remediation_run = RemediationRun(
@@ -112,7 +161,7 @@ def approve_retraining_for_incident(
     }
 
 
-@router.post("/{remediation_run_id}/reject")
+@router.post("/{remediation_run_id}/reject", response_model=RemediationDecisionResponse)
 def reject_remediation_run(
     remediation_run_id: int,
     db: Session = Depends(get_db),
@@ -128,6 +177,12 @@ def reject_remediation_run(
     )
     if not remediation_run:
         raise HTTPException(status_code=404, detail="Remediation run not found.")
+
+    if remediation_run.status in {"completed", "failed", "blocked", "rejected"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Remediation run is already in terminal status '{remediation_run.status}'.",
+        )
 
     remediation_run.status = "rejected"
     remediation_run.finished_at = datetime.utcnow()
@@ -151,3 +206,39 @@ def _extract_failure_types(description: str) -> list[str]:
         return []
 
     return payload.get("failure_types") or []
+
+
+def _validate_retraining_preconditions(
+    pipeline_run: PipelineRun,
+    model_record: MLModel,
+    target_column: str,
+) -> None:
+    if not pipeline_run.cleaned_data_path or not os.path.exists(pipeline_run.cleaned_data_path):
+        raise HTTPException(
+            status_code=400,
+            detail="Cleaned data is not available for this run, so retraining cannot be approved.",
+        )
+
+    if not model_record.expected_features:
+        raise HTTPException(
+            status_code=400,
+            detail="This model does not have expected_features configured, so retraining is blocked until the feature list is defined.",
+        )
+
+    df = pd.read_csv(pipeline_run.cleaned_data_path, nrows=5)
+    if target_column not in df.columns:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target column '{target_column}' was not found in the cleaned dataset.",
+        )
+
+    available_features = [
+        column
+        for column in model_record.expected_features
+        if column in df.columns and column != target_column
+    ]
+    if not available_features:
+        raise HTTPException(
+            status_code=400,
+            detail="None of the configured expected_features are available in the cleaned dataset for retraining.",
+        )

@@ -16,7 +16,6 @@ from app.services.auth.auth_service import (
     refresh_access_token,
     logout_user
 )
-from app.config.settings import get_auth_cookie_settings
 
 router = APIRouter(
     prefix="/auth",
@@ -24,7 +23,17 @@ router = APIRouter(
 )
 
 
-AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
+def _cookie_settings(request: Request) -> dict:
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    scheme = (forwarded_proto or request.url.scheme or "").lower()
+    secure = scheme == "https"
+
+    return {
+        "httponly": True,
+        "secure": secure,
+        "samesite": "none" if secure else "lax",
+        "path": "/",
+    }
 
 
 # ======================================
@@ -49,6 +58,7 @@ def signup_route(
 @router.post("/verify-otp")
 def verify_otp_route(
     data: VerifyOTPRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -59,23 +69,28 @@ def verify_otp_route(
         otp=data.otp
     )
 
+    cookie_options = _cookie_settings(request)
+
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
         max_age=60 * 30,
-        **AUTH_COOKIE_SETTINGS,
+        **cookie_options,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
         max_age=60 * 60 * 24 * 7,
-        **AUTH_COOKIE_SETTINGS,
+        **cookie_options,
     )
 
     return {
         "message": "OTP verified",
-        "onboarding_required": result["onboarding_required"]
+        "onboarding_required": result["onboarding_required"],
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "token_type": "bearer",
     }
 
 
@@ -85,6 +100,7 @@ def verify_otp_route(
 @router.post("/login")
 def login_route(
     data: LoginRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -95,18 +111,20 @@ def login_route(
         password=data.password
     )
 
+    cookie_options = _cookie_settings(request)
+
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
         max_age=60 * 30,
-        **AUTH_COOKIE_SETTINGS,
+        **cookie_options,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
         max_age=60 * 60 * 24 * 7,
-        **AUTH_COOKIE_SETTINGS,
+        **cookie_options,
     )
 
     return {
@@ -144,11 +162,13 @@ def refresh_token_route(
         key="access_token",
         value=result["access_token"],
         max_age=60 * 30,
-        **AUTH_COOKIE_SETTINGS,
+        **_cookie_settings(request),
     )
 
     return {
-        "message": "Token refreshed"
+        "message": "Token refreshed",
+        "access_token": result["access_token"],
+        "token_type": result["token_type"],
     }
 
 # ======================================
