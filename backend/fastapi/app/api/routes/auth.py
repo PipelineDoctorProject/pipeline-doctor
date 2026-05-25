@@ -16,11 +16,15 @@ from app.services.auth.auth_service import (
     refresh_access_token,
     logout_user
 )
+from app.config.settings import get_auth_cookie_settings
 
 router = APIRouter(
     prefix="/auth",
     tags=["Auth"]
 )
+
+
+AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
 
 
 # ======================================
@@ -58,21 +62,15 @@ def verify_otp_route(
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 60 * 24 * 7
+        max_age=60 * 60 * 24 * 7,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     return {
@@ -100,21 +98,15 @@ def login_route(
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 60 * 24 * 7
+        max_age=60 * 60 * 24 * 7,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     return {
@@ -151,11 +143,8 @@ def refresh_token_route(
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     return {

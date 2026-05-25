@@ -17,11 +17,15 @@ from app.schemas.onboarding import (
 from app.services.auth.onboarding_service import (
     create_company
 )
+from app.config.settings import get_auth_cookie_settings
 
 router = APIRouter(
     prefix="/onboarding",
     tags=["Onboarding"]
 )
+
+
+AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
 
 
 @router.post("/company")
@@ -50,21 +54,15 @@ def create_company_route(
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 60 * 24 * 7
+        max_age=60 * 60 * 24 * 7,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     return {

@@ -21,11 +21,15 @@ from app.services.auth.invite_service import (
 from app.services.auth.accept_invite_service import (
     accept_invite
 )
+from app.config.settings import get_auth_cookie_settings
 
 router = APIRouter(
     prefix="/invite",
     tags=["Invite"]
 )
+
+
+AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
 
 
 # ==========================================
@@ -78,21 +82,15 @@ def accept_invite_route(
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 60 * 24 * 7
+        max_age=60 * 60 * 24 * 7,
+        **AUTH_COOKIE_SETTINGS,
     )
 
     return {
