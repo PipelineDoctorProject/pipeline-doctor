@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.drift_finding import DriftFinding
 from app.models.incident import Incident
+from app.services.slack_service import send_incident_notification
 
 def save_drift_finding_and_incident(
     db: Session, 
@@ -47,5 +48,7 @@ def save_drift_finding_and_incident(
             severity=severity
         )
         db.add(incident)
+        db.flush()
+        send_incident_notification(db, tenant_id=None, incident=incident)
 
     return incident

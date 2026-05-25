@@ -28,6 +28,8 @@ from app.models import (
     AgentStepLog,
     RemediationRun,
     RemediationActionLog,
+    SlackWorkspace,
+    SlackChannel,
 )
 
 # Load environment variables

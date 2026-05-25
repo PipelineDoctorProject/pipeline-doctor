@@ -53,6 +53,11 @@ const navItems = [
     icon: FileCode2,
     path: "/schemas",
   },
+  {
+    label: "Slack",
+    icon: Settings,
+    path: "/integrations/slack",
+  },
 ];
 
 export default function Sidebar() {
