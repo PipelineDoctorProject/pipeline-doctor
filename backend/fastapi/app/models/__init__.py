@@ -10,6 +10,8 @@ from app.models.baseline import Baseline
 from app.models.schema_change_event import SchemaChangeEvent
 from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
+from app.models.slack_workspace import SlackWorkspace
+from app.models.slack_channel import SlackChannel
 
 __all__ = [
     "MLModel",
@@ -23,5 +25,7 @@ __all__ = [
     "Baseline",
     "SchemaChangeEvent",
     "AgentRun",
-    "AgentStepLog"
+    "AgentStepLog",
+    "SlackWorkspace",
+    "SlackChannel",
 ]

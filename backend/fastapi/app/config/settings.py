@@ -37,6 +37,14 @@ LOCAL_MLFLOW_URIS = {
     "http://127.0.0.1:5000",
     "http://localhost:5000",
 }
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+SLACK_CLIENT_ID = os.getenv("SLACK_CLIENT_ID")
+SLACK_CLIENT_SECRET = os.getenv("SLACK_CLIENT_SECRET")
+SLACK_REDIRECT_URI = os.getenv("SLACK_REDIRECT_URI")
+SLACK_BOT_SCOPES = os.getenv(
+    "SLACK_BOT_SCOPES",
+    "chat:write,channels:read,groups:read",
+)
 
 
 def resolve_mlflow_tracking_uri(configured_uri: str | None = None) -> str:
