@@ -22,6 +22,7 @@ import ModelsPage from "./pages/models/Modelspage";
 import OnboardingPage from "./pages/onboarding/Onboarding";
 import PipelinesPage from "./pages/pipelines/PipelinesPage";
 import SchemaPage from "./pages/schema/Schema";
+import SlackPage from "./pages/integrations/SlackPage";
 
 export default function App() {
   const me = useAuthStore((state) => state.me);
@@ -111,6 +112,7 @@ export default function App() {
           <Route path="/drift" element={<DriftPage />} />
           <Route path="/models" element={<ModelsPage />} />
           <Route path="/schemas" element={<SchemaPage />} />
+          <Route path="/integrations/slack" element={<SlackPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

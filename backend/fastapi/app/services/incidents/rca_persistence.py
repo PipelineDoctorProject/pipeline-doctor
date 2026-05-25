@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.incident import Incident
 from app.services.incidents.live_events import publish_incident_event
+from app.services.slack_service import send_incident_notification
 
 
 def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
@@ -55,4 +56,5 @@ def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
     db.commit()
     db.refresh(incident)
     publish_incident_event("incident_updated", incident)
+    send_incident_notification(db, tenant_id=None, incident=incident)
     return incident

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
+from app.config.settings import FRONTEND_URL
 
 from app.api.routes import (
     health,
@@ -17,6 +18,7 @@ from app.api.routes import (
     dashboard,
     tenant,
     agent_trace,
+    slack,
 )
 
 from app.middleware.auth_middleware import AuthMiddleware
@@ -44,7 +46,7 @@ from app.api.routes import (health,
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173"
+        FRONTEND_URL
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -75,6 +77,7 @@ app.include_router(upload_baseline.router)
 app.include_router(schema.router)
 app.include_router(tenant.router)
 app.include_router(agent_trace.router)  # WS /ws/agent-trace/{run_id}
+app.include_router(slack.router)
 
 
 # ==========================================
