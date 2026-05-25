@@ -7,15 +7,20 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.dependencies.auth import require_tenant_user
 from app.models.incident import Incident
+from app.models.remediation_action_log import RemediationActionLog
 from app.models.pipeline_run import PipelineRun
 from app.models.remediation_run import RemediationRun
+from app.schemas.remediation import (
+    RemediationActionLogResponse,
+    RemediationRunResponse,
+)
 from app.services.remediation import decide_remediation
 from app.tasks.remediation_tasks import run_remediation_task
 
 router = APIRouter(prefix="/remediation", tags=["Remediation"])
 
 
-@router.get("/incident/{incident_id}")
+@router.get("/incident/{incident_id}", response_model=list[RemediationRunResponse])
 def list_remediation_runs_for_incident(
     incident_id: int,
     db: Session = Depends(get_db),
@@ -25,6 +30,28 @@ def list_remediation_runs_for_incident(
         db.query(RemediationRun)
         .filter(RemediationRun.incident_id == incident_id)
         .order_by(RemediationRun.id.desc())
+        .all()
+    )
+
+
+@router.get("/{remediation_run_id}/logs", response_model=list[RemediationActionLogResponse])
+def list_remediation_logs(
+    remediation_run_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    remediation_run = (
+        db.query(RemediationRun)
+        .filter(RemediationRun.id == remediation_run_id)
+        .first()
+    )
+    if not remediation_run:
+        raise HTTPException(status_code=404, detail="Remediation run not found.")
+
+    return (
+        db.query(RemediationActionLog)
+        .filter(RemediationActionLog.remediation_run_id == remediation_run_id)
+        .order_by(RemediationActionLog.created_at.asc())
         .all()
     )
 
