@@ -142,7 +142,9 @@ services:
       OPSSIGHT_API_PASSWORD: "1234"
       OPSSIGHT_API_TOKEN: ""
     command: >
-      bash -c "airflow db migrate &&
+      bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
+               until pg_isready -h airflow-db -U airflow >/dev/null 2>&1; do echo 'Waiting for airflow-db readiness...'; sleep 2; done &&
+               airflow db migrate &&
                airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@opssight.ai ||
                echo Airflow admin user already exists"
     volumes:
@@ -164,6 +166,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_RECYCLE: "300"
       AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -175,7 +178,9 @@ services:
       OPSSIGHT_API_PASSWORD: "1234"
       OPSSIGHT_API_TOKEN: ""
     command: >
-      bash -c "rm -f /opt/airflow/airflow-webserver.pid &&
+      bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
+               until pg_isready -h airflow-db -U airflow >/dev/null 2>&1; do echo 'Waiting for airflow-db readiness...'; sleep 2; done &&
+               rm -f /opt/airflow/airflow-webserver.pid &&
                exec airflow webserver"
     ports:
       - "8080:8080"
@@ -205,6 +210,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_RECYCLE: "300"
       AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -216,7 +222,10 @@ services:
       OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
       OPSSIGHT_API_PASSWORD: "1234"
       OPSSIGHT_API_TOKEN: ""
-    command: scheduler
+    command: >
+      bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
+               until pg_isready -h airflow-db -U airflow >/dev/null 2>&1; do echo 'Waiting for airflow-db readiness...'; sleep 2; done &&
+               exec airflow scheduler"
     volumes:
       - ./airflow-setup/dags:/opt/airflow/dags
       - ./airflow-setup/data:/opt/airflow/data
