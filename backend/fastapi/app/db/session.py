@@ -22,7 +22,19 @@ DATABASE_URL = URL.create(
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"sslmode": "require"},
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_timeout=10,
+    pool_size=5,
+    max_overflow=5,
+    connect_args={
+        "sslmode": "require",
+        "connect_timeout": 5,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+    },
 )
 
 SessionLocal = sessionmaker(
