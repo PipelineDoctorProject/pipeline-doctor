@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.schema_change_event import SchemaChangeEvent
 from app.dependencies.auth import require_tenant_user
+from app.services.access_control import require_accessible_model
 
 
 router = APIRouter(prefix="/schema", tags=["Schema Evolution"])
@@ -10,6 +11,8 @@ router = APIRouter(prefix="/schema", tags=["Schema Evolution"])
 
 @router.get("/pending/{model_id}")
 def get_pending_events(model_id: int, db: Session = Depends(get_db), current_user=Depends(require_tenant_user)):
+    require_accessible_model(db, model_id, current_user.tenant_id)
+
     events = (
         db.query(SchemaChangeEvent)
         .filter(

@@ -125,12 +125,44 @@ const useAuthStore = create((set, get) => ({
       }
     );
 
-    await get().me();
+    setAccessToken(response.data?.access_token);
 
-    set({
+    const workspace = {
+      tenant_id: response.data?.tenant_id,
+      workspace_name: response.data?.workspace_name || company_name,
+      schema_name: response.data?.schema_name,
+    };
+
+    set((state) => ({
       loading: false,
       onboardingStep: 2,
-    });
+      isAuthenticated: true,
+      checkingAuth: false,
+      workspace,
+      dashboardData: {
+        ...(state.dashboardData || {}),
+        user: state.user || state.dashboardData?.user || null,
+        workspace,
+        is_onboarded: true,
+      },
+    }));
+
+    const dashboardContext = await get().me();
+
+    if (!dashboardContext) {
+      set((state) => ({
+        user: state.user || state.dashboardData?.user || null,
+        isAuthenticated: true,
+        checkingAuth: false,
+        workspace,
+        dashboardData: {
+          ...(state.dashboardData || {}),
+          user: state.user || state.dashboardData?.user || null,
+          workspace,
+          is_onboarded: true,
+        },
+      }));
+    }
 
     return response.data;
 

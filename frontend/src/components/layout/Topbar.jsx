@@ -11,8 +11,11 @@ export default function Topbar() {
   const [models, setModels] = useState([]);
   const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
   const setSelectedModelId = useSelectedModelStore((state) => state.setSelectedModelId);
+  const hydrateSelectionScope = useSelectedModelStore(
+    (state) => state.hydrateSelectionScope,
+  );
 
-  // const user = dashboardData?.user
+  const user = dashboardData?.user;
   const workspace = dashboardData?.workspace;
   const selectedModel = useMemo(
     () => models.find((model) => String(model.id) === String(selectedModelId)),
@@ -20,19 +23,34 @@ export default function Topbar() {
   );
 
   useEffect(() => {
+    const scope = workspace?.tenant_id
+      ? `${workspace.tenant_id}:${user?.id || "anonymous"}`
+      : null;
+    hydrateSelectionScope(scope);
+  }, [workspace?.tenant_id, user?.id, hydrateSelectionScope]);
+
+  useEffect(() => {
     let isMounted = true;
 
     getModels()
       .then((data) => {
         if (!isMounted) return;
-        setModels(data || []);
+        const nextModels = data || [];
+        setModels(nextModels);
+
+        if (
+          selectedModelId !== "all" &&
+          !nextModels.some((model) => String(model.id) === String(selectedModelId))
+        ) {
+          setSelectedModelId("all");
+        }
       })
       .catch((error) => console.log(error));
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedModelId, setSelectedModelId]);
   
   return (
     <header className="flex h-[80px] items-center justify-between border-b border-black/[0.05] bg-white/80 px-8 backdrop-blur-xl">
@@ -89,7 +107,7 @@ export default function Topbar() {
             <p className="text-[13px] font-medium text-[#111827]">{workspace?.workspace_name}</p>
 
             <p className="max-w-[140px] truncate text-[11px] text-gray-500">
-              {selectedModel ? selectedModel.name : "Workspace Admin"}
+              {selectedModel ? selectedModel.name : "All models"}
             </p>
           </div>
 
