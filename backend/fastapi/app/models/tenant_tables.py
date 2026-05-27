@@ -1,5 +1,6 @@
 from app.models.pipeline_run import PipelineRun
 from app.models.prediction_log import PredictionLog
+from app.models.incident_group import IncidentGroup
 from app.models.incident import Incident
 from app.models.drift_finding import DriftFinding
 from app.models.data_quality import DataQualityFinding
@@ -15,6 +16,7 @@ TENANT_MODELS = [
     MLModel,
     PipelineRun,
     PredictionLog,
+    IncidentGroup,
     Incident,
     DriftFinding,
     DataQualityFinding,

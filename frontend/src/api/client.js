@@ -36,7 +36,7 @@ api.interceptors.response.use(
 
   async (error) => {
 
-    const originalRequest = error.config;
+    const originalRequest = error.config || {};
 
     // routes that should NEVER trigger refresh
     const excludedRoutes = [
@@ -48,6 +48,12 @@ api.interceptors.response.use(
 
     // stop if not 401
     if (error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // allow callers like /dashboard/me on the login page to fail quietly
+    if (originalRequest.skipAuthRefresh) {
+      setAccessToken(null);
       return Promise.reject(error);
     }
 

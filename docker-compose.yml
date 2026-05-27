@@ -4,6 +4,9 @@ services:
       context: ./backend/fastapi
     image: pipeline-doctor-backend:local
     container_name: pipeline-doctor-api
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     env_file:
       - ./backend/fastapi/.env
     environment:
@@ -28,12 +31,15 @@ services:
   celery-worker:
     image: pipeline-doctor-backend:local
     container_name: pipeline-doctor-celery-worker
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     env_file:
       - ./backend/fastapi/.env
     environment:
       REDIS_URL: redis://redis:6379/0
       MLFLOW_TRACKING_URI: http://mlflow:5000
-    command: celery -A app.core.celery_app:celery worker -Q ai,scheduler,emails -l info
+    command: celery -A app.core.celery_app:celery worker -Q ai,scheduler,emails -l info --concurrency=2 --max-tasks-per-child=20
     depends_on:
       redis:
         condition: service_healthy
@@ -48,6 +54,9 @@ services:
   celery-beat:
     image: pipeline-doctor-backend:local
     container_name: pipeline-doctor-celery-beat
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     env_file:
       - ./backend/fastapi/.env
     environment:
@@ -129,6 +138,9 @@ services:
   airflow-init:
     image: apache/airflow:2.8.0
     container_name: pipeline-doctor-airflow-init
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
@@ -162,6 +174,9 @@ services:
   airflow-webserver:
     image: apache/airflow:2.8.0
     container_name: pipeline-doctor-airflow-webserver
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
@@ -206,6 +221,9 @@ services:
   airflow-scheduler:
     image: apache/airflow:2.8.0
     container_name: pipeline-doctor-airflow-scheduler
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow

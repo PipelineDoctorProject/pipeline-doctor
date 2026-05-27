@@ -9,8 +9,7 @@ from app.services.drift.concept_drift import check_concept_drift
 from app.services.drift.storage import save_drift_finding_and_incident
 from app.services.incidents.live_events import publish_incident_event
 from app.services.quality.baseline_service import get_active_baseline
-
-def run_drift_checks(db: Session, run: PipelineRun):
+def run_drift_checks(db: Session, run: PipelineRun, tenant_id: str | None = None):
     if not run.cleaned_data_path or not os.path.exists(run.cleaned_data_path):
         message = f"Cleaned data not found for run {run.id}: {run.cleaned_data_path}"
         print(message)
@@ -79,4 +78,9 @@ def run_drift_checks(db: Session, run: PipelineRun):
     for incident in created_incidents:
         publish_incident_event("incident_created", incident)
 
-    return {"saved": len(all_results), "reason": None}
+    return {
+        "saved": len(all_results),
+        "reason": None,
+        "created_incidents": len(created_incidents),
+        "notification_strategy": "ui_events_only_for_drift_findings",
+    }

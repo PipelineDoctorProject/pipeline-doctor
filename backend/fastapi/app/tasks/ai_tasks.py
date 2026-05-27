@@ -276,7 +276,12 @@ def run_doctor_agent_task(
         db.add(step_4)
         db.commit()
 
-        persist_root_cause_incident(db, pipeline_run_id, analysis_state)
+        persist_root_cause_incident(
+            db,
+            pipeline_run_id,
+            analysis_state,
+            tenant_id=tenant_id,
+        )
 
         # ==========================================
         # COMPLETE AGENT RUN

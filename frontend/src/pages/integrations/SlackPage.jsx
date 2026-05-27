@@ -216,6 +216,17 @@ export default function SlackPage() {
                         ? `#${status.default_channel.slack_channel_name}`
                         : "No default channel selected"}
                     </p>
+                    {status.default_channel?.status ? (
+                      <p
+                        className={`mt-2 text-[13px] leading-6 ${
+                          status.default_channel.status.delivery_ready
+                            ? "text-emerald-700"
+                            : "text-amber-700"
+                        }`}
+                      >
+                        {status.default_channel.status.message}
+                      </p>
+                    ) : null}
                   </div>
 
                   {status.can_manage ? (
@@ -236,6 +247,23 @@ export default function SlackPage() {
                           </option>
                         ))}
                       </select>
+
+                      {selectedChannel ? (
+                        <div
+                          className={`rounded-md border px-3 py-3 text-[13px] leading-6 ${
+                            selectedChannel.delivery_ready
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                              : "border-amber-200 bg-amber-50 text-amber-800"
+                          }`}
+                        >
+                          <p className="font-medium">
+                            {selectedChannel.delivery_ready
+                              ? "Channel is ready for incident alerts."
+                              : "Action required before this channel can receive alerts."}
+                          </p>
+                          <p className="mt-1">{selectedChannel.readiness_message}</p>
+                        </div>
+                      ) : null}
 
                       <div className="flex flex-wrap gap-3">
                         <button
@@ -271,7 +299,7 @@ export default function SlackPage() {
                 "Admin starts OAuth from this page.",
                 "Slack authenticates the installer and chosen workspace.",
                 "OpsSight stores Slack team ID plus bot token for this tenant.",
-                "New incidents post to the saved default channel.",
+                "Public channels can be auto-readied; private channels require inviting @opssight before alerts can post.",
               ].map((item, index) => (
                 <div key={item} className="rounded-md border border-slate-200 bg-slate-50 p-4">
                   <div className="mb-3 flex h-7 w-7 items-center justify-center rounded-md bg-white text-[12px] font-semibold text-slate-700 shadow-sm">
@@ -281,6 +309,19 @@ export default function SlackPage() {
                 </div>
               ))}
             </div>
+            {status?.workspace?.scope ? (
+              <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">
+                  Installed Slack Scopes
+                </p>
+                <p className="mt-2 text-[13px] leading-6 text-slate-700">
+                  {status.workspace.scope}
+                </p>
+                <p className="mt-2 text-[12px] leading-5 text-slate-500">
+                  Recommended for production: {status.recommended_scopes?.join(", ")}
+                </p>
+              </div>
+            ) : null}
           </section>
         </>
       )}
