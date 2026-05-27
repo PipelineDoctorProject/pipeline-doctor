@@ -7,10 +7,12 @@ from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
 
 from app.models.incident import Incident
+from app.models.incident_group import IncidentGroup
 from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
 from app.models.drift_finding import DriftFinding
 from app.models.pipeline_run import PipelineRun
+from app.services.incidents.grouping import attach_incident_to_group
 from app.services.incidents.live_events import publish_incident_event
 from app.services.slack_service import send_incident_notification
 
@@ -42,6 +44,8 @@ def create_incident(
     )
 
     db.add(incident)
+    db.flush()
+    attach_incident_to_group(db, incident=incident)
 
     db.commit()
 
@@ -141,6 +145,55 @@ def get_incident_agent_runs(
     return runs
 
 
+@router.get("/{incident_id}/children", response_model=list[IncidentResponse])
+def get_incident_children(
+    incident_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user)
+):
+
+    incident = (
+        db.query(Incident)
+        .filter(Incident.id == incident_id)
+        .first()
+    )
+
+    if not incident:
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found"
+        )
+
+    if not incident.group_id:
+        return [_serialize_incident(incident)]
+
+    grouped_incidents = (
+        db.query(Incident)
+        .filter(Incident.group_id == incident.group_id)
+        .order_by(Incident.created_at.asc(), Incident.id.asc())
+        .all()
+    )
+
+    drift_ids = [
+        child.finding_id
+        for child in grouped_incidents
+        if child.finding_type == "drift" and child.finding_id
+    ]
+    drift_by_id: dict[int, DriftFinding] = {}
+    if drift_ids:
+        drift_by_id = {
+            finding.id: finding
+            for finding in db.query(DriftFinding)
+            .filter(DriftFinding.id.in_(drift_ids))
+            .all()
+        }
+
+    return [
+        _serialize_incident(child, drift_by_id.get(child.finding_id))
+        for child in grouped_incidents
+    ]
+
+
 @router.get("/agent-runs/{agent_run_id}/steps")
 def get_agent_steps(
     agent_run_id: int,
@@ -182,9 +235,16 @@ def _serialize_incident(
         "failure_type": incident.failure_type,
         "finding_type": incident.finding_type,
         "finding_id": incident.finding_id,
+        "group_id": incident.group_id,
         "severity": incident.severity,
         "status": incident.status,
         "created_at": incident.created_at,
+        "child_incident_count": len(incident.group.incidents) if incident.group else 1,
+        "is_primary_incident": bool(
+            incident.group and incident.group.primary_incident_id == incident.id
+        ),
+        "group_title": incident.group.title if incident.group else incident.title,
+        "group_summary": incident.group.summary if incident.group else _human_description(incident, rca_report),
         "guidance": _build_guidance(
             incident,
             drift_finding,
@@ -200,21 +260,35 @@ def _serialized_incidents(
     db: Session,
     model_id: int | None = None,
 ):
-
-    query = db.query(Incident)
+    query = db.query(IncidentGroup)
 
     if model_id is not None:
         query = (
             query
-            .join(PipelineRun, Incident.run_id == PipelineRun.id)
+            .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
             .filter(PipelineRun.model_id == model_id)
         )
 
-    incidents = query.order_by(Incident.id.desc()).all()
+    groups = query.order_by(IncidentGroup.created_at.desc(), IncidentGroup.id.desc()).all()
+
+    representative_incidents = []
+    for group in groups:
+        representative = next(
+            (incident for incident in group.incidents if incident.id == group.primary_incident_id),
+            None,
+        )
+        if not representative and group.incidents:
+            representative = sorted(
+                group.incidents,
+                key=lambda incident: (incident.created_at, incident.id),
+                reverse=True,
+            )[0]
+        if representative:
+            representative_incidents.append(representative)
 
     drift_ids = [
         incident.finding_id
-        for incident in incidents
+        for incident in representative_incidents
         if incident.finding_type == "drift" and incident.finding_id
     ]
 
@@ -233,7 +307,7 @@ def _serialized_incidents(
             incident,
             drift_by_id.get(incident.finding_id)
         )
-        for incident in incidents
+        for incident in representative_incidents
     ]
 
 

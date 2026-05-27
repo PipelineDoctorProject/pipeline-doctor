@@ -11,7 +11,9 @@ from app.services.slack_service import (
     decode_oauth_state,
     disconnect_workspace,
     exchange_code_for_installation,
+    ensure_channel_delivery_ready,
     get_default_channel,
+    get_channel_details,
     get_workspace_for_tenant,
     list_workspace_channels,
     save_default_channel,
@@ -77,10 +79,41 @@ def get_slack_status(
 ):
     workspace = get_workspace_for_tenant(db, current_user.tenant_id)
     default_channel = get_default_channel(workspace) if workspace else None
+    default_channel_status = None
+
+    if workspace and default_channel:
+        try:
+            channel_info = get_channel_details(workspace, default_channel.slack_channel_id)
+            ensure_channel_delivery_ready(
+                workspace,
+                default_channel.slack_channel_id,
+                default_channel.slack_channel_name,
+            )
+            default_channel_status = {
+                "delivery_ready": True,
+                "is_private": bool(channel_info.get("is_private")),
+                "is_member": bool(channel_info.get("is_member")),
+                "message": "Slack alerts are ready for this channel.",
+            }
+        except HTTPException as exc:
+            channel_info = channel_info if "channel_info" in locals() else {}
+            default_channel_status = {
+                "delivery_ready": False,
+                "is_private": bool(channel_info.get("is_private")),
+                "is_member": bool(channel_info.get("is_member")),
+                "message": exc.detail,
+            }
 
     return {
         "connected": bool(workspace),
         "can_manage": current_user.role == "admin",
+        "recommended_scopes": [
+            "chat:write",
+            "chat:write.public",
+            "channels:read",
+            "channels:join",
+            "groups:read",
+        ],
         "workspace": (
             {
                 "id": workspace.id,
@@ -98,6 +131,7 @@ def get_slack_status(
                 "id": default_channel.id,
                 "slack_channel_id": default_channel.slack_channel_id,
                 "slack_channel_name": default_channel.slack_channel_name,
+                "status": default_channel_status,
             }
             if default_channel
             else None

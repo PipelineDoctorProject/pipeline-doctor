@@ -33,6 +33,7 @@ class PipelineRun(Base):
     schema_changed = Column(Boolean, default=False)
     drift_findings = relationship("DriftFinding", back_populates="run")  # ADD THIS
     incidents = relationship("Incident",back_populates='run')
+    incident_groups = relationship("IncidentGroup", back_populates="run")
 
 
     drift_findings = relationship("DriftFinding", back_populates="run")

@@ -49,6 +49,11 @@ class IncidentResponse(BaseModel):
     created_at:datetime
     finding_type: Optional[str] = None
     finding_id: Optional[int] = None
+    group_id: Optional[int] = None
+    child_incident_count: int = 1
+    is_primary_incident: bool = True
+    group_title: Optional[str] = None
+    group_summary: Optional[str] = None
     guidance: Optional[dict[str, Any]] = None
     rca_report: Optional[dict[str, Any]] = None
     remediation: Optional[RemediationSummary] = None

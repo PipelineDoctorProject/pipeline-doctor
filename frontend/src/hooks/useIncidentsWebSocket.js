@@ -1,28 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const WS_BASE = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+const RECONNECT_DELAY_MS = 2000;
 
 export default function useIncidentsWebSocket() {
   const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const manuallyClosedRef = useRef(false);
   const [isLive, setIsLive] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
 
+  const clearReconnectTimer = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  }, []);
+
   const disconnect = useCallback(() => {
+    manuallyClosedRef.current = true;
+    clearReconnectTimer();
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
     setIsLive(false);
-  }, []);
+  }, [clearReconnectTimer]);
 
   const connect = useCallback(() => {
-    disconnect();
+    manuallyClosedRef.current = false;
+    clearReconnectTimer();
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
 
     const ws = new WebSocket(`${WS_BASE}/ws/incidents`);
     wsRef.current = ws;
 
     ws.onopen = () => {
       setIsLive(true);
+      clearReconnectTimer();
     };
 
     ws.onmessage = (event) => {
@@ -40,9 +59,19 @@ export default function useIncidentsWebSocket() {
     };
 
     ws.onclose = () => {
+      wsRef.current = null;
       setIsLive(false);
+
+      if (manuallyClosedRef.current) {
+        return;
+      }
+
+      clearReconnectTimer();
+      reconnectTimerRef.current = window.setTimeout(() => {
+        connect();
+      }, RECONNECT_DELAY_MS);
     };
-  }, [disconnect]);
+  }, [clearReconnectTimer]);
 
   useEffect(() => {
     return () => {
