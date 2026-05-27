@@ -1,19 +1,41 @@
 import { create } from "zustand";
 
-const STORAGE_KEY = "pipeline-doctor:selected-model-id";
+const STORAGE_KEY_PREFIX = "pipeline-doctor:selected-model-id";
 
-function readInitialModelId() {
-  if (typeof window === "undefined") return "all";
-  return window.localStorage.getItem(STORAGE_KEY) || "all";
+function buildStorageKey(scope) {
+  return scope ? `${STORAGE_KEY_PREFIX}:${scope}` : STORAGE_KEY_PREFIX;
 }
 
-const useSelectedModelStore = create((set) => ({
-  selectedModelId: readInitialModelId(),
+function readScopedModelId(scope) {
+  if (typeof window === "undefined") return "all";
+  return window.localStorage.getItem(buildStorageKey(scope)) || "all";
+}
+
+const useSelectedModelStore = create((set, get) => ({
+  selectedModelId: "all",
+  selectionScope: null,
+  hydrateSelectionScope: (scope) => {
+    const normalizedScope = scope || null;
+
+    if (get().selectionScope === normalizedScope) {
+      return;
+    }
+
+    set({
+      selectionScope: normalizedScope,
+      selectedModelId: readScopedModelId(normalizedScope),
+    });
+  },
   setSelectedModelId: (modelId) => {
     const value = modelId || "all";
+
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, value);
+      window.localStorage.setItem(
+        buildStorageKey(get().selectionScope),
+        value,
+      );
     }
+
     set({ selectedModelId: value });
   },
 }));

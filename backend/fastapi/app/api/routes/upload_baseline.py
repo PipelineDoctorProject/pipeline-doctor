@@ -26,6 +26,7 @@ from app.services.quality.baseline_service import (
     create_baseline_version,
     activate_baseline,
 )
+from app.services.access_control import require_accessible_model
 
 from app.config.settings import (
     BASELINE_UPLOAD_DIR,
@@ -174,6 +175,8 @@ async def upload_baseline(
             status_code=401,
             detail="Tenant database not found"
         )
+
+    require_accessible_model(db, model_id, current_user.tenant_id)
 
     # ==========================================
     # VALIDATE FILE

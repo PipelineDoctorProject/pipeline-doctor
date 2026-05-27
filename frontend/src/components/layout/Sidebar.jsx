@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   FileCode2,
   Workflow,
-  Settings,
   Brain,
   LogOut,
 } from "lucide-react";
@@ -16,6 +15,57 @@ import { NavLink } from "react-router-dom";
 import useAuthStore from "../../store/authStore";
 import Logo from "../../assets/logo_og.png";
 import Logo2 from "../../assets/logo2.png";
+
+function SlackNavIcon({ size = 18, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      {...props}
+    >
+      <path
+        d="M9.75 2.75A2.75 2.75 0 1 0 4.25 2.75V8.5H9.75V2.75Z"
+        fill="currentColor"
+      />
+      <path
+        d="M12 2.75A2.75 2.75 0 1 1 17.5 2.75V8.5H12V2.75Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+      <path
+        d="M21.25 9.75A2.75 2.75 0 1 0 21.25 4.25H15.5V9.75H21.25Z"
+        fill="currentColor"
+      />
+      <path
+        d="M21.25 12A2.75 2.75 0 1 1 21.25 17.5H15.5V12H21.25Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+      <path
+        d="M14.25 21.25A2.75 2.75 0 1 0 19.75 21.25V15.5H14.25V21.25Z"
+        fill="currentColor"
+      />
+      <path
+        d="M12 21.25A2.75 2.75 0 1 1 6.5 21.25V15.5H12V21.25Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+      <path
+        d="M2.75 14.25A2.75 2.75 0 1 0 2.75 19.75H8.5V14.25H2.75Z"
+        fill="currentColor"
+      />
+      <path
+        d="M2.75 12A2.75 2.75 0 1 1 2.75 6.5H8.5V12H2.75Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
 
 const navItems = [
   {
@@ -55,7 +105,7 @@ const navItems = [
   },
   {
     label: "Slack",
-    icon: Settings,
+    icon: SlackNavIcon,
     path: "/integrations/slack",
   },
 ];

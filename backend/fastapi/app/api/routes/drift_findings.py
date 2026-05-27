@@ -9,6 +9,7 @@ from app.services.drift.drift_service import run_drift_checks
 from app.schemas.drift import DriftResponse
 from app.schemas.explanations import InsightExplanationResponse
 from app.services.ai_explanations import build_drift_explanation
+from app.services.access_control import require_accessible_model
 
 router = APIRouter(prefix="/drift-findings", tags=["Drift Findings"])
 
@@ -20,6 +21,9 @@ def list_drift_findings(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    if model_id is not None:
+        require_accessible_model(db, model_id, current_user.tenant_id)
+
     query = db.query(DriftFinding)
     if run_id is not None:
         query = query.filter(DriftFinding.run_id == run_id)

@@ -2,7 +2,7 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useAuthStore from "../../store/authStore";
 
 import Logo2 from "../../assets/logo2.png";
@@ -28,12 +28,22 @@ export default function OnboardingPage() {
   const [members, setMembers] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isStepTransitioning, setIsStepTransitioning] = useState(false);
+  const transitionTimerRef = useRef(null);
 
   useEffect(() => {
     if (workspace?.tenant_id) {
       setStep(2);
     }
   }, [workspace]);
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleCreateCompany = async (e) => {
     e.preventDefault();
@@ -46,6 +56,11 @@ export default function OnboardingPage() {
       await createCompany(companyName);
 
       setStep(2);
+      setIsStepTransitioning(true);
+      transitionTimerRef.current = window.setTimeout(() => {
+        setIsStepTransitioning(false);
+        transitionTimerRef.current = null;
+      }, 500);
     } catch (err) {
       alert(err?.detail || "Company Creation Failed");
     } finally {
@@ -70,6 +85,8 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = async () => {
+    if (isStepTransitioning) return;
+
     try {
       for (const email of members) {
         await inviteMember(email);
@@ -261,23 +278,25 @@ export default function OnboardingPage() {
 
                   {/* ACTIONS */}
                   <div className="flex items-center justify-between pt-6">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate("/dashboard")
-                      }
-                      className="text-[13px] font-medium text-[#6b7280] transition hover:text-[#111827]"
-                    >
-                      Skip For Now
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate("/dashboard")
+                        }
+                        disabled={isStepTransitioning}
+                        className="text-[13px] font-medium text-[#6b7280] transition hover:text-[#111827]"
+                      >
+                        Skip For Now
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={handleFinish}
-                      className="h-[50px] rounded-[14px] bg-[#3563ff] px-6 text-[14px] font-medium text-white transition hover:bg-[#2957f5]"
-                    >
-                      Finish Setup
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleFinish}
+                        disabled={isStepTransitioning}
+                        className="h-[50px] rounded-[14px] bg-[#3563ff] px-6 text-[14px] font-medium text-white transition hover:bg-[#2957f5] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Finish Setup
+                      </button>
                   </div>
                 </div>
               </>
