@@ -3,13 +3,19 @@ import json
 from sqlalchemy.orm import Session
 
 from app.models.incident import Incident
+from app.services.incidents.grouping import attach_incident_to_group
 from app.services.incidents.report_builder import build_final_incident_report
 from app.services.incidents.live_events import publish_incident_event
 from app.services.remediation import decide_remediation
 from app.services.slack_service import send_incident_notification
 
 
-def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
+def persist_root_cause_incident(
+    db: Session,
+    run_id: int,
+    root_cause_state,
+    tenant_id: str | None = None,
+):
     report = root_cause_state.get("report") or {}
     failure_types = report.get("failure_types") or []
 
@@ -60,8 +66,9 @@ def persist_root_cause_incident(db: Session, run_id: int, root_cause_state):
     incident.title = "AI Root Cause Analysis"
     incident.description = json.dumps(payload, default=str)
     incident.severity = report.get("severity", "medium")
+    attach_incident_to_group(db, incident=incident)
     db.commit()
     db.refresh(incident)
     publish_incident_event("incident_updated", incident)
-    send_incident_notification(db, tenant_id=None, incident=incident)
+    send_incident_notification(db, tenant_id=tenant_id, incident=incident)
     return incident

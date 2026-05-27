@@ -289,7 +289,11 @@ def run_data_quality_pipeline(
             run_for_drift = db.get(PipelineRun, run_id, populate_existing=True)
             if not run_for_drift:
                 raise Exception("Pipeline run not found for drift checks")
-            drift_result = run_drift_checks(db, run_for_drift)
+            drift_result = run_drift_checks(
+                db,
+                run_for_drift,
+                tenant_id=current_tenant_id,
+            )
             print(f"Drift checks completed: {drift_result}")
         except Exception as drift_e:
             db.rollback()

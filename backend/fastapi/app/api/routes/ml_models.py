@@ -147,6 +147,7 @@ def register_model(
         )
 
     db_model = MLModel(
+        tenant_id=current_user.tenant_id,
         name=model_in.name,
         version=model_in.version,
         framework=model_in.framework,

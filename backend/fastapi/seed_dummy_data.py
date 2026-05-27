@@ -33,6 +33,7 @@ def seed_data(email: str):
         model = db.query(MLModel).first()
         if not model:
             model = MLModel(
+                tenant_id=tenant.id,
                 name="Fraud_Detection_XGBoost",
                 version="1.2.0",
                 framework="xgboost",

@@ -189,6 +189,10 @@ const useAuthStore = create((set, get) => ({
 
     } catch (error) {
 
+      if (error?.response?.status === 401) {
+        setAccessToken(null);
+      }
+
       set({
         user: null,
         workspace: null,

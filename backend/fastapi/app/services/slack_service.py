@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta
+import json
+import logging
 from typing import Any
 from urllib.parse import urlencode
 
 import jwt
 import requests
 from fastapi import HTTPException
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config.settings import (
@@ -19,6 +22,7 @@ from app.models.ml_model import MLModel
 from app.models.pipeline_run import PipelineRun
 from app.models.slack_channel import SlackChannel
 from app.models.slack_workspace import SlackWorkspace
+from app.models.tenant import Tenant
 from app.models.user import User
 from app.tasks.email_tasks import send_incident_alert_email_task
 
@@ -26,7 +30,11 @@ from app.tasks.email_tasks import send_incident_alert_email_task
 SLACK_AUTHORIZE_URL = "https://slack.com/oauth/v2/authorize"
 SLACK_ACCESS_URL = "https://slack.com/api/oauth.v2.access"
 SLACK_CHANNELS_URL = "https://slack.com/api/conversations.list"
+SLACK_CHANNEL_INFO_URL = "https://slack.com/api/conversations.info"
+SLACK_CHANNEL_JOIN_URL = "https://slack.com/api/conversations.join"
 SLACK_POST_MESSAGE_URL = "https://slack.com/api/chat.postMessage"
+
+logger = logging.getLogger(__name__)
 
 
 def require_slack_configuration() -> None:
@@ -191,15 +199,42 @@ def list_workspace_channels(workspace: SlackWorkspace) -> list[dict[str, Any]]:
         )
 
     channels = payload.get("channels") or []
-    normalized = [
-        {
-            "id": channel.get("id"),
-            "name": channel.get("name") or channel.get("id"),
-            "is_private": bool(channel.get("is_private")),
-        }
-        for channel in channels
-        if channel.get("id")
-    ]
+    scopes = _workspace_scopes(workspace)
+    normalized = []
+
+    for channel in channels:
+        channel_id = channel.get("id")
+        if not channel_id:
+            continue
+
+        is_private = bool(channel.get("is_private"))
+        is_member = bool(channel.get("is_member"))
+        is_public_channel = bool(channel.get("is_channel"))
+        can_auto_join = is_public_channel and "channels:join" in scopes
+        can_public_post = is_public_channel and "chat:write.public" in scopes
+        delivery_ready = is_member or can_auto_join or can_public_post
+
+        if is_private and not is_member:
+            action_required = "invite_bot"
+            readiness_message = "Invite @opssight to this private channel before saving it."
+        elif not delivery_ready:
+            action_required = "reconnect_slack"
+            readiness_message = "Reconnect Slack to grant channels:join or chat:write.public for public-channel delivery."
+        else:
+            action_required = None
+            readiness_message = "Ready to receive incident alerts."
+
+        normalized.append(
+            {
+                "id": channel_id,
+                "name": channel.get("name") or channel_id,
+                "is_private": is_private,
+                "is_member": is_member,
+                "delivery_ready": delivery_ready,
+                "action_required": action_required,
+                "readiness_message": readiness_message,
+            }
+        )
 
     normalized.sort(key=lambda channel: channel["name"].lower())
     return normalized
@@ -212,6 +247,8 @@ def save_default_channel(
     channel_id: str,
     channel_name: str,
 ) -> SlackChannel:
+    ensure_channel_delivery_ready(workspace, channel_id, channel_name)
+
     for channel in workspace.channels:
         channel.is_default = False
 
@@ -250,6 +287,83 @@ def get_default_channel(workspace: SlackWorkspace) -> SlackChannel | None:
     return next((channel for channel in workspace.channels if channel.is_default), None)
 
 
+def _workspace_scopes(workspace: SlackWorkspace) -> set[str]:
+    return {
+        scope.strip()
+        for scope in (workspace.scope or "").split(",")
+        if scope.strip()
+    }
+
+
+def get_channel_details(workspace: SlackWorkspace, channel_id: str) -> dict[str, Any]:
+    response = requests.get(
+        SLACK_CHANNEL_INFO_URL,
+        headers={"Authorization": f"Bearer {workspace.bot_token}"},
+        params={"channel": channel_id},
+        timeout=20,
+    )
+    response.raise_for_status()
+    payload = response.json()
+
+    if not payload.get("ok"):
+        raise RuntimeError(payload.get("error", "unknown_error"))
+
+    return payload.get("channel") or {}
+
+
+def ensure_channel_delivery_ready(workspace: SlackWorkspace, channel_id: str, channel_name: str) -> dict[str, Any]:
+    channel_info = get_channel_details(workspace, channel_id)
+
+    if channel_info.get("is_private") and not channel_info.get("is_member"):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+            f"Slack bot is not a member of private channel #{channel_name}. "
+            "Invite @opssight to the channel, then retry."
+            ),
+        )
+
+    if channel_info.get("is_member"):
+        return channel_info
+
+    scopes = _workspace_scopes(workspace)
+
+    if channel_info.get("is_channel") and "channels:join" in scopes:
+        join_response = requests.post(
+            SLACK_CHANNEL_JOIN_URL,
+            headers={
+                "Authorization": f"Bearer {workspace.bot_token}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={"channel": channel_id},
+            timeout=20,
+        )
+        join_response.raise_for_status()
+        join_payload = join_response.json()
+
+        if not join_payload.get("ok"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Slack could not auto-join #{channel_name}: {join_payload.get('error', 'unable_to_join_channel')}",
+            )
+
+        channel_info = join_payload.get("channel") or channel_info
+
+        if channel_info.get("is_member"):
+            return channel_info
+
+    if channel_info.get("is_channel") and "chat:write.public" in scopes:
+        return channel_info
+
+    raise HTTPException(
+        status_code=400,
+        detail=(
+        f"Slack bot cannot post to #{channel_name}. "
+        "Invite @opssight to the channel or reconnect Slack with channels:join/chat:write.public scopes."
+        ),
+    )
+
+
 def build_frontend_callback_url(success: bool, message: str) -> str:
     params = urlencode(
         {
@@ -260,11 +374,37 @@ def build_frontend_callback_url(success: bool, message: str) -> str:
     return f"{FRONTEND_URL.rstrip('/')}/integrations/slack?{params}"
 
 
+def _incident_slack_description(incident) -> str:
+    description = getattr(incident, "description", "") or ""
+
+    try:
+        payload = json.loads(description)
+    except (TypeError, json.JSONDecodeError):
+        payload = None
+
+    if isinstance(payload, dict):
+        description = (
+            payload.get("summary")
+            or payload.get("recommendation")
+            or description
+        )
+
+    description = " ".join(str(description).split())
+    if len(description) > 500:
+        return f"{description[:497]}..."
+    return description
+
+
 def send_incident_notification(db: Session, *, tenant_id: str | None, incident) -> None:
     if not tenant_id:
         tenant_id = resolve_tenant_id_for_run(db, incident.run_id)
 
     if not tenant_id:
+        logger.warning(
+            "Skipping incident %s Slack delivery because tenant_id could not be resolved for run %s",
+            getattr(incident, "id", None),
+            getattr(incident, "run_id", None),
+        )
         return
 
     workspace = get_workspace_for_tenant(db, tenant_id)
@@ -287,13 +427,33 @@ def send_incident_notification(db: Session, *, tenant_id: str | None, incident) 
         )
         return
 
+    try:
+        ensure_channel_delivery_ready(
+            workspace,
+            default_channel.slack_channel_id,
+            default_channel.slack_channel_name,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Slack channel %s is not ready for incident delivery: %s",
+            default_channel.slack_channel_name,
+            exc,
+        )
+        notify_tenant_by_email(
+            db,
+            tenant_id=tenant_id,
+            incident=incident,
+            delivery_reason=str(exc),
+        )
+        return
+
     text = (
         f":rotating_light: *{incident.severity.upper()} incident*\n"
         f"*Title:* {incident.title}\n"
         f"*Type:* {incident.failure_type}\n"
         f"*Run ID:* {incident.run_id}\n"
         f"*Status:* {incident.status}\n"
-        f"*Description:* {incident.description}"
+        f"*Description:* {_incident_slack_description(incident)}"
     )
 
     try:
@@ -313,12 +473,23 @@ def send_incident_notification(db: Session, *, tenant_id: str | None, incident) 
         payload = response.json()
         if not payload.get("ok"):
             raise RuntimeError(payload.get("error", "unknown_error"))
-    except Exception:
+        logger.info(
+            "Slack incident alert delivered to %s for incident %s",
+            default_channel.slack_channel_name,
+            incident.id,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Slack delivery failed for incident %s on channel %s: %s",
+            incident.id,
+            default_channel.slack_channel_name,
+            exc,
+        )
         notify_tenant_by_email(
             db,
             tenant_id=tenant_id,
             incident=incident,
-            delivery_reason="Slack delivery failed, so this alert is being delivered by email.",
+            delivery_reason=f"Slack delivery failed ({exc}), so this alert is being delivered by email.",
         )
         return
 
@@ -337,7 +508,27 @@ def resolve_tenant_id_for_run(db: Session, run_id: int) -> str | None:
         .filter(MLModel.id == pipeline_run.model_id)
         .first()
     )
-    return model.tenant_id if model else None
+    if model and model.tenant_id:
+        return model.tenant_id
+
+    public_tenant_id = db.execute(
+        text("SELECT tenant_id FROM public.ml_models WHERE id = :model_id"),
+        {"model_id": pipeline_run.model_id},
+    ).scalar()
+    if public_tenant_id:
+        return public_tenant_id
+
+    current_schema_name = db.execute(text("SELECT current_schema()")).scalar()
+    if current_schema_name and current_schema_name != "public":
+        tenant = (
+            db.query(Tenant)
+            .filter(Tenant.schema_name == current_schema_name)
+            .first()
+        )
+        if tenant:
+            return tenant.id
+
+    return None
 
 
 def notify_tenant_by_email(

@@ -44,7 +44,7 @@ SLACK_CLIENT_SECRET = os.getenv("SLACK_CLIENT_SECRET")
 SLACK_REDIRECT_URI = os.getenv("SLACK_REDIRECT_URI")
 SLACK_BOT_SCOPES = os.getenv(
     "SLACK_BOT_SCOPES",
-    "chat:write,channels:read,groups:read",
+    "chat:write,chat:write.public,channels:read,channels:join,groups:read",
 )
 
 

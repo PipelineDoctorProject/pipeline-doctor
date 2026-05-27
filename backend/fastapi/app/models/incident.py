@@ -12,6 +12,7 @@ class Incident(Base):
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
     failure_type = Column(String, nullable=False)
+    group_id = Column(Integer, ForeignKey("incident_groups.id"), nullable=True, index=True)
     finding_type = Column(String)  
     finding_id = Column(Integer)
     severity = Column(String, nullable=False)
@@ -19,6 +20,11 @@ class Incident(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     run = relationship("PipelineRun", back_populates="incidents")
+    group = relationship(
+        "IncidentGroup",
+        back_populates="incidents",
+        foreign_keys=[group_id],
+    )
     remediation_runs = relationship(
         "RemediationRun",
         back_populates="incident",
