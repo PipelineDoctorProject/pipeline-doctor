@@ -37,3 +37,17 @@ class RemediationActionLogResponse(BaseModel):
     message: str
     payload: dict | None = None
     created_at: datetime
+
+
+class RemediationContextResponse(BaseModel):
+    incident_id: int
+    run_id: int
+    model_id: int
+    model_name: str | None = None
+    model_framework: str | None = None
+    expected_features: list[str] = []
+    dataset_columns: list[str] = []
+    target_candidates: list[str] = []
+    suggested_target_column: str | None = None
+    cleaned_data_available: bool
+    readiness_warnings: list[str] = []
