@@ -5,6 +5,8 @@ import "@fontsource/inter/600.css";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { setAccessToken } from "../../api/client";
+import useAuthStore from "../../store/authStore";
 
 // import Logo from ".../assets/logo_og.png";
 import Logo2 from '../../assets/logo2.png';
@@ -12,6 +14,7 @@ import Logo2 from '../../assets/logo2.png';
 export default function AcceptInvitePage() {
 
   const navigate = useNavigate();
+  const me = useAuthStore((state) => state.me);
 
   const [searchParams] = useSearchParams();
 
@@ -69,7 +72,17 @@ export default function AcceptInvitePage() {
       throw data;
     }
 
-    navigate("/dashboard");
+    setAccessToken(data?.access_token);
+
+    const dashboardContext = await me();
+
+    if (!dashboardContext) {
+      throw {
+        detail: "Invitation accepted, but we could not load your workspace session.",
+      };
+    }
+
+    navigate("/dashboard", { replace: true });
 
   } catch (err) {
 

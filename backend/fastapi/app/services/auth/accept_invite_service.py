@@ -31,9 +31,10 @@ def accept_invite(
 
     user.hashed_password = hash_password(password)
 
+    user.is_verified = True
     user.invite_accepted = True
-
     user.invite_token = None
+    user.otp_code = None
 
     db.commit()
 

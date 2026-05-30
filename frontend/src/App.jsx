@@ -25,19 +25,19 @@ import SchemaPage from "./pages/schema/Schema";
 import SlackPage from "./pages/integrations/SlackPage";
 
 export default function App() {
-  const me = useAuthStore((state) => state.me);
+  const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await me();
+        await bootstrapAuth();
       } catch (error) {
         console.log(error);
       }
     };
 
     checkAuth();
-  }, [me]);
+  }, [bootstrapAuth]);
 
   return (
     <BrowserRouter>
