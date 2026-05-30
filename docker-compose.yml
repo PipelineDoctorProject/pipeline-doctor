@@ -149,9 +149,9 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
       OPSSIGHT_API_URL: "http://api:8000"
-      OPSSIGHT_MODEL_ID: "2"
-      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
-      OPSSIGHT_API_PASSWORD: "1234"
+      OPSSIGHT_MODEL_ID: "4"
+      OPSSIGHT_API_EMAIL: "codecraze9020@gmail.com"
+      OPSSIGHT_API_PASSWORD: "sinshy123"
       OPSSIGHT_API_TOKEN: ""
     command: >
       bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
@@ -188,9 +188,9 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
       AIRFLOW__WEBSERVER__WORKERS: "1"
       OPSSIGHT_API_URL: "http://api:8000"
-      OPSSIGHT_MODEL_ID: "2"
-      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
-      OPSSIGHT_API_PASSWORD: "1234"
+      OPSSIGHT_MODEL_ID: "4"
+      OPSSIGHT_API_EMAIL: "codecraze9020@gmail.com"
+      OPSSIGHT_API_PASSWORD: "sinshy123"
       OPSSIGHT_API_TOKEN: ""
     command: >
       bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
@@ -236,9 +236,9 @@ services:
       AIRFLOW__SCHEDULER__PARSING_PROCESSES: "1"
       AIRFLOW__SCHEDULER__STANDALONE_DAG_PROCESSOR: "false"
       OPSSIGHT_API_URL: "http://api:8000"
-      OPSSIGHT_MODEL_ID: "2"
-      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
-      OPSSIGHT_API_PASSWORD: "1234"
+      OPSSIGHT_MODEL_ID: "4"
+      OPSSIGHT_API_EMAIL: "codecraze9020@gmail.com"
+      OPSSIGHT_API_PASSWORD: "sinshy123"
       OPSSIGHT_API_TOKEN: ""
     command: >
       bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
