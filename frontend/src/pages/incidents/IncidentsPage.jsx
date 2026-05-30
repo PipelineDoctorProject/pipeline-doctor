@@ -21,6 +21,7 @@ import useAgentWebSocket from "../../hooks/useAgentWebSocket";
 import useIncidentsWebSocket from "../../hooks/useIncidentsWebSocket";
 import AgentTraceStepper from "../../components/agents/AgentTraceStepper";
 import IncidentReasoningCard from "../../components/agents/IncidentReasoningCard";
+import IncidentRemediationPanel from "../../components/incidents/IncidentRemediationPanel";
 
 const severityConfig = {
   critical: {
@@ -488,6 +489,11 @@ export default function IncidentsPage() {
     (group) => String(group.runId) === String(selectedRunId),
   );
   const selectedRcaIncident = selectedRun?.incidents.find((incident) => incident.rca_report);
+  const selectedRemediationIncident =
+    selectedRcaIncident ||
+    selectedRun?.incidents.find((incident) => incident.remediation || incident.final_report) ||
+    selectedRun?.incidents?.[0] ||
+    null;
   const selectedRcaReport = selectedRcaIncident?.rca_report ?? null;
   const displayAgentSteps = agentSteps;
   const latestAgentRunStatus = agentRuns[0]?.status;
@@ -880,6 +886,15 @@ export default function IncidentsPage() {
                   <p className="mt-1 text-[12px] leading-5 text-slate-500">
                     The report will appear here after the reporting step finishes saving the final RCA output.
                   </p>
+                </div>
+              )}
+
+              {selectedRemediationIncident && (
+                <div className="mb-6">
+                  <IncidentRemediationPanel
+                    incident={selectedRemediationIncident}
+                    onRemediationChanged={() => loadIncidents({ silent: true, announceDelta: false })}
+                  />
                 </div>
               )}
 

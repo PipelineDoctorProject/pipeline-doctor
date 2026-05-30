@@ -15,6 +15,7 @@ from app.models.pipeline_run import PipelineRun
 from app.models.remediation_run import RemediationRun
 from app.schemas.remediation import (
     RemediationActionLogResponse,
+    RemediationContextResponse,
     RemediationDecisionResponse,
     RemediationRunResponse,
 )
@@ -36,6 +37,68 @@ def list_remediation_runs_for_incident(
         .order_by(RemediationRun.id.desc())
         .all()
     )
+
+
+@router.get("/incident/{incident_id}/context", response_model=RemediationContextResponse)
+def get_remediation_context(
+    incident_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found.")
+
+    pipeline_run = db.query(PipelineRun).filter(PipelineRun.id == incident.run_id).first()
+    if not pipeline_run:
+        raise HTTPException(status_code=404, detail="Pipeline run not found.")
+
+    model_record = db.query(MLModel).filter(MLModel.id == pipeline_run.model_id).first()
+    if not model_record:
+        raise HTTPException(status_code=404, detail="ML model not found for remediation.")
+
+    expected_features = list(model_record.expected_features or [])
+    cleaned_data_available = bool(
+        pipeline_run.cleaned_data_path and os.path.exists(pipeline_run.cleaned_data_path)
+    )
+    dataset_columns: list[str] = []
+
+    if cleaned_data_available:
+        df = pd.read_csv(pipeline_run.cleaned_data_path, nrows=5)
+        dataset_columns = [str(column) for column in df.columns]
+
+    target_candidates = [
+        column for column in dataset_columns if column not in expected_features
+    ]
+    suggested_target_column = _suggest_target_column(target_candidates)
+
+    readiness_warnings: list[str] = []
+    if not cleaned_data_available:
+        readiness_warnings.append(
+            "Cleaned data is not available for this run, so retraining cannot start."
+        )
+    if not expected_features:
+        readiness_warnings.append(
+            "This model does not have expected features configured yet."
+        )
+    if cleaned_data_available and not target_candidates:
+        readiness_warnings.append(
+            "No target column candidates were found outside the configured feature set."
+        )
+
+    return {
+        "incident_id": incident.id,
+        "run_id": pipeline_run.id,
+        "model_id": model_record.id,
+        "model_name": model_record.name,
+        "model_framework": model_record.framework,
+        "expected_features": expected_features,
+        "dataset_columns": dataset_columns,
+        "target_candidates": target_candidates,
+        "suggested_target_column": suggested_target_column,
+        "cleaned_data_available": cleaned_data_available,
+        "readiness_warnings": readiness_warnings,
+    }
 
 
 @router.get("/{remediation_run_id}", response_model=RemediationRunResponse)
@@ -242,3 +305,28 @@ def _validate_retraining_preconditions(
             status_code=400,
             detail="None of the configured expected_features are available in the cleaned dataset for retraining.",
         )
+
+
+def _suggest_target_column(target_candidates: list[str]) -> str | None:
+    if not target_candidates:
+        return None
+
+    preferred_names = [
+        "target",
+        "label",
+        "class",
+        "outcome",
+        "prediction_label",
+        "cluster_label",
+    ]
+
+    normalized_lookup = {
+        column.lower(): column
+        for column in target_candidates
+    }
+
+    for preferred in preferred_names:
+        if preferred in normalized_lookup:
+            return normalized_lookup[preferred]
+
+    return target_candidates[0]

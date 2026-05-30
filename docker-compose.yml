@@ -77,7 +77,7 @@ services:
       - ./backend/fastapi/.env
     command: >
       sh -c "mkdir -p /app/mlartifacts &&
-             mlflow server --backend-store-uri postgresql+psycopg2://mlflow:mlflow@mlflow-db/mlflow --default-artifact-root /app/mlartifacts --workers 1 --host 0.0.0.0 --port 5000"
+             mlflow server --backend-store-uri postgresql+psycopg2://mlflow:mlflow@mlflow-db/mlflow --default-artifact-root /app/mlartifacts --workers 1 --host 0.0.0.0 --port 5000 --allowed-hosts mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000"
     ports:
       - "5000:5000"
     volumes:
