@@ -7,6 +7,7 @@ from fastapi import (
     Depends
 )
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.dependencies.auth import get_current_user
 from app.db.session import get_db
@@ -64,9 +65,14 @@ def get_dashboard_context(
         },
 
         "stats": {
-            "total_models": db.query(MLModel).count() if user.tenant_id else 0,
-            "total_runs": db.query(PipelineRun).count() if user.tenant_id else 0,
-            "open_incidents": db.query(Incident).filter(Incident.status == "open").count() if user.tenant_id else 0,
+            "total_models": db.query(func.count(MLModel.id)).scalar() if user.tenant_id else 0,
+            "total_runs": db.query(func.count(PipelineRun.id)).scalar() if user.tenant_id else 0,
+            "open_incidents": (
+                db.query(func.count(Incident.id))
+                .filter(Incident.status == "open")
+                .scalar()
+                if user.tenant_id else 0
+            ),
         },
 
         "is_onboarded": bool(user.tenant_id)

@@ -21,15 +21,12 @@ from app.services.auth.invite_service import (
 from app.services.auth.accept_invite_service import (
     accept_invite
 )
-from app.config.settings import get_auth_cookie_settings
+from app.api.routes.auth import _cookie_settings
 
 router = APIRouter(
     prefix="/invite",
     tags=["Invite"]
 )
-
-
-AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
 
 
 # ==========================================
@@ -69,6 +66,7 @@ def invite_member_route(
 @router.post("/accept")
 def accept_invite_route(
     data: AcceptInviteRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -79,20 +77,25 @@ def accept_invite_route(
         password=data.password
     )
 
+    cookie_options = _cookie_settings(request)
+
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
         max_age=60 * 30,
-        **AUTH_COOKIE_SETTINGS,
+        **cookie_options,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
         max_age=60 * 60 * 24 * 7,
-        **AUTH_COOKIE_SETTINGS,
+        **cookie_options,
     )
 
     return {
-        "message": "Invitation accepted"
+        "message": "Invitation accepted",
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "token_type": result["token_type"],
     }

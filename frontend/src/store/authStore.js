@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api, { setAccessToken } from "../api/client";
+import api, { hasAccessToken, setAccessToken } from "../api/client";
 import { inviteMemberApi } from "../api/invite";
 
 const useAuthStore = create((set, get) => ({
@@ -11,6 +11,24 @@ const useAuthStore = create((set, get) => ({
   loading: false,
   checkingAuth: true,
   onboardingStep: 1,
+  authCheckVersion: 0,
+
+  bootstrapAuth: async () => {
+
+    if (!hasAccessToken()) {
+      set({
+        user: null,
+        isAuthenticated: false,
+        workspace: null,
+        dashboardData: null,
+        checkingAuth: false,
+      });
+
+      return null;
+    }
+
+    return get().me();
+  },
 
   signup: async (email, password) => {
 
@@ -62,7 +80,13 @@ const useAuthStore = create((set, get) => ({
 
       setAccessToken(response.data?.access_token);
 
-      await get().me();
+      const dashboardContext = await get().me();
+
+      if (!dashboardContext) {
+        throw {
+          detail: "We verified your OTP, but could not load your workspace session.",
+        };
+      }
 
       set({
         loading: false,
@@ -93,7 +117,13 @@ const useAuthStore = create((set, get) => ({
 
       setAccessToken(response.data?.access_token);
 
-      await get().me();
+      const dashboardContext = await get().me();
+
+      if (!dashboardContext) {
+        throw {
+          detail: "Login succeeded, but we could not load your workspace session.",
+        };
+      }
 
       set({
         loading: false,
@@ -199,6 +229,9 @@ const useAuthStore = create((set, get) => ({
   },
 
   me: async () => {
+    const authCheckVersion = get().authCheckVersion + 1;
+
+    set({ authCheckVersion });
 
     try {
 
@@ -208,6 +241,10 @@ const useAuthStore = create((set, get) => ({
           skipAuthRefresh: true,
         }
       );
+
+      if (get().authCheckVersion !== authCheckVersion) {
+        return response.data;
+      }
 
       set({
         user: response.data.user,
@@ -220,6 +257,9 @@ const useAuthStore = create((set, get) => ({
       return response.data;
 
     } catch (error) {
+      if (get().authCheckVersion !== authCheckVersion) {
+        return null;
+      }
 
       if (error?.response?.status === 401) {
         setAccessToken(null);

@@ -14,6 +14,10 @@ function getAccessToken() {
   return sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+export function hasAccessToken() {
+  return Boolean(getAccessToken());
+}
+
 const api = axios.create({
   baseURL: "http://localhost:8000",
   withCredentials: true,
