@@ -81,10 +81,15 @@ def create_company(
         return {
             "message": "Company created",
             "tenant_id": tenant.id,
+            "workspace_name": tenant.name,
             "schema_name": schema_name,
             "access_token": access_token,
             "refresh_token": refresh_token
         }
+
+    except HTTPException:
+        db.rollback()
+        raise
 
     except Exception as e:
 

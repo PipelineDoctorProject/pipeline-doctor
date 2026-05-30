@@ -15,6 +15,7 @@ from app.models.pipeline_run import PipelineRun
 from app.services.incidents.grouping import attach_incident_to_group
 from app.services.incidents.live_events import publish_incident_event
 from app.services.slack_service import send_incident_notification
+from app.services.access_control import require_accessible_model
 
 from app.schemas.incident import (
     IncidentCreate,
@@ -62,6 +63,8 @@ def list_incidents(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    if model_id is not None:
+        require_accessible_model(db, model_id, current_user.tenant_id)
 
     return _serialized_incidents(
         db,
@@ -75,6 +78,8 @@ def filter_incidents(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    if model_id is not None:
+        require_accessible_model(db, model_id, current_user.tenant_id)
 
     return _serialized_incidents(
         db,

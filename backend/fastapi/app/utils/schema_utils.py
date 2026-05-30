@@ -8,12 +8,13 @@ def create_schema(db, schema_name: str):
     if not schema_name.isidentifier():
         raise ValueError("Invalid schema name")
 
-    # Create schema and switch to it (ONLY the tenant schema for now)
+    # Create schema and use tenant-first resolution while still allowing
+    # tenant tables to reference shared public tables such as public.tenants.
     db.execute(
         text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
     )
     db.execute(
-        text(f'SET search_path TO "{schema_name}"')
+        text(f'SET search_path TO "{schema_name}", public')
     )
 
     # Dynamically create tenant tables in the specific schema
@@ -25,10 +26,6 @@ def create_schema(db, schema_name: str):
             checkfirst=True
         )
 
-    # Now set the search_path to include public for subsequent operations
-    db.execute(
-        text(f'SET search_path TO "{schema_name}", public')
-    )
     db.commit()
 
 
