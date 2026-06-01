@@ -11,6 +11,9 @@ from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
 from app.models.remediation_run import RemediationRun
 from app.models.remediation_action_log import RemediationActionLog
+from app.models.slack_channel import SlackChannel
+from app.models.slack_workspace import SlackWorkspace
+
 
 TENANT_MODELS = [
     MLModel,
@@ -26,4 +29,6 @@ TENANT_MODELS = [
     AgentStepLog,
     RemediationRun,
     RemediationActionLog,
+    SlackChannel,
+    SlackWorkspace
 ]

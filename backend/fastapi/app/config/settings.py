@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load .env file
@@ -59,6 +60,31 @@ DATA_QUALITY_MIN_CLEAN_ROW_RATIO = float(os.getenv("DATA_QUALITY_MIN_CLEAN_ROW_R
 DATA_QUALITY_CATEGORICAL_LIMIT = int(os.getenv("DATA_QUALITY_CATEGORICAL_LIMIT", "50"))
 DATA_QUALITY_HIGH_CARDINALITY_LIMIT = int(os.getenv("DATA_QUALITY_HIGH_CARDINALITY_LIMIT", "200"))
 DATA_QUALITY_HIGH_CARDINALITY_RATIO = float(os.getenv("DATA_QUALITY_HIGH_CARDINALITY_RATIO", "0.20"))
+
+
+def get_allowed_origins() -> list[str]:
+    origins = {FRONTEND_URL}
+    parsed = urlparse(FRONTEND_URL)
+
+    if parsed.hostname == "localhost":
+        origins.add(FRONTEND_URL.replace("localhost", "127.0.0.1"))
+    elif parsed.hostname == "127.0.0.1":
+        origins.add(FRONTEND_URL.replace("127.0.0.1", "localhost"))
+
+    return sorted(origins)
+
+
+def get_auth_cookie_settings() -> dict[str, object]:
+    parsed = urlparse(FRONTEND_URL)
+    is_local_http = parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1"}
+    secure = not is_local_http
+
+    return {
+        "httponly": True,
+        "secure": secure,
+        "samesite": "Lax" if not secure else "None",
+        "path": "/",
+    }
 
 
 def resolve_mlflow_tracking_uri(configured_uri: str | None = None) -> str:

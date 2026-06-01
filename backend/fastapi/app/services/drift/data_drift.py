@@ -1,11 +1,8 @@
 import numpy as np
 import pandas as pd
-from evidently import Report
-from evidently.presets import DataDriftPreset
 from app.services.drift.metrics import calculate_psi, calculate_ks
 from app.services.drift.utils import classify_drift_severity
 from app.config import settings
-from evidently.ui.workspace import Workspace
 
 IDENTIFIER_TOKENS = {"id", "uuid", "key"}
 
@@ -39,6 +36,9 @@ def check_data_drift(reference_data: pd.DataFrame, current_data: pd.DataFrame):
         return results, feature_names
 
     try:
+        from evidently import Report
+        from evidently.presets import DataDriftPreset
+
         report = Report([DataDriftPreset()])
         # Run the report and CAPTURE the resulting Snapshot object
         snapshot = report.run(

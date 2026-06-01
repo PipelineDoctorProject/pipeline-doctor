@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from typing import List
 
-from mlflow.tracking import MlflowClient
 from app.config.settings import resolve_mlflow_tracking_uri
 
 from app.models.ml_model import MLModel
@@ -44,6 +43,8 @@ def _default_registry_status(model: MLModel):
 
 
 def _mlflow_registry_status(model: MLModel):
+    from mlflow.tracking import MlflowClient
+
     if not model.mlflow_model_name:
         return _default_registry_status(model)
 
@@ -212,6 +213,7 @@ def discover_models(
     data: DiscoverModelsRequest,
     current_user=Depends(require_tenant_user)
 ):
+    from mlflow.tracking import MlflowClient
 
     try:
 
@@ -251,6 +253,7 @@ def get_model_versions(
     data: ModelVersionsRequest,
     current_user=Depends(require_tenant_user)
 ):
+    from mlflow.tracking import MlflowClient
 
     try:
 

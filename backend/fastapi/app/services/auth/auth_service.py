@@ -6,6 +6,10 @@ from app.core.security import hash_password, verify_password
 from app.core.jwt import create_access_token, decode_token, create_refresh_token
 from app.utils.otp_utils import generate_otp
 from app.tasks.email_tasks import send_otp_email_task
+from app.config.settings import get_auth_cookie_settings
+
+
+AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
 
 
 def signup_user(db: Session, email: str, password: str):
@@ -125,12 +129,16 @@ def logout_user(response):
 
     response.delete_cookie(
         key="access_token",
-        path="/"
+        path="/",
+        secure=AUTH_COOKIE_SETTINGS["secure"],
+        samesite=AUTH_COOKIE_SETTINGS["samesite"],
     )
 
     response.delete_cookie(
         key="refresh_token",
-        path="/"
+        path="/",
+        secure=AUTH_COOKIE_SETTINGS["secure"],
+        samesite=AUTH_COOKIE_SETTINGS["samesite"],
     )
 
     return {

@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 
 from app.models.pipeline_run import PipelineRun
 from app.services.drift.utils import get_baseline_file_for_model
-from app.services.drift.data_drift import check_data_drift, check_profile_drift
-from app.services.drift.concept_drift import check_concept_drift
 from app.services.drift.storage import save_drift_finding_and_incident
 from app.services.incidents.live_events import publish_incident_event
 from app.services.quality.baseline_service import get_active_baseline
 def run_drift_checks(db: Session, run: PipelineRun, tenant_id: str | None = None):
+    from app.services.drift.concept_drift import check_concept_drift
+    from app.services.drift.data_drift import check_data_drift, check_profile_drift
+
     if not run.cleaned_data_path or not os.path.exists(run.cleaned_data_path):
         message = f"Cleaned data not found for run {run.id}: {run.cleaned_data_path}"
         print(message)

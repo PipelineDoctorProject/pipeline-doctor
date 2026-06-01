@@ -11,7 +11,6 @@ from app.models.remediation_action_log import RemediationActionLog
 from app.models.remediation_run import RemediationRun
 from app.models.tenant import Tenant
 from app.services.remediation import decide_remediation
-from app.services.remediation.retraining_service import run_retraining
 from app.utils.schema_utils import set_schema
 
 logger = get_task_logger(__name__)
@@ -29,6 +28,8 @@ def run_remediation_task(
     tenant_id: str | None,
     target_column: str,
 ):
+    from app.services.remediation.retraining_service import run_retraining
+
     db = SessionLocal()
 
     try:
