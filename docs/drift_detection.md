@@ -1,38 +1,43 @@
 # Drift Detection
 
-The Drift Detection layer runs after validation and cleaned-data generation. Its job is to answer:
+The Drift Detection layer only runs after the accepted cleaned dataset passes the post-clean quality gate.
 
-**Has the current production batch shifted away from the baseline population?**
+Its job is to answer:
+
+- has the current production batch shifted away from the baseline population?
+- did the model-output behavior also shift?
 
 There are two monitored categories:
 
 1. data drift on input features
-2. concept drift on prediction output
+2. concept drift on model output
 
 ---
 
 ## Execution Flow
 
 ```text
-Cleaned CSV
+Accepted cleaned CSV
     |
 run_drift_checks(...)
     |
-Data drift per feature
-Concept drift on predictions
+data drift per comparable feature
+concept drift on prediction output when available
     |
-Store drift findings
+store drift findings
     |
-Create incidents for high/critical signals
+create detailed incidents
+    |
+group incidents by run
 ```
+
+If the quality gate fails, this stage is skipped entirely.
 
 ---
 
 ## Main Metrics
 
 ### PSI
-
-**File:** `backend/fastapi/app/services/drift/metrics.py`
 
 Population Stability Index compares the baseline distribution with the current batch distribution.
 
@@ -44,20 +49,20 @@ Typical interpretation:
 | `0.1 - 0.2` | monitor |
 | `0.2 - 0.3` | warning |
 | `0.3 - 0.5` | significant drift |
-| `> 0.5` | major drift |
+| `>= 0.5` | major drift |
 
 ### KS
 
-Also computed in `metrics.py`, the Kolmogorov-Smirnov test compares the shape of the cumulative distributions.
+The Kolmogorov-Smirnov test compares the shape of the cumulative distributions.
 
-The result includes:
+Stored values include:
 
 - `ks_score`
 - `ks_pvalue`
 
 ### Final drift score
 
-The stored `drift_score` is the maximum of PSI and KS:
+The stored drift score is:
 
 ```python
 drift_score = max(psi_score, ks_score)
@@ -65,24 +70,9 @@ drift_score = max(psi_score, ks_score)
 
 ---
 
-## Concept Drift
+## Severity
 
-**File:** `backend/fastapi/app/services/drift/concept_drift.py`
-
-Concept drift is based on prediction behavior rather than only input features.
-
-It compares:
-
-- baseline prediction distribution
-- current run prediction distribution
-
-This catches cases where the model output changes even when the feature inputs look relatively normal.
-
----
-
-## Severity and Incidents
-
-**File:** `backend/fastapi/app/services/drift/utils.py`
+Current severity mapping:
 
 | Drift score | Severity |
 |---|---|
@@ -91,52 +81,33 @@ This catches cases where the model output changes even when the feature inputs l
 | `0.3 - 0.5` | high |
 | `>= 0.5` | critical |
 
-High and critical drift findings can create incidents that later appear in the Incidents page and feed the RCA pipeline.
+---
+
+## Baseline Inputs
+
+The drift layer prefers a raw baseline CSV when available.
+
+If the raw baseline file is missing or incompatible, the system falls back to profile-based comparison using the active baseline profile.
 
 ---
 
-## Stored Findings
+## Incident Behavior
 
-Each row in `drift_findings` contains:
-
-- `run_id`
-- `feature_name`
-- `psi_score`
-- `ks_score`
-- `ks_pvalue`
-- `drift_score`
-- `drift_detected`
-- `severity`
-- `created_at`
-
-These stored values are the source of truth for the Drift page.
+- detailed drift incidents are still created as evidence
+- top-level incident listing is grouped by run through `incident_groups`
+- Slack is centered on the primary run-level alert, not every individual drift finding
 
 ---
 
 ## AI Explanation Layer
 
-The Drift page now includes an optional explanation layer for a selected run.
+The Drift page explanation endpoint summarizes stored findings but does not override the underlying metrics.
 
-### What it does
-
-It does not detect drift or override severity.
-
-Instead, it explains:
-
-- `Possible Business Interpretation`
-- `What Changed Compared To Baseline`
-
-### Endpoint
+Endpoint:
 
 `GET /drift-findings/explain?run_id=<run_id>`
 
-### Behavior
-
-- if a live LLM is configured, the backend summarizes the stored drift findings into business-friendly language
-- if no LLM is available, the backend returns a structured deterministic explanation
-- the metric table, PSI, KS, and drift score remain the source of truth
-
-This follows the same product rule as Data Quality:
+Product rule:
 
 - metrics detect
 - AI explains
@@ -145,8 +116,7 @@ This follows the same product rule as Data Quality:
 
 ## Related Files
 
-- `backend/fastapi/app/api/routes/drift_findings.py`
 - `backend/fastapi/app/services/drift/drift_service.py`
-- `backend/fastapi/app/services/drift/metrics.py`
-- `backend/fastapi/app/services/ai_explanations/insight_explainer.py`
-- `frontend/src/pages/drift/DriftPage.jsx`
+- `backend/fastapi/app/services/drift/storage.py`
+- `backend/fastapi/app/services/drift/utils.py`
+- `backend/fastapi/app/api/routes/drift_findings.py`

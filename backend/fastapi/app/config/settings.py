@@ -8,6 +8,11 @@ load_dotenv()
 BASELINE_UPLOAD_DIR = "uploads/baselines"
 os.makedirs(BASELINE_UPLOAD_DIR, exist_ok=True)
 
+CLEANED_OUTPUT_DIR = os.getenv("CLEANED_OUTPUT_DIR", "cleaned")
+QUARANTINE_OUTPUT_DIR = os.getenv("QUARANTINE_OUTPUT_DIR", os.path.join(CLEANED_OUTPUT_DIR, "quarantine"))
+os.makedirs(CLEANED_OUTPUT_DIR, exist_ok=True)
+os.makedirs(QUARANTINE_OUTPUT_DIR, exist_ok=True)
+
 
 # JWT Config
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -45,6 +50,15 @@ SLACK_BOT_SCOPES = os.getenv(
     "SLACK_BOT_SCOPES",
     "chat:write,chat:write.public,channels:read,channels:join,groups:read",
 )
+
+# Data quality defaults
+DATA_QUALITY_NULL_RATIO_THRESHOLD = float(os.getenv("DATA_QUALITY_NULL_RATIO_THRESHOLD", "0.30"))
+DATA_QUALITY_ROW_ISSUE_THRESHOLD = float(os.getenv("DATA_QUALITY_ROW_ISSUE_THRESHOLD", "0.70"))
+DATA_QUALITY_MIN_CLEAN_ROW_COUNT = int(os.getenv("DATA_QUALITY_MIN_CLEAN_ROW_COUNT", "10"))
+DATA_QUALITY_MIN_CLEAN_ROW_RATIO = float(os.getenv("DATA_QUALITY_MIN_CLEAN_ROW_RATIO", "0.50"))
+DATA_QUALITY_CATEGORICAL_LIMIT = int(os.getenv("DATA_QUALITY_CATEGORICAL_LIMIT", "50"))
+DATA_QUALITY_HIGH_CARDINALITY_LIMIT = int(os.getenv("DATA_QUALITY_HIGH_CARDINALITY_LIMIT", "200"))
+DATA_QUALITY_HIGH_CARDINALITY_RATIO = float(os.getenv("DATA_QUALITY_HIGH_CARDINALITY_RATIO", "0.20"))
 
 
 def resolve_mlflow_tracking_uri(configured_uri: str | None = None) -> str:

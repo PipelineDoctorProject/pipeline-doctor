@@ -1,51 +1,85 @@
-# Data Quality Checks
+# Data Quality and Cleaning Gate
 
-The Data Quality layer is the first line of defense. It validates each incoming CSV against the active baseline before the batch is trusted for prediction, drift analysis, or RCA.
+The Data Quality layer is now a production-style acceptance gate, not just a passive checker.
+
+Its job is to answer:
+
+- can this batch be trusted for downstream prediction and drift analysis?
+- which rows or values were repaired safely?
+- which rows were too corrupted and had to be quarantined?
 
 ---
 
-## Overall Flow
+## Current Flow
 
 ```text
 Incoming CSV
     |
-Save uploaded file
-    |
 Load active baseline
     |
-Schema evolution check
+Detect schema differences
     |
-Run validation rules
+Raw validation against baseline
     |
-Transform and align cleaned data
+Cleaning and sanitization
     |
-Store DataQualityFindings
+Quarantine heavily corrupted rows
     |
-Optionally trigger prediction, drift, and RCA
+Post-clean validation
+    |
+Quality gate
+    |
+    +--> fail: mark run failed, skip prediction and drift, queue RCA
+    |
+    +--> pass: save cleaned CSV, run prediction, run drift, queue RCA
 ```
 
 ---
 
-## Baseline System
+## Baseline Profiling
 
-A baseline is a stored reference profile created from a known-good dataset.
+The baseline is created from a known-good dataset and stores two things:
 
-### What gets stored
+- `schema`
+- `profile`
 
-| Field | Example | Description |
-|---|---|---|
-| `schema` | `{"age": "int64"}` | Column name to data type map |
-| `profile.min` | `25` | Minimum observed numeric value |
-| `profile.max` | `65` | Maximum observed numeric value |
-| `profile.null_ratio` | `0.02` | Null percentage in baseline |
-| `profile.unique_values` | `["A", "B", "C"]` | Allowed values for categorical columns |
+### Schema
 
-### Baseline versioning
+Maps each column to a normalized type such as:
 
-- every upload creates a new version
-- the first baseline is auto-approved and active
-- later uploads start as draft
-- only one baseline can be active per model
+- `int`
+- `float`
+- `bool`
+- `object`
+
+### Profile
+
+The profile is column-aware:
+
+#### Numeric columns
+
+Stores:
+
+- `min`
+- `max`
+- `mean`
+- `median`
+- `p01`
+- `p99`
+
+`p01` and `p99` are used as safer operating bounds than exact raw min/max.
+
+#### Identifier columns
+
+Columns like `id`, `uuid`, or `...id` are treated as identifiers, not strict enums.
+
+#### High-cardinality text columns
+
+Columns with too many unique values are treated as text/high-cardinality fields instead of strict enum categories.
+
+#### Enum-style categorical columns
+
+Only low-cardinality stable categories are validated as explicit allowed values.
 
 ---
 
@@ -53,140 +87,196 @@ A baseline is a stored reference profile created from a known-good dataset.
 
 ### 1. Schema type validation
 
-**File:** `backend/fastapi/app/services/quality/validator.py`
+Checks whether incoming values are compatible with the expected type.
 
-Compares incoming column types with the baseline schema.
+Examples:
 
-| Scenario | Result |
-|---|---|
-| baseline type matches incoming type | pass |
-| type mismatch | failure stored as `schema_type_mismatch` |
+- `float` column receiving numeric-looking strings can still be coerced
+- a required numeric column full of invalid text fails
+
+Stored finding type:
+
+- `schema_type_mismatch`
 
 ### 2. Null ratio validation
 
-Calculates the percentage of nulls per column.
+Checks missingness per column.
 
-| Null ratio | Result |
-|---|---|
-| within threshold | pass |
-| above threshold | failure stored as `null_ratio` |
+Default threshold:
+
+- `DATA_QUALITY_NULL_RATIO_THRESHOLD = 0.30`
+
+Stored finding type:
+
+- `null_ratio`
 
 ### 3. Numeric range validation
 
-Checks whether numeric values stay within the baseline min and max range.
+Checks whether current numeric values move outside baseline bounds.
 
-| Scenario | Result |
-|---|---|
-| value range stays inside baseline | pass |
-| values move outside baseline range | failure stored as `range` |
+Current validation prefers:
 
-### 4. Categorical value validation
+- `p01`
+- `p99`
 
-Checks whether incoming categorical values were already seen in the baseline.
+Fallback:
 
-| Scenario | Result |
-|---|---|
-| all values are known | pass |
-| new category appears | failure stored as `categorical` |
+- `min`
+- `max`
 
----
+Stored finding type:
 
-## Schema Evolution
+- `range`
 
-**File:** `backend/fastapi/app/services/quality/schema_handler.py`
+### 4. Enum categorical validation
 
-Before validation, the system compares the incoming schema with the active baseline:
+Checks only stable enum-like categories against baseline values.
 
-- extra columns are flagged as schema change events
-- missing columns are added back as `None` to avoid crashes
-- the cleaned dataframe is reordered to match the baseline contract
+Identifier columns and high-cardinality text are not treated as strict enums anymore.
 
-### Approval flow
+Stored finding type:
 
-1. new or missing columns are detected
-2. a `schema_change_events` record is stored with `pending` status
-3. an admin can review and approve the change
-4. a new baseline can later be uploaded to make the change official
+- `categorical`
 
 ---
 
-## Cleaned Output
+## Cleaning and Sanitization
 
-**File:** `backend/fastapi/app/services/quality/pipeline.py`
+The cleaner does more than basic fillna.
 
-After validation and transformation, the pipeline writes a cleaned CSV:
+### Missing marker normalization
 
-- saved as `cleaned/{run_id}.csv`
-- stored on the run as `cleaned_data_path`
-- later used by drift detection
+These values are normalized to missing:
 
-When running in Docker, `/app/cleaned` is backed by the Docker volume `backend_cleaned`, so the file may exist in the container volume instead of the local repo folder unless a bind mount is used.
+- empty string
+- `NA`
+- `N/A`
+- `NULL`
+- `NONE`
+- `NAN`
+
+### Numeric sanitization
+
+- coercion failures become missing
+- out-of-range numeric values are masked
+- numeric nulls are filled from:
+  - current-batch median
+  - baseline median or mean
+  - midpoint of baseline bounds
+  - `0` as last fallback
+
+### Boolean sanitization
+
+Only explicit boolean tokens are trusted, such as:
+
+- `true`, `false`
+- `1`, `0`
+- `yes`, `no`
+
+Invalid boolean-like values are treated as issues instead of blindly becoming `True`.
+
+### Categorical sanitization
+
+- invalid enum values are masked
+- enum nulls are filled from a valid mode or baseline value
+- identifier fields use `UNKNOWN_ID`
+- non-enum text fields are normalized but not forced into a small category set
+
+### Row quarantine
+
+Each row accumulates issue counts.
+
+Rows whose issue ratio crosses:
+
+- `DATA_QUALITY_ROW_ISSUE_THRESHOLD = 0.70`
+
+are removed from the accepted dataset and written to quarantine.
+
+---
+
+## Quality Gate
+
+After cleaning, the accepted dataset is validated again.
+
+The run is blocked when any of these are true:
+
+- cleaned row count is `0`
+- cleaned row count is below `DATA_QUALITY_MIN_CLEAN_ROW_COUNT`
+- cleaned row ratio is below `DATA_QUALITY_MIN_CLEAN_ROW_RATIO`
+- required baseline columns are missing
+- post-clean schema/type errors remain
+- post-clean validation checks still fail
+
+Current defaults:
+
+| Setting | Default |
+|---|---|
+| `DATA_QUALITY_NULL_RATIO_THRESHOLD` | `0.30` |
+| `DATA_QUALITY_ROW_ISSUE_THRESHOLD` | `0.70` |
+| `DATA_QUALITY_MIN_CLEAN_ROW_COUNT` | `10` |
+| `DATA_QUALITY_MIN_CLEAN_ROW_RATIO` | `0.50` |
+| `DATA_QUALITY_CATEGORICAL_LIMIT` | `50` |
+| `DATA_QUALITY_HIGH_CARDINALITY_LIMIT` | `200` |
+| `DATA_QUALITY_HIGH_CARDINALITY_RATIO` | `0.20` |
+
+---
+
+## Output Artifacts
+
+### Accepted dataset
+
+- path: `cleaned/{run_id}.csv`
+- stored on `pipeline_runs.cleaned_data_path`
+- used for prediction, drift, and remediation
+
+### Quarantine dataset
+
+- path: `cleaned/quarantine/{run_id}.csv`
+- contains removed rows that were too corrupted to trust
+
+When running in Docker, these live in the `backend_cleaned` volume under `/app/cleaned`.
 
 ---
 
 ## Stored Findings
 
-Failures are stored in `data_quality_findings` with fields such as:
+Raw validation findings are stored in `data_quality_findings`.
 
-- `pipeline_run_id`
-- `column_name`
-- `check_type`
-- `success`
-- `details`
-- `created_at`
+That means:
 
-These stored findings are the source of truth for the Data Quality page.
+- the UI still shows what originally failed
+- RCA still has access to the raw evidence
+- the cleaned accepted dataset can still pass the gate even when the raw upload was bad
 
----
+This distinction is intentional:
 
-## AI Explanation Layer
-
-The Data Quality page now includes an optional explanation layer for a selected run.
-
-### What it does
-
-It does not decide whether a check failed. The deterministic validators already do that.
-
-Instead, it explains:
-
-- `Why This Matters`
-- `Suggested Remediation`
-
-### Endpoint
-
-`GET /data-quality/explain?run_id=<run_id>`
-
-### Behavior
-
-- if a live LLM is configured, the backend generates a short explanation from the stored failed findings
-- if no LLM is available, the backend returns a structured deterministic fallback explanation
-- the validation table and grouped issue cards remain the source of truth
-
-This keeps the page safe for production use:
-
-- rules detect
-- AI explains
+- raw findings explain the problem
+- post-clean validation decides whether downstream steps are allowed
 
 ---
 
-## RCA Handoff
+## Downstream Rules
 
-The Data Quality pipeline no longer writes the final RCA report directly.
+### If quality gate passes
 
-After validation, cleaned-data generation, prediction, and drift checks:
+- run status becomes `success`
+- predictions may run
+- drift detection may run
+- doctor RCA is queued
 
-1. the run is saved normally
-2. the backend queues the doctor agent task
-3. the doctor task generates RCA, trace logs, and the final incident report
+### If quality gate fails
 
-This keeps RCA persistence aligned with the incident trace shown in the drawer.
+- run status becomes `failed`
+- predictions are skipped
+- drift detection is skipped
+- doctor RCA is still queued so the failure is explainable
 
 ---
 
 ## Related Files
 
-- `backend/fastapi/app/api/routes/data_quality.py`
-- `backend/fastapi/app/services/quality/pipeline.py`
+- `backend/fastapi/app/services/quality/baseline.py`
 - `backend/fastapi/app/services/quality/validator.py`
-- `backend/fastapi/app/services/ai_explanations/insight_explainer.py`
-- `frontend/src/pages/data-quality/DataQualityPage.jsx`
+- `backend/fastapi/app/services/quality/transformer.py`
+- `backend/fastapi/app/services/quality/pipeline.py`
+- `backend/fastapi/app/api/routes/data_quality.py`

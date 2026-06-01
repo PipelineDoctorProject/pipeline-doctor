@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.settings import FRONTEND_URL
+from app.db.session import SessionLocal
+from app.models.tenant import Tenant
+from app.utils.schema_utils import ensure_all_tenant_schemas
 
 from app.api.routes import (
     health,
@@ -25,6 +28,20 @@ from app.api.routes import (
 from app.middleware.auth_middleware import AuthMiddleware
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+def repair_existing_tenant_schemas():
+    db = SessionLocal()
+
+    try:
+        tenants = db.query(Tenant).all()
+        repaired_schemas = ensure_all_tenant_schemas(db, tenants)
+        print(
+            f"Tenant schema repair complete for {len(repaired_schemas)} schema(s)."
+        )
+    finally:
+        db.close()
 
 
 

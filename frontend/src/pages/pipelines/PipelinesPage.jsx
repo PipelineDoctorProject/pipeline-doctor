@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getPipelineRuns } from "../../store/pipelineStore";
+import { getAccessToken } from "../../api/client";
 
 export default function PipelinesPage() {
   const [runs, setRuns] = useState([]);
@@ -31,6 +32,7 @@ export default function PipelinesPage() {
       setRuns(data || []);
     } catch (err) {
       console.log(err);
+      setRuns([]);
     } finally {
       setLoading(false);
     }
@@ -50,8 +52,12 @@ export default function PipelinesPage() {
       const response = await fetch(
         `http://localhost:8000/runs/${runId}/download-cleaned`,
         {
-          // Use credentials: include so cookies are sent automatically
           credentials: "include",
+          headers: getAccessToken()
+            ? {
+                Authorization: `Bearer ${getAccessToken()}`,
+              }
+            : undefined,
         }
       );
 

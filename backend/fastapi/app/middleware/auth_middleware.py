@@ -28,19 +28,19 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
                 return response
 
-            token = request.cookies.get("access_token")
+            auth_header = request.headers.get("Authorization")
+            token = None
 
-            # Swagger bearer support
-            if not token:
-
-                auth_header = request.headers.get("Authorization")
-
-                if (
-                    auth_header and
-                    auth_header.startswith("Bearer ")
-                ):
-
-                    token = auth_header.split(" ")[1]
+            # Prefer the explicit bearer token used by the SPA.
+            # Falling back to cookies is still useful for refresh-based
+            # sessions, but the cookie must not override a newer header.
+            if (
+                auth_header and
+                auth_header.startswith("Bearer ")
+            ):
+                token = auth_header.split(" ", 1)[1]
+            else:
+                token = request.cookies.get("access_token")
 
             if token:
 

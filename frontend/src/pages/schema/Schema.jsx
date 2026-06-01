@@ -78,6 +78,8 @@ export default function SchemaPage() {
       });
     } catch (err) {
       console.log(err);
+      setBaselines([]);
+      setSelectedBaseline(null);
     } finally {
       setLoading(false);
     }
