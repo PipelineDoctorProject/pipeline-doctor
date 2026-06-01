@@ -251,6 +251,8 @@ export default function DataQualityPage() {
       setFindings(data || []);
     } catch (err) {
       console.log(err);
+      setFindings([]);
+      setExplanation(null);
     } finally {
       setLoading(false);
     }

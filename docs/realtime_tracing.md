@@ -1,78 +1,32 @@
-# Realtime Tracing (WebSockets + Live Incident Updates)
+# Realtime Tracing
 
-This document explains the realtime features added this week.
+PipelineDoctor uses WebSockets plus Redis Pub/Sub for two live experiences:
 
-The project now supports:
-
-- live RCA step updates while the doctor agent runs
-- automatic incident page refresh when incidents are created or updated
-
-The doctor task is now the single source of RCA creation for new runs, so the saved RCA report and the live trace come from the same flow.
+- live RCA step updates while the doctor agent is running
+- live grouped-incident refresh on the incidents page
 
 ---
 
-## Realtime Architecture Diagram
+## Current Realtime Architecture
 
 ```mermaid
 flowchart LR
-    A[Celery Doctor Task] --> B[(Redis Pub/Sub)]
-    B --> C[FastAPI WebSocket Endpoints]
-    C --> D[React Hooks]
-    D --> E[Incident Drawer Stepper]
-    D --> F[Incidents Page Live Refresh]
+    A[Celery doctor or incident publisher] --> B[(Redis Pub/Sub)]
+    B --> C[FastAPI WebSocket endpoints]
+    C --> D[React hooks]
+    D --> E[Incident drawer RCA stepper]
+    D --> F[Incidents page grouped refresh]
 ```
 
-### What This Diagram Means
-
-- Celery produces live execution events.
-- Redis is used as the realtime bridge.
-- FastAPI subscribes to Redis and forwards events through WebSockets.
-- React listens through hooks and updates the UI immediately.
-
 ---
 
-## Why This Exists
+## Endpoints
 
-Without realtime updates:
+### `WS /ws/agent-trace/{run_id}`
 
-- users had to refresh the incidents page manually
-- the RCA drawer could only show stored logs after the run finished
+Used by the incident drawer to stream live RCA execution for a run.
 
-Now the UI can show:
-
-- "System is detecting..."
-- "System is reasoning..."
-- "System is parsing..."
-- "System is finalizing and saving the RCA report..."
-
-and only show the final RCA card when reporting is done.
-
----
-
-## Core Files
-
-| File | Responsibility |
-|---|---|
-| `backend/fastapi/app/api/routes/agent_trace.py` | WebSocket endpoints |
-| `backend/fastapi/app/services/websocket/connection_manager.py` | Connection management |
-| `backend/fastapi/app/services/incidents/live_events.py` | Redis incident publish helper |
-| `backend/fastapi/app/tasks/ai_tasks.py` | Step event publishing |
-| `frontend/src/hooks/useAgentWebSocket.js` | Live RCA trace hook |
-| `frontend/src/hooks/useIncidentsWebSocket.js` | Live incident feed hook |
-| `frontend/src/components/agents/AgentTraceStepper.jsx` | Live stepper UI |
-| `frontend/src/pages/incidents/IncidentsPage.jsx` | Drawer behavior and event handling |
-
----
-
-## WebSocket Endpoints
-
-### Agent Trace
-
-`WS /ws/agent-trace/{run_id}`
-
-Used by the incident drawer to watch one RCA execution.
-
-**Event types**
+Common event types:
 
 - `connected`
 - `ping`
@@ -80,226 +34,56 @@ Used by the incident drawer to watch one RCA execution.
 - `run_complete`
 - `run_failed`
 
-### Agent Trace WebSocket Flow
+### `WS /ws/incidents`
 
-```mermaid
-sequenceDiagram
-    participant W as Celery Worker
-    participant R as Redis channel agent_trace:{run_id}
-    participant F as FastAPI WS /ws/agent-trace/{run_id}
-    participant U as React useAgentWebSocket
-    participant S as AgentTraceStepper
+Used by the incidents page to refresh when incidents are created or updated.
 
-    W->>R: publish step_update
-    F->>R: subscribe
-    R-->>F: step_update event
-    F-->>U: websocket message
-    U-->>S: update step state
-    W->>R: publish run_complete / run_failed
-    R-->>F: terminal event
-    F-->>U: terminal websocket message
-```
-
-### Incidents Feed
-
-`WS /ws/incidents`
-
-Used by the incidents page to react to incident changes.
-
-**Event types**
+Common event types:
 
 - `connected`
 - `ping`
 - `incident_created`
 - `incident_updated`
 
-### Incident Feed WebSocket Flow
+---
 
-```mermaid
-sequenceDiagram
-    participant B as Backend Incident Service
-    participant R as Redis channel incidents
-    participant F as FastAPI WS /ws/incidents
-    participant U as React useIncidentsWebSocket
-    participant P as Incidents Page
+## Current UI Behavior
 
-    B->>R: publish incident_created / incident_updated
-    F->>R: subscribe
-    R-->>F: incident event
-    F-->>U: websocket message
-    U-->>P: reload incidents
-    P-->>P: show toast / refresh rows
-```
+### Agent trace
+
+The drawer:
+
+1. loads stored `agent_runs`
+2. loads stored `agent_step_logs`
+3. connects to `WS /ws/agent-trace/{run_id}` when the run is still active
+4. shows live progress until reporting finishes
+5. reveals the final RCA card only after reporting is complete
+
+### Incidents page
+
+The incidents page:
+
+1. loads grouped top-level incidents
+2. connects to `WS /ws/incidents`
+3. refreshes the grouped incident list when live events arrive
+4. fetches children separately when the drawer opens
 
 ---
 
-## Redis Channels
+## Reliability Notes
 
-Redis acts as the bridge between Celery workers and WebSocket clients.
+Recent hardening changed two important runtime behaviors:
 
-| Channel | Purpose |
-|---|---|
-| `agent_trace:{run_id}` | Live RCA step updates for one run |
-| `incidents` | Shared incident update feed |
-
-This is important because Celery and FastAPI do not share memory. Redis carries the live events between them.
+- the incident WebSocket hook now reconnects after unexpected socket closure
+- the incident list is centered on run-level grouped alerts, not every raw child incident
 
 ---
 
-## Live RCA Step Flow
+## Related Files
 
-```text
-Validation and drift finish
-        |
-Queue run_doctor_agent_task(...)
-        |
-Celery doctor task starts
-        |
-Publish step_update to Redis
-        |
-FastAPI WebSocket listens on agent_trace:{run_id}
-        |
-Frontend hook receives event
-        |
-AgentTraceStepper updates live
-```
-
-### Detailed RCA Trace Pipeline
-
-```mermaid
-flowchart TD
-    A[Validation + Drift Done] --> B[Queue run_doctor_agent_task]
-    B --> C[Create AgentRun]
-    C --> D[Detection Step]
-    D --> E[Publish step_update to Redis]
-    E --> F[FastAPI agent trace socket]
-    F --> G[useAgentWebSocket hook]
-    G --> H[AgentTraceStepper]
-    H --> I[User sees live progress]
-    D --> J[AI Reasoning]
-    J --> K[Parsing]
-    K --> L[Reporting]
-```
-
-### Step Names
-
-| Step Index | Name |
-|---|---|
-| `0` | `detection` |
-| `1` | `reasoning` |
-| `2` | `parser` |
-| `3` | `reporting` |
-
----
-
-## Incident Feed Flow
-
-```text
-Incident is created or updated
-        |
-publish_incident_event(...)
-        |
-Redis channel "incidents"
-        |
-FastAPI WebSocket forwards event
-        |
-Incidents page silently reloads data
-        |
-UI updates and can show toast notifications
-```
-
-### Detailed Incident Refresh Pipeline
-
-```mermaid
-flowchart TD
-    A[Incident Created / Updated] --> B[publish_incident_event]
-    B --> C[Redis incidents channel]
-    C --> D[FastAPI websocket route]
-    D --> E[useIncidentsWebSocket]
-    E --> F[IncidentsPage refresh logic]
-    F --> G[Updated rows]
-    F --> H[Toast notification]
-```
-
----
-
-## Current Drawer Rules
-
-### RCA Visibility
-
-The drawer does not show the `AI Root Cause Analysis` card immediately when `rca_report` exists in incident data.
-
-It now waits until:
-
-- the reporting step is `done`, or
-- the stored agent run clearly finished reporting
-
-For older runs created before the unified doctor-task flow, a saved RCA report may still exist without any trace logs. New runs should not have that mismatch.
-
-### Dynamic Step Messaging
-
-While the run is live, the stepper uses dynamic action text for each step instead of static descriptions.
-
-Examples:
-
-- `System is detecting drift, schema, and data quality signals.`
-- `System is reasoning over the detected failure signals.`
-- `System is parsing the AI response into structured RCA fields.`
-- `System is finalizing and saving the RCA report.`
-
----
-
-## Frontend Control Flow
-
-The incident drawer does this:
-
-1. fetch incident list
-2. fetch agent runs for the selected incident
-3. fetch stored step logs for the latest agent run
-4. connect to `/ws/agent-trace/{run_id}` if the run is still running
-5. switch from stored view to live stepper when frames arrive
-6. reveal the RCA card only after reporting completes
-
-The incidents page separately opens `/ws/incidents` to auto-refresh incident rows.
-
----
-
-## Debug Checklist
-
-If live trace is not working:
-
-1. confirm the latest agent run is `running`
-2. confirm `/ws/agent-trace/{run_id}` appears in browser Network > Socket
-3. confirm `step_update` frames arrive
-4. confirm the stepper changes in the drawer
-
-If the incident drawer shows RCA summary but no trace:
-
-1. check `GET /incidents/{incident_id}/agent-runs`
-2. check backend API logs for doctor-task queueing errors
-3. check whether the run was created before the unified doctor-task flow
-
-One important queueing error seen during development was:
-
-- `Tenant id could not be resolved for the doctor agent task`
-
-When that happened, the incident could still exist, but no `AgentRun` was created.
-
-If incident auto-refresh is not working:
-
-1. confirm `/ws/incidents` appears in browser Network > Socket
-2. confirm Redis publish is happening
-3. confirm the frontend reloads incidents on `incident_created` / `incident_updated`
-
-If the incident drawer looks stuck on an old Airflow run state:
-
-1. check the Airflow task log, not only the graph color
-2. confirm whether the task actually ended `success`, `failed`, or `up_for_retry`
-3. remember that Airflow UI can look stale when the DAG is temporarily deactivated by scheduler instability
-
----
-
-## Related Docs
-
-- [ai_orchestration.md](./ai_orchestration.md)
-- [automation_and_scheduler.md](./automation_and_scheduler.md)
+- `backend/fastapi/app/api/routes/agent_trace.py`
+- `backend/fastapi/app/services/websocket/connection_manager.py`
+- `backend/fastapi/app/services/incidents/live_events.py`
+- `frontend/src/hooks/useAgentWebSocket.js`
+- `frontend/src/hooks/useIncidentsWebSocket.js`
+- `frontend/src/pages/incidents/IncidentsPage.jsx`

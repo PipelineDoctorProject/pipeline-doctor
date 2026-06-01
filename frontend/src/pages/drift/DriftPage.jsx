@@ -368,6 +368,8 @@ export default function DriftPage() {
       setFindings(data || []);
     } catch (err) {
       console.log(err);
+      setFindings([]);
+      setExplanation(null);
     } finally {
       setLoading(false);
     }
