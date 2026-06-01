@@ -110,7 +110,8 @@ def get_baselines(
 @router.patch("/baselines/{baseline_id}/activate")
 def activate_baseline_route(
     baseline_id: int,
-    request: Request
+    request: Request,
+    current_user=Depends(require_tenant_user)
 ):
 
     db: Session = request.state.db

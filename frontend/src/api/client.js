@@ -14,6 +14,8 @@ function getAccessToken() {
   return sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+export { getAccessToken };
+
 export function hasAccessToken() {
   return Boolean(getAccessToken());
 }

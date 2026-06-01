@@ -1,6 +1,6 @@
 # AI Orchestration (LangGraph RCA)
 
-This document explains the AI root cause analysis system added this week.
+This document explains the current AI root cause analysis system.
 
 The goal of the orchestration layer is to convert failed monitoring evidence into a structured RCA report that users can read directly in the incident drawer.
 

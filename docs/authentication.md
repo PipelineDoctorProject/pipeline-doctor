@@ -1,249 +1,206 @@
-# Authentication & Security
+# Authentication and Tenant Isolation
 
-PipelineDoctor uses a multi-stage, multi-tenant authentication system designed for security and scalability, featuring JWT-based tokens and OTP (One-Time Password) email verification.
-
----
-
-## 🔑 Authentication Flow
-
-### 1. User Signup
-- **Endpoint**: `POST /auth/signup`
-- **Process**:
-    - User provides `email` and `password`.
-    - System checks for duplicate emails.
-    - Password is hashed using **Bcrypt** and stored.
-    - A 6-digit OTP is generated and emailed to the user.
-    - User record is created with `is_verified=False`.
-
-**Request:**
-```json
-{ "email": "user@example.com", "password": "yourpassword" }
-```
-**Response:**
-```json
-{ "message": "OTP sent" }
-```
+PipelineDoctor uses JWT auth, OTP verification, invite-based member onboarding, and schema-based multi-tenancy.
 
 ---
 
-### 2. OTP Verification
-- **Endpoint**: `POST /auth/verify-otp`
-- **Process**:
-    - User submits the OTP received via email.
-    - If correct, `is_verified` is set to `True` and `otp_code` is cleared.
-    - System issues an **Access Token** (30 min) and a **Refresh Token** (7 days).
-    - Returns `onboarding_required: True` to trigger the company setup flow.
+## Account and Workspace Flow
 
-**Request:**
-```json
-{ "email": "user@example.com", "otp": "482910" }
-```
-**Response:**
-```json
-{
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
-  "onboarding_required": true
-}
-```
+### 1. Self-register
+
+- Endpoint: `POST /auth/signup`
+- Input: `email`, `password`
+- Behavior:
+  - normalizes email
+  - hashes the password
+  - creates the user
+  - sends a 6-digit OTP
+- Workspace role:
+  - self-registered users become `admin`
+
+### 2. Verify OTP
+
+- Endpoint: `POST /auth/verify-otp`
+- Output:
+  - `access_token`
+  - `refresh_token`
+  - `token_type`
+  - `onboarding_required`
+- Behavior:
+  - marks the user verified
+  - clears OTP state
+  - issues the first JWT pair
+  - sends the user into onboarding when they do not yet belong to a tenant
+
+### 3. Workspace onboarding
+
+- Endpoint: `POST /onboarding/company`
+- Input: `company_name`
+- Output:
+  - `tenant_id`
+  - `workspace_name`
+  - `schema_name`
+  - refreshed `access_token` and `refresh_token`
+- Frontend flow:
+  - step 1: create workspace
+  - step 2: invite members or skip
+  - only after step 2 does the user move to the dashboard
+
+### 4. Invite members
+
+- Endpoint: `POST /invite/member`
+- Admin only
+- Behavior:
+  - creates a pre-linked member account inside the admin's tenant
+  - assigns `role = "member"`
+  - emails an invite token
+
+### 5. Accept invite
+
+- Endpoint: `POST /invite/accept`
+- Input: `token`, `password`
+- Output:
+  - `access_token`
+  - `refresh_token`
+  - `token_type`
+- Behavior:
+  - sets the member password
+  - marks the invite accepted
+  - marks the member verified
+  - signs the member into the workspace immediately
+
+### 6. Login and refresh
+
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+
+The backend returns bearer tokens in the JSON response and also sets auth cookies for browser flows.
 
 ---
 
-### 3. User Login
-- **Endpoint**: `POST /auth/login`
-- **Process**:
-    - Standard email/password validation using Bcrypt verification.
-    - Issues new Access and Refresh tokens upon success.
+## Token Strategy
 
-**Request:**
-```json
-{ "email": "user@example.com", "password": "yourpassword" }
-```
-**Response:**
-```json
-{ "access_token": "eyJ...", "refresh_token": "eyJ..." }
-```
-
----
-
-### 4. Token Refresh
-- **Endpoint**: `POST /auth/refresh`
-- **Process**:
-    - Validates the refresh token's signature and `type` field.
-    - Issues a fresh access token without requiring re-login.
-
-**Request:**
-```json
-{ "refresh_token": "eyJ..." }
-```
-**Response:**
-```json
-{ "access_token": "eyJ...", "token_type": "bearer" }
-```
-
----
-
-## 🛡️ Security Implementation
-
-### JWT Token Strategy
-**File:** `app/core/jwt.py`
-
-| Token Type | Expiry | Contains |
+| Token | Default lifetime | Purpose |
 |---|---|---|
-| Access Token | 30 minutes | `user_id`, `tenant_id`, `role`, `schema_name` |
-| Refresh Token | 7 days | `user_id`, `tenant_id`, `role`, `schema_name` |
+| Access token | 30 minutes | main authenticated API access |
+| Refresh token | 7 days | access-token renewal |
 
-- **Algorithm**: HS256 (HMAC with SHA-256).
-- **Type Field**: Both tokens contain a `type` field (`"access"` / `"refresh"`) to prevent token-type confusion attacks.
-- **Expiry**: Enforced automatically; expired tokens raise a `401 Token expired` error.
+JWT payload includes:
 
-### Password Safety
-**File:** `app/core/security.py`
-- Passwords are **never stored in plain text**.
-- Uses **Passlib with Bcrypt** for secure hashing with automatic salting.
-
----
-
-## 🏢 Multi-Tenancy Architecture
-
-
-PipelineDoctor implements a **Schema-based Multi-Tenancy** strategy, ensuring that data for different organizations is physically isolated at the database level.
-
-### 1. Tenant Isolation
-- **Isolated Schemas**: Every "Company" (Tenant) is assigned a unique PostgreSQL schema (e.g., `tenant_google_a1b2c3`).
-- **Data Sovereignty**: Tables like `ml_models`, `baselines`, and `incidents` are created inside the tenant's specific schema, not in the public schema.
-
-### 2. Tenant Onboarding
-After a user verifies their account via OTP, they must go through the **Onboarding Flow**:
-- **Endpoint**: `POST /onboarding/company`
-- **Process**:
-    - User provides a `company_name`.
-    - System generates a unique `schema_name`.
-    - System executes `CREATE SCHEMA` and initializes all required tables within that schema.
-    - The `user` record is linked to the new `tenant_id`.
-
-### 3. Identity Injection (JWT)
-Once a user is associated with a tenant, all future tokens include multi-tenant metadata:
-- **`tenant_id`**: The unique UUID of the organization.
-- **`schema_name`**: The database schema identifier.
-- **`role`**: The user's permissions within that specific tenant.
-
-### 4. Automated Context Switching (Middleware)
-A dedicated **Auth Middleware** (`app/middleware/auth_middleware.py`) handles every request:
-- It extracts the `tenant_id` from the JWT.
-- It automatically executes `SET search_path TO "..."` on the database session.
-- This ensures that all SQL queries in the service layer are automatically routed to the correct tenant's tables without the developer having to manually filter by `tenant_id`.
+- `user_id`
+- `tenant_id`
+- `schema_name`
+- `role`
+- `type`
 
 ---
 
-## 🚦 Token Refresh Flow
-When an access token expires, the client should call:
-- **Endpoint**: `POST /auth/refresh`
-- **Payload**: `{ "refresh_token": "..." }`
-- **Response**: A new valid `access_token`.
+## Cookie and Header Behavior
+
+Auth uses environment-aware cookie settings:
+
+- local HTTP:
+  - `secure = false`
+  - `samesite = lax`
+- HTTPS:
+  - `secure = true`
+  - `samesite = none`
+
+Important runtime rule:
+
+- the backend prefers the `Authorization: Bearer ...` header over stale browser cookies
+
+That prevents cross-session issues where one user could accidentally keep using another user's old cookie state in the same browser.
 
 ---
 
-## 📦 Service Components
+## Tenant Isolation Model
 
-- **JWT Core (`app/core/jwt.py`)**: Handles encoding, decoding, and expiration logic.
-- **Security Utils (`app/core/security.py`)**: Handles password hashing and verification.
-- **Auth Service (`app/services/auth/auth_service.py`)**: Business logic for signup, login, and OTP management.
-- **Email Utils (`app/utils/email_utils.py`)**: Orchestrates sending OTPs to users.
-=======
+PipelineDoctor uses PostgreSQL schema-based isolation.
 
-PipelineDoctor implements **PostgreSQL Schema-based Multi-Tenancy**, providing complete physical data isolation between organizations.
+### Public schema
 
-### How it works:
+Shared tables live in `public`, including:
 
-```
-User Signs Up → Verifies OTP → Creates Company (Onboarding)
-                                        ↓
-                        PostgreSQL Schema created:
-                        "tenant_acmecorp_a1b2c3"
-                                        ↓
-                        All model/pipeline/drift tables
-                        created inside that schema
-                                        ↓
-                        JWT updated with tenant_id + schema_name
+- `users`
+- `tenants`
+- Slack workspace connection metadata
+
+### Tenant schemas
+
+Each workspace gets a dedicated schema such as:
+
+`tenant_acme_a1b2c3`
+
+Tenant-scoped tables include:
+
+- `ml_models`
+- `baselines`
+- `pipeline_runs`
+- `data_quality_findings`
+- `drift_findings`
+- `incident_groups`
+- `incidents`
+- `agent_runs`
+- `agent_step_logs`
+- `remediation_runs`
+- `remediation_action_logs`
+
+### Request routing
+
+For authenticated requests, middleware:
+
+1. decodes the JWT
+2. loads the user
+3. sets:
+
+```sql
+SET search_path TO "<tenant_schema>", public
 ```
 
-### 1. Tenant Isolation
-- Every "Company" gets a **dedicated PostgreSQL schema** (e.g., `tenant_acme_a1b2c3`).
-- Tables like `ml_models`, `baselines`, `pipeline_runs`, `drift_findings`, and `incidents` exist independently per tenant.
-- **No cross-tenant data leakage is possible** at the database level.
-
-### 2. Tenant Onboarding
-- **Endpoint**: `POST /onboarding/company`
-- **File**: `app/services/auth/onboarding_service.py`
-
-**Process:**
-1. User provides a `company_name`.
-2. System generates a unique `schema_name` (e.g., `tenant_acme_corp_a1b2c3`).
-3. Executes `CREATE SCHEMA IF NOT EXISTS "schema_name"` in PostgreSQL.
-4. Dynamically creates all required tables inside the new schema.
-5. Links the `user` record to the new `tenant_id`.
-6. Issues new tokens now containing `tenant_id`, `schema_name`, and `role`.
-
-**Request:**
-```json
-{ "company_name": "Acme Corp" }
-```
-**Response:**
-```json
-{
-  "message": "Company created",
-  "tenant_id": "uuid...",
-  "schema_name": "tenant_acme_corp_a1b2c3",
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ..."
-}
-```
-
-### 3. Automated Context Switching (Middleware)
-**File:** `app/middleware/auth_middleware.py`
-
-Every incoming HTTP request is intercepted by the **AuthMiddleware**:
-
-1. Extracts the `Authorization: Bearer <token>` header.
-2. Decodes the JWT and loads the `user` object from the database.
-3. If the user has a `tenant_id`, executes:
-   ```sql
-   SET search_path TO "tenant_acme_corp_a1b2c3", public
-   ```
-4. All subsequent SQL queries in that request are automatically routed to the correct tenant's tables — **zero manual filtering needed**.
+This lets tenant-scoped SQLAlchemy models resolve into the correct tenant schema automatically while still allowing shared `public` references.
 
 ---
 
-## 👥 Team Invite System
+## Tenant Safety Hardening
 
-**File:** `app/services/auth/invite_service.py`
+The current production-style safeguards are:
 
-Admins can invite team members to their tenant workspace.
-
-- **Endpoint**: `POST /invite/send`
-- **Who can invite**: Only users with `role = "admin"`.
-
-**Process:**
-1. Admin provides the new member's email.
-2. System creates a `User` record pre-linked to the admin's `tenant_id` with `role = "member"`.
-3. A unique `invite_token` (UUID) is generated and emailed.
-4. Member clicks the link → `POST /invite/accept?token=<uuid>` → sets a password and activates account.
+- tenant schema bootstrap creates required tenant tables explicitly
+- startup repair can backfill missing tenant tables for older partially created workspaces
+- model-filtered endpoints verify that the requested `model_id` belongs to the current tenant
+- frontend model-selection state is scoped per tenant and per user
+- backend remains the final enforcement layer for data ownership
 
 ---
 
-## 📦 Service & File Map
+## Operational Notes
 
-| File | Responsibility |
-|---|---|
-| `app/core/jwt.py` | Token creation, decoding, and expiry validation |
-| `app/core/security.py` | Bcrypt password hashing and verification |
-| `app/services/auth/auth_service.py` | Signup, OTP verify, login, token refresh logic |
-| `app/services/auth/onboarding_service.py` | Company creation and schema provisioning |
-| `app/services/auth/invite_service.py` | Team member invitation flow |
-| `app/services/auth/accept_invite_service.py` | Invite acceptance and account activation |
-| `app/middleware/auth_middleware.py` | JWT extraction and DB schema context switching |
-| `app/utils/email_utils.py` | SMTP email sending (OTP + invite links) |
-| `app/utils/otp_utils.py` | Random 6-digit OTP generation |
-| `app/utils/schema_utils.py` | `CREATE SCHEMA` and `SET search_path` utilities |
+- invited members should only see their tenant's data
+- admins can invite members during onboarding and later from the dashboard
+- onboarding returns refreshed tenant-aware tokens; the frontend must store the new access token before calling protected routes
 
+---
+
+## Security Follow-Up
+
+Before production deployment:
+
+- rotate `SECRET_KEY` to a 32+ byte secret
+- keep SMTP, Slack, and DB credentials in secure environment management
+- add end-to-end auth regression tests for signup, onboarding, invite acceptance, and member login
+
+---
+
+## Related Files
+
+- `backend/fastapi/app/api/routes/auth.py`
+- `backend/fastapi/app/api/routes/onboarding.py`
+- `backend/fastapi/app/api/routes/invite.py`
+- `backend/fastapi/app/middleware/auth_middleware.py`
+- `backend/fastapi/app/services/auth/auth_service.py`
+- `backend/fastapi/app/services/auth/onboarding_service.py`
+- `backend/fastapi/app/services/auth/invite_service.py`
+- `backend/fastapi/app/services/auth/accept_invite_service.py`
+- `backend/fastapi/app/utils/schema_utils.py`

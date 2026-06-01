@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.dependencies.auth import require_tenant_user
 from app.models.pipeline_run import PipelineRun
 from app.schemas.run import RunCreate, RunResponse, PipeLineCreate, PipeLineResponse
 
@@ -13,7 +14,11 @@ router = APIRouter(prefix="/runs", tags=["Runs"])
 
 
 @router.get("/{run_id}/download-cleaned")
-def download_cleaned_data(run_id: int, db: Session = Depends(get_db)):
+def download_cleaned_data(
+    run_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
     """Download the cleaned CSV file for a specific pipeline run."""
     run = db.query(PipelineRun).filter(PipelineRun.id == run_id).first()
 
@@ -56,7 +61,10 @@ def download_cleaned_data(run_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[RunResponse])
-def list_runs_api(db: Session = Depends(get_db)):
+def list_runs_api(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
     runs = db.query(PipelineRun).order_by(PipelineRun.id.desc()).all()
     return runs
     
