@@ -4,7 +4,6 @@ import shutil
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
-from app.services.quality.pipeline import run_data_quality_pipeline
 
 
 INCOMING_DIR = "uploads/incoming"
@@ -13,6 +12,7 @@ FAILED_DIR = "uploads/failed"
 
 
 def process_incoming_files(model_id: int):
+    from app.services.quality.pipeline import run_data_quality_pipeline
 
     os.makedirs(PROCESSED_DIR, exist_ok=True)
     os.makedirs(FAILED_DIR, exist_ok=True)

@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load .env file
@@ -68,6 +69,31 @@ REMEDIATION_MAX_CLASS_UNIQUE_RATIO = float(os.getenv("REMEDIATION_MAX_CLASS_UNIQ
 REMEDIATION_MIN_CLASS_COUNT = int(os.getenv("REMEDIATION_MIN_CLASS_COUNT", "3"))
 REMEDIATION_TEST_SIZE = float(os.getenv("REMEDIATION_TEST_SIZE", "0.20"))
 REMEDIATION_PROMOTION_ALIAS = os.getenv("REMEDIATION_PROMOTION_ALIAS", "champion")
+
+
+def get_allowed_origins() -> list[str]:
+    origins = {FRONTEND_URL}
+    parsed = urlparse(FRONTEND_URL)
+
+    if parsed.hostname == "localhost":
+        origins.add(FRONTEND_URL.replace("localhost", "127.0.0.1"))
+    elif parsed.hostname == "127.0.0.1":
+        origins.add(FRONTEND_URL.replace("127.0.0.1", "localhost"))
+
+    return sorted(origins)
+
+
+def get_auth_cookie_settings() -> dict[str, object]:
+    parsed = urlparse(FRONTEND_URL)
+    is_local_http = parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1"}
+    secure = not is_local_http
+
+    return {
+        "httponly": True,
+        "secure": secure,
+        "samesite": "Lax" if not secure else "None",
+        "path": "/",
+    }
 
 
 def resolve_mlflow_tracking_uri(configured_uri: str | None = None) -> str:

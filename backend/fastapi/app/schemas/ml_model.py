@@ -1,8 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
-import mlflow
-from mlflow.tracking import MlflowClient
 
 class MLModelBase(BaseModel):
     name: str

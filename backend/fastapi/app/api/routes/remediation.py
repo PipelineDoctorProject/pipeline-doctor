@@ -134,6 +134,8 @@ def approve_retraining_for_incident(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user),
 ):
+    from app.tasks.remediation_tasks import run_remediation_task
+
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can approve remediation.")
 
