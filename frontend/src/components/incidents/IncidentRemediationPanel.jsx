@@ -17,16 +17,24 @@ import {
   getRemediationContext,
   getRemediationRunLogs,
   getRemediationRunsForIncident,
+  promoteRemediationCandidate,
+  rejectRemediationCandidate,
   rejectRemediationRun,
 } from "../../store/remediationStore";
 
 const RUN_STATUS_STYLES = {
+  queued: "border-indigo-200 bg-indigo-50 text-indigo-700",
   approved: "border-sky-200 bg-sky-50 text-sky-700",
   running: "border-amber-200 bg-amber-50 text-amber-700",
   completed: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  pending_promotion: "border-violet-200 bg-violet-50 text-violet-700",
+  promoted: "border-emerald-200 bg-emerald-100 text-emerald-800",
+  promotion_rejected: "border-rose-200 bg-rose-50 text-rose-700",
   failed: "border-red-200 bg-red-50 text-red-700",
   blocked: "border-orange-200 bg-orange-50 text-orange-700",
   rejected: "border-slate-200 bg-slate-100 text-slate-700",
+  cancel_requested: "border-rose-200 bg-rose-50 text-rose-700",
+  canceled: "border-slate-300 bg-slate-100 text-slate-700",
   default: "border-slate-200 bg-slate-50 text-slate-700",
 };
 
@@ -137,6 +145,8 @@ export default function IncidentRemediationPanel({
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState("");
 
   const loadContext = useCallback(async () => {
     if (!incident?.id) return;
@@ -161,7 +171,9 @@ export default function IncidentRemediationPanel({
       const data = await getRemediationRunsForIncident(incident.id);
       setRuns(data || []);
       const preferredRun = (data || []).find((run) =>
-        ["approved", "running"].includes(String(run.status || "").toLowerCase()),
+        ["queued", "approved", "running", "cancel_requested"].includes(
+          String(run.status || "").toLowerCase(),
+        ),
       );
       setSelectedRunId(preferredRun?.id || data?.[0]?.id || null);
     } catch (error) {
@@ -196,6 +208,7 @@ export default function IncidentRemediationPanel({
     setLogs([]);
     setSelectedRunId(null);
     setTargetColumn("");
+    setReviewNotes("");
     loadContext();
     loadRuns();
   }, [incident?.id, loadContext, loadRuns]);
@@ -217,7 +230,19 @@ export default function IncidentRemediationPanel({
   const activeRun = useMemo(
     () =>
       runs.find((run) =>
-        ["approved", "running"].includes(String(run.status || "").toLowerCase()),
+        ["queued", "approved", "running", "cancel_requested"].includes(
+          String(run.status || "").toLowerCase(),
+        ),
+      ) || null,
+    [runs],
+  );
+
+  const reviewRun = useMemo(
+    () =>
+      runs.find((run) =>
+        ["pending_promotion", "completed"].includes(
+          String(run.status || "").toLowerCase(),
+        ),
       ) || null,
     [runs],
   );
@@ -227,13 +252,16 @@ export default function IncidentRemediationPanel({
     isAdmin &&
       remediation?.allowed_to_execute &&
       remediation?.requires_approval &&
-      !activeRun,
+      !activeRun &&
+      !reviewRun,
   );
   const canReject = Boolean(
     isAdmin &&
       activeRun &&
-      ["approved", "running"].includes(String(activeRun.status || "").toLowerCase()),
+      ["queued", "approved", "running"].includes(String(activeRun.status || "").toLowerCase()),
   );
+  const canPromote = Boolean(isAdmin && reviewRun);
+  const candidateMetrics = remediation?.candidate_metrics || null;
 
   const handleApprove = async () => {
     const normalizedTarget = targetColumn.trim();
@@ -270,6 +298,42 @@ export default function IncidentRemediationPanel({
     } catch (error) {
       console.log(error);
       toast.error(error?.response?.data?.detail || "Failed to reject remediation.");
+    } finally {
+      setRejecting(false);
+    }
+  };
+
+  const handlePromote = async () => {
+    if (!reviewRun) return;
+
+    try {
+      setPromoting(true);
+      const response = await promoteRemediationCandidate(reviewRun.id, reviewNotes.trim());
+      toast.success(response.message || "Candidate promoted.");
+      await loadRuns();
+      await loadLogs(reviewRun.id);
+      await onRemediationChanged?.();
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.response?.data?.detail || "Failed to promote the candidate.");
+    } finally {
+      setPromoting(false);
+    }
+  };
+
+  const handleRejectCandidate = async () => {
+    if (!reviewRun) return;
+
+    try {
+      setRejecting(true);
+      const response = await rejectRemediationCandidate(reviewRun.id, reviewNotes.trim());
+      toast.success(response.message || "Candidate rejected.");
+      await loadRuns();
+      await loadLogs(reviewRun.id);
+      await onRemediationChanged?.();
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.response?.data?.detail || "Failed to reject the candidate.");
     } finally {
       setRejecting(false);
     }
@@ -394,7 +458,9 @@ export default function IncidentRemediationPanel({
                   </p>
                   <p className="mt-1 text-[12px] text-slate-500">
                     {context?.cleaned_data_available
-                      ? "Cleaned data is available for retraining."
+                      ? `Cleaned data is available for retraining. Feature source: ${humanize(
+                          context?.expected_features_source || "unknown",
+                        )}.`
                       : "Cleaned data is not available for this run."}
                   </p>
                 </div>
@@ -445,7 +511,9 @@ export default function IncidentRemediationPanel({
                       Remediation run #{activeRun.id} is {humanize(activeRun.status)}.
                     </p>
                     <p className="mt-1 text-[12px] leading-5 text-amber-800">
-                      You can reject the active run before it reaches a terminal state.
+                      {String(activeRun.status || "").toLowerCase() === "running"
+                        ? "You can request cancellation while the run is still executing."
+                        : "You can reject the active run before it reaches a terminal state."}
                     </p>
                   </div>
                   <button
@@ -454,8 +522,80 @@ export default function IncidentRemediationPanel({
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 text-[13px] font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <XCircle size={15} />
-                    {rejecting ? "Rejecting..." : "Reject remediation"}
+                    {rejecting
+                      ? "Submitting..."
+                      : String(activeRun.status || "").toLowerCase() === "running"
+                        ? "Request cancellation"
+                        : "Reject remediation"}
                   </button>
+                </div>
+              ) : canPromote ? (
+                <div className="mt-3 space-y-4">
+                  <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
+                    <p className="text-[13px] font-semibold text-violet-900">
+                      Candidate run #{reviewRun.id} is ready for promotion review.
+                    </p>
+                    <p className="mt-1 text-[12px] leading-5 text-violet-800">
+                      Review the candidate metrics and notes, then promote it to the live alias or reject it.
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-[12px] font-semibold text-slate-800">
+                      Candidate model URI
+                    </p>
+                    <p className="mt-1 break-all text-[12px] leading-5 text-slate-600">
+                      {remediation?.candidate_model_uri || "Candidate artifact URI is not available."}
+                    </p>
+                    {candidateMetrics && (
+                      <div className="mt-3 grid gap-2 md:grid-cols-2">
+                        {Object.entries(candidateMetrics).map(([metric, value]) => (
+                          <div
+                            key={metric}
+                            className="rounded-md border border-slate-200 bg-white px-3 py-2"
+                          >
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                              {humanize(metric)}
+                            </p>
+                            <p className="mt-1 text-[13px] font-semibold text-slate-900">
+                              {typeof value === "number" ? value.toFixed(4) : String(value)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-medium text-slate-700">
+                      Review notes
+                    </label>
+                    <textarea
+                      value={reviewNotes}
+                      onChange={(event) => setReviewNotes(event.target.value)}
+                      placeholder="Optional review notes for this promotion decision"
+                      className="mt-2 min-h-[96px] w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-[14px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <button
+                      onClick={handlePromote}
+                      disabled={promoting}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-[13px] font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <CheckCircle2 size={15} />
+                      {promoting ? "Promoting..." : "Promote candidate"}
+                    </button>
+                    <button
+                      onClick={handleRejectCandidate}
+                      disabled={rejecting}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 text-[13px] font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <XCircle size={15} />
+                      {rejecting ? "Submitting..." : "Reject candidate"}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">

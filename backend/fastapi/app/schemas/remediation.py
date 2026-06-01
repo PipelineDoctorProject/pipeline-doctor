@@ -46,6 +46,7 @@ class RemediationContextResponse(BaseModel):
     model_name: str | None = None
     model_framework: str | None = None
     expected_features: list[str] = []
+    expected_features_source: str | None = None
     dataset_columns: list[str] = []
     target_candidates: list[str] = []
     suggested_target_column: str | None = None

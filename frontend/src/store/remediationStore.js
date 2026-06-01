@@ -32,3 +32,21 @@ export const rejectRemediationRun = async (remediationRunId) => {
   const response = await api.post(`/remediation/${remediationRunId}/reject`);
   return response.data;
 };
+
+export const promoteRemediationCandidate = async (remediationRunId, reviewNotes = "") => {
+  const response = await api.post(`/remediation/${remediationRunId}/promote`, null, {
+    params: {
+      review_notes: reviewNotes || undefined,
+    },
+  });
+  return response.data;
+};
+
+export const rejectRemediationCandidate = async (remediationRunId, reviewNotes = "") => {
+  const response = await api.post(`/remediation/${remediationRunId}/reject`, null, {
+    params: {
+      review_notes: reviewNotes || undefined,
+    },
+  });
+  return response.data;
+};

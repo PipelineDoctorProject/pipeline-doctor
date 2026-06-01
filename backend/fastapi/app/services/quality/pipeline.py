@@ -31,6 +31,21 @@ mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 _model_cache = {}
 
 
+def clear_mlflow_model_cache(model_name: str | None = None):
+    if not model_name:
+        _model_cache.clear()
+        return
+
+    target_prefix = f"{model_name}@"
+    stale_keys = [
+        cache_key
+        for cache_key in list(_model_cache.keys())
+        if cache_key.startswith(target_prefix)
+    ]
+    for cache_key in stale_keys:
+        _model_cache.pop(cache_key, None)
+
+
 def get_mlflow_model(db: Session, model_id: int):
     db_model = db.query(MLModel).filter(MLModel.id == model_id).first()
     if not db_model or not db_model.mlflow_model_name:
