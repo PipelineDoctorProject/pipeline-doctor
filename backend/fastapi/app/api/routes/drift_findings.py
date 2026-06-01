@@ -4,7 +4,6 @@ from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
 from app.models.drift_finding import DriftFinding
 from app.models.pipeline_run import PipelineRun
-from app.services.drift.drift_service import run_drift_checks
 
 from app.schemas.drift import DriftResponse
 from app.schemas.explanations import InsightExplanationResponse
@@ -44,6 +43,8 @@ def backfill_drift_findings(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    from app.services.drift.drift_service import run_drift_checks
+
     run = db.get(PipelineRun, run_id)
     if not run:
         return {
