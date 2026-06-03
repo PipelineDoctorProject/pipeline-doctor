@@ -85,6 +85,7 @@ def run_remediation_task(
                 )
             )
             sync_incident_remediation_state(
+                db,
                 incident,
                 remediation_run,
                 status="blocked",
@@ -108,6 +109,7 @@ def run_remediation_task(
             )
         )
         sync_incident_remediation_state(
+            db,
             incident,
             remediation_run,
             status="running",
@@ -148,6 +150,7 @@ def run_remediation_task(
             )
         )
         sync_incident_remediation_state(
+            db,
             incident,
             remediation_run,
             status="pending_promotion",
@@ -175,6 +178,7 @@ def run_remediation_task(
             )
             if incident:
                 sync_incident_remediation_state(
+                    db,
                     incident,
                     remediation_run,
                     status="canceled",
@@ -202,6 +206,7 @@ def run_remediation_task(
             )
             if incident:
                 sync_incident_remediation_state(
+                    db,
                     incident,
                     remediation_run,
                     status="failed",
@@ -228,6 +233,7 @@ def run_remediation_task(
             )
             if incident:
                 sync_incident_remediation_state(
+                    db,
                     incident,
                     remediation_run,
                     status="failed",
@@ -291,6 +297,7 @@ def _mark_canceled_if_requested(
         )
     )
     sync_incident_remediation_state(
+        db,
         incident,
         remediation_run,
         status="canceled",

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.incident import Incident
 from app.services.incidents.grouping import attach_incident_to_group
 from app.services.incidents.report_builder import build_final_incident_report
+from app.services.incidents.report_service import create_incident_report_version
 from app.services.incidents.live_events import publish_incident_event
 from app.services.remediation import decide_remediation
 from app.services.slack_service import send_incident_notification
@@ -67,6 +68,13 @@ def persist_root_cause_incident(
     incident.description = json.dumps(payload, default=str)
     incident.severity = report.get("severity", "medium")
     attach_incident_to_group(db, incident=incident)
+    create_incident_report_version(
+        db,
+        incident=incident,
+        rca_payload=payload,
+        generator="deterministic",
+        generator_model=root_cause_state.get("llm_model"),
+    )
     db.commit()
     db.refresh(incident)
     publish_incident_event("incident_updated", incident)
