@@ -13,8 +13,6 @@ Place this file in the airflow-setup/dags/ directory.
 """
 
 import os
-import requests
-import pandas as pd
 from datetime import datetime, timedelta
 
 from airflow import DAG
@@ -35,6 +33,8 @@ DATA_DIR = "/opt/airflow/data"
 
 
 def build_auth_headers():
+    import requests
+
     # Preferred path for Airflow: log in per run and use a fresh access token.
     if OPSSIGHT_API_EMAIL and OPSSIGHT_API_PASSWORD:
         login_url = f"{OPSSIGHT_API_URL}/auth/login"
@@ -85,6 +85,8 @@ def build_auth_headers():
 #   - pd.read_json(api_response) for external API
 # =============================================
 def load_data(**kwargs):
+    import pandas as pd
+
     print("=" * 60)
     print("TASK 1: Loading data from source...")
     print("=" * 60)
@@ -115,6 +117,8 @@ def load_data(**kwargs):
 # TASK 2: PUSH TO OPSSIGHT
 # =============================================
 def push_to_opssight(**kwargs):
+    import requests
+
     ti = kwargs['ti']
     file_path = ti.xcom_pull(task_ids='load_data')
 

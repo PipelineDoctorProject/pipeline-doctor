@@ -15,10 +15,18 @@ AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
 def signup_user(db: Session, email: str, password: str):
     normalized_email = email.strip().lower()
 
-    if db.query(User).filter(User.email == normalized_email).first():
+    existing_user = db.query(User).filter(User.email == normalized_email).first()
+    if existing_user and existing_user.is_verified:
         raise HTTPException(400, "User already exists")
 
     otp = generate_otp()
+
+    if existing_user:
+        existing_user.hashed_password = hash_password(password)
+        existing_user.otp_code = otp
+        db.commit()
+        send_otp_email_task.delay(normalized_email, otp)
+        return {"message": "OTP sent"}
 
     user = User(
         email=normalized_email,
@@ -38,11 +46,18 @@ def signup_user(db: Session, email: str, password: str):
 
 def verify_otp(db: Session, email: str, otp: str):
     normalized_email = email.strip().lower()
+    normalized_otp = "".join(str(otp).split())
 
     user = db.query(User).filter(User.email == normalized_email).first()
 
-    if not user or user.otp_code != otp:
-        raise HTTPException(400, "Invalid OTP")
+    if not user:
+        raise HTTPException(404, "No pending signup found for this email")
+
+    if user.is_verified:
+        raise HTTPException(400, "Account already verified. Please login.")
+
+    if not user.otp_code or user.otp_code != normalized_otp:
+        raise HTTPException(400, "Invalid OTP. Use the latest code from your email.")
 
     user.is_verified = True
     user.otp_code = None
@@ -61,6 +76,26 @@ def verify_otp(db: Session, email: str, otp: str):
         "refresh_token": refresh_token,
         "onboarding_required": True
     }
+
+
+def resend_otp(db: Session, email: str):
+    normalized_email = email.strip().lower()
+
+    user = db.query(User).filter(User.email == normalized_email).first()
+
+    if not user:
+        raise HTTPException(404, "No pending signup found for this email")
+
+    if user.is_verified:
+        raise HTTPException(400, "Account already verified. Please login.")
+
+    otp = generate_otp()
+    user.otp_code = otp
+    db.commit()
+
+    send_otp_email_task.delay(normalized_email, otp)
+
+    return {"message": "OTP sent"}
 
 
 def login_user(db: Session, email: str, password: str):

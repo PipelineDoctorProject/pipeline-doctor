@@ -35,10 +35,13 @@ const useAuthStore = create((set, get) => ({
     set({ loading: true });
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
 
       const response = await api.post("/auth/signup", {
-        email,
+        email: normalizedEmail,
         password,
+      }, {
+        timeout: 60000,
       });
 
       set({ loading: false });
@@ -72,10 +75,12 @@ const useAuthStore = create((set, get) => ({
     set({ loading: true });
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedOtp = String(otp).replace(/\s/g, "");
 
       const response = await api.post("/auth/verify-otp", {
-        email,
-        otp,
+        email: normalizedEmail,
+        otp: normalizedOtp,
       });
 
       setAccessToken(response.data?.access_token);
@@ -99,6 +104,25 @@ const useAuthStore = create((set, get) => ({
       set({
         loading: false,
       });
+
+      throw error.response?.data || error;
+    }
+  },
+
+  resendOtp: async (email) => {
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const response = await api.post("/auth/resend-otp", {
+        email: normalizedEmail,
+      }, {
+        timeout: 60000,
+      });
+
+      return response.data;
+
+    } catch (error) {
 
       throw error.response?.data || error;
     }

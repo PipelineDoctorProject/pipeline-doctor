@@ -8,7 +8,6 @@ from app.models.data_quality import DataQualityFinding
 from app.models.baseline import Baseline
 from app.schemas.data_quality import DataQualityResponse
 from app.schemas.explanations import InsightExplanationResponse
-from app.services.quality.data_loader import load_dataset
 from app.services.ai_explanations import build_data_quality_explanation
 from app.services.access_control import require_accessible_model
 
@@ -32,6 +31,8 @@ async def save_upload(file: UploadFile) -> str:
 
 
 def infer_model_from_active_baselines(db: Session, file_path: str):
+    from app.services.quality.data_loader import load_dataset
+
     df = load_dataset(file_path)
     incoming_cols = {str(col).lower() for col in df.columns}
 

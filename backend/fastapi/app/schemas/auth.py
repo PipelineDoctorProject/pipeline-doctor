@@ -17,6 +17,10 @@ class VerifyOTPRequest(BaseModel):
     otp: str
 
 
+class ResendOTPRequest(BaseModel):
+    email: str
+
+
 # =========================
 # LOGIN
 # =========================

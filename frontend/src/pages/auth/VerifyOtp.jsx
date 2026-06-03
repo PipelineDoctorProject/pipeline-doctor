@@ -13,12 +13,14 @@ export default function VerifyOtpPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const email = location.state?.email;
+  const email = location.state?.email || sessionStorage.getItem("opssight_pending_signup_email") || "";
 
   const verifyOtp = useAuthStore((state) => state.verifyOtp);
+  const resendOtp = useAuthStore((state) => state.resendOtp);
 
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -26,7 +28,12 @@ export default function VerifyOtpPage() {
     setIsLoading(true);
 
     try {
+      if (!email) {
+        throw { detail: "Email is missing. Please sign up again." };
+      }
+
       const response = await verifyOtp(email, otp);
+      sessionStorage.removeItem("opssight_pending_signup_email");
 
       if (response.onboarding_required) {
         navigate("/onboarding");
@@ -37,6 +44,22 @@ export default function VerifyOtpPage() {
       alert(err?.detail || "OTP verification failed");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      if (!email) {
+        throw { detail: "Email is missing. Please sign up again." };
+      }
+
+      setIsResending(true);
+      await resendOtp(email);
+      alert("A fresh OTP was sent. Use the latest code from your email.");
+    } catch (err) {
+      alert(err?.detail || "Could not resend OTP");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -104,7 +127,9 @@ export default function VerifyOtpPage() {
             type="text"
             placeholder="ENTER OTP"
             value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            maxLength={6}
+            inputMode="numeric"
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             className="w-full h-[64px] rounded-2xl border border-black/[0.05] bg-white/70 backdrop-blur-xl px-6 text-center text-[22px] tracking-[0.55em] text-[#111827] outline-none transition placeholder:text-gray-400 focus:border-[#3563ff]/30"
           />
 
@@ -121,9 +146,11 @@ export default function VerifyOtpPage() {
         {/* footer */}
         <button
           type="button"
+          onClick={handleResend}
+          disabled={isResending}
           className="mt-8 text-[12px] text-gray-500 hover:text-[#111827] transition"
         >
-          Resend verification code
+          {isResending ? "Sending new code..." : "Resend verification code"}
         </button>
 
         {/* bottom signal */}

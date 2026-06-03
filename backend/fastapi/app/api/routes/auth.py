@@ -6,12 +6,14 @@ from app.db.session import get_db
 from app.schemas.auth import (
     SignupRequest,
     VerifyOTPRequest,
+    ResendOTPRequest,
     LoginRequest
 )
 
 from app.services.auth.auth_service import (
     signup_user,
     verify_otp,
+    resend_otp,
     login_user,
     refresh_access_token,
     logout_user
@@ -92,6 +94,17 @@ def verify_otp_route(
         "refresh_token": result["refresh_token"],
         "token_type": "bearer",
     }
+
+
+@router.post("/resend-otp")
+def resend_otp_route(
+    data: ResendOTPRequest,
+    db: Session = Depends(get_db)
+):
+    return resend_otp(
+        db=db,
+        email=data.email
+    )
 
 
 # ======================================

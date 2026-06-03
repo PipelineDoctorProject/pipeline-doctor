@@ -27,12 +27,15 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
 
-      await signup(email, password);
+      await signup(normalizedEmail, password);
+      sessionStorage.setItem("opssight_pending_signup_email", normalizedEmail);
 
       navigate("/verify-otp", {
-        state: { email },
-      }, { replace: true });
+        state: { email: normalizedEmail },
+        replace: true,
+      });
 
     } catch (err) {
 

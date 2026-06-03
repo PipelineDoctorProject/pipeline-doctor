@@ -10,17 +10,12 @@ from fastapi import (
 
 from sqlalchemy.orm import Session
 
-import pandas as pd
 import os
 import uuid
 
 from app.models.baseline import Baseline
 from app.models.ml_model import MLModel
 from app.dependencies.auth import require_tenant_user
-
-from app.services.quality.baseline import (
-    create_baseline,
-)
 
 from app.services.quality.baseline_service import (
     create_baseline_version,
@@ -215,6 +210,7 @@ async def upload_baseline(
     # LOAD CSV
     # ==========================================
     try:
+        import pandas as pd
 
         df = pd.read_csv(file_path)
 
@@ -238,6 +234,8 @@ async def upload_baseline(
     # ==========================================
     # CREATE BASELINE
     # ==========================================
+    from app.services.quality.baseline import create_baseline
+
     baseline_data = create_baseline(df)
     baseline_data["profile"]["_meta"] = {
         "source_file_path": file_path,

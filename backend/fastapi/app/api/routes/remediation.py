@@ -3,7 +3,6 @@ import json
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
-import pandas as pd
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -63,6 +62,8 @@ def get_remediation_context(
     dataset_columns: list[str] = []
 
     if cleaned_data_available:
+        import pandas as pd
+
         df = pd.read_csv(pipeline_run.cleaned_data_path, nrows=5)
         dataset_columns = [str(column) for column in df.columns]
 
@@ -288,6 +289,8 @@ def _validate_retraining_preconditions(
             status_code=400,
             detail="This model does not have expected_features configured, so retraining is blocked until the feature list is defined.",
         )
+
+    import pandas as pd
 
     df = pd.read_csv(pipeline_run.cleaned_data_path, nrows=5)
     if target_column not in df.columns:
