@@ -1,4 +1,4 @@
-# Current Sprint: Data Quality
+# Data Quality Workstream
 
 This workstream covers the move from demo-style cleaning to a production-style quality gate.
 
@@ -38,7 +38,7 @@ The run is blocked when:
 
 ---
 
-## Verified This Sprint
+## Verified Scenarios
 
 The corrupted tracks batch was checked against the real tracks baseline:
 

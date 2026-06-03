@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.config.settings import resolve_mlflow_tracking_uri
+from app.db.session import get_db
 
 from app.models.ml_model import MLModel
 
@@ -101,20 +102,11 @@ def _serialize_model(model: MLModel, include_live_registry_status: bool = False)
 # =====================================================
 @router.get("/", response_model=List[MLModelResponse])
 def list_models(
-    request: Request,
     skip: int = 0,
     limit: int = 100,
+    db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
-
-    db: Session = request.state.db
-
-    if not db:
-        raise HTTPException(
-            status_code=401,
-            detail="Tenant database not found"
-        )
-
     models = (
         db.query(MLModel)
         .offset(skip)
@@ -135,18 +127,9 @@ def list_models(
 )
 def register_model(
     model_in: MLModelCreate,
-    request: Request,
+    db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
-
-    db: Session = request.state.db
-
-    if not db:
-        raise HTTPException(
-            status_code=401,
-            detail="Tenant database not found"
-        )
-
     db_model = MLModel(
         tenant_id=current_user.tenant_id,
         name=model_in.name,
@@ -175,18 +158,9 @@ def register_model(
 )
 def get_model(
     model_id: int,
-    request: Request,
+    db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
-
-    db: Session = request.state.db
-
-    if not db:
-        raise HTTPException(
-            status_code=401,
-            detail="Tenant database not found"
-        )
-
     db_model = (
         db.query(MLModel)
         .filter(MLModel.id == model_id)

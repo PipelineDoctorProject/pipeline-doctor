@@ -3,7 +3,6 @@ from fastapi import (
     UploadFile,
     File,
     HTTPException,
-    Request,
     Depends
     
 )
@@ -15,6 +14,7 @@ import uuid
 
 from app.models.baseline import Baseline
 from app.models.ml_model import MLModel
+from app.db.session import get_db
 from app.dependencies.auth import require_tenant_user
 
 from app.services.quality.baseline_service import (
@@ -36,19 +36,10 @@ router = APIRouter(
 # =====================================================
 @router.get("/baselines/")
 def get_baselines(
-    request: Request,
+    db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 
 ):
-
-    db: Session = request.state.db
-
-    if not db:
-        raise HTTPException(
-            status_code=401,
-            detail="Tenant database not found"
-        )
-
     baselines = (
         db.query(Baseline)
         .order_by(
@@ -105,18 +96,9 @@ def get_baselines(
 @router.patch("/baselines/{baseline_id}/activate")
 def activate_baseline_route(
     baseline_id: int,
-    request: Request,
+    db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
-
-    db: Session = request.state.db
-
-    if not db:
-        raise HTTPException(
-            status_code=401,
-            detail="Tenant database not found"
-        )
-
     try:
         baseline = activate_baseline(
             db,
@@ -158,20 +140,11 @@ def activate_baseline_route(
 # =====================================================
 @router.post("/baseline/upload")
 async def upload_baseline(
-    request: Request,
     model_id: int,
     file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
-
-    db: Session = request.state.db
-
-    if not db:
-        raise HTTPException(
-            status_code=401,
-            detail="Tenant database not found"
-        )
-
     require_accessible_model(db, model_id, current_user.tenant_id)
 
     # ==========================================

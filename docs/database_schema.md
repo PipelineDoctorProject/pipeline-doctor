@@ -216,7 +216,7 @@ Persisted RCA trace steps for:
 
 ### `remediation_runs`
 
-Approved or blocked remediation executions tied to incidents.
+Approved, blocked, staged, or deployed remediation executions tied to incidents.
 
 Important fields:
 
@@ -231,6 +231,22 @@ Important fields:
 - `started_at`
 - `finished_at`
 
+Common statuses:
+
+- `queued`
+- `running`
+- `cancel_requested`
+- `canceled`
+- `failed`
+- `blocked`
+- `rejected`
+- `pending_promotion`
+- `staged`
+- `promotion_rejected`
+- `deployed`
+
+Older local data may contain `promoted` from the earlier single-step promotion flow.
+
 ### `remediation_action_logs`
 
 Per-step remediation execution log.
@@ -243,6 +259,12 @@ Important fields:
 - `message`
 - `payload`
 - `created_at`
+
+Important payloads:
+
+- candidate result: `candidate_model_uri`, `candidate_mlflow_run_id`, `metrics`, `feature_columns`
+- staging result: `staged_model_uri`, `staged_model_version`, `staged_alias`
+- deployment result: `deployed_model_uri`, `deployed_alias`, `deployment_status`
 
 ---
 
