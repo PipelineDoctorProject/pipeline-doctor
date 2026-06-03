@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-from app.config.settings import FRONTEND_URL
+from app.config.settings import get_allowed_origins
 from app.db.session import SessionLocal
 from app.models.tenant import Tenant
 from app.utils.schema_utils import ensure_all_tenant_schemas
@@ -63,9 +63,7 @@ from app.api.routes import (health,
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        FRONTEND_URL
-    ],
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

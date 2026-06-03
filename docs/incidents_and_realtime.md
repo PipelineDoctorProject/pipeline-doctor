@@ -1,4 +1,4 @@
-# Current Sprint: Incidents and Realtime
+# Incidents and Realtime
 
 This workstream covers run-level incident grouping and live UI behavior.
 
@@ -14,7 +14,7 @@ This workstream covers run-level incident grouping and live UI behavior.
 
 ---
 
-## Current UI Model
+## UI Model
 
 ### Top-level list
 

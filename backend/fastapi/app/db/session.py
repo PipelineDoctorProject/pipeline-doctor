@@ -6,7 +6,15 @@ from fastapi import Depends
 from app.utils.schema_utils import apply_session_schema, set_schema
 
 from app.config.settings import (
-    DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME
+    DB_USER,
+    DB_PASSWORD,
+    DB_HOST,
+    DB_PORT,
+    DB_NAME,
+    DB_POOL_SIZE,
+    DB_MAX_OVERFLOW,
+    DB_POOL_TIMEOUT,
+    DB_POOL_RECYCLE,
 )
 
 # Build DB URL
@@ -23,10 +31,10 @@ DATABASE_URL = URL.create(
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    pool_recycle=300,
-    pool_timeout=10,
-    pool_size=5,
-    max_overflow=5,
+    pool_recycle=DB_POOL_RECYCLE,
+    pool_timeout=DB_POOL_TIMEOUT,
+    pool_size=DB_POOL_SIZE,
+    max_overflow=DB_MAX_OVERFLOW,
     connect_args={
         "sslmode": "require",
         "connect_timeout": 5,
@@ -62,6 +70,8 @@ def get_db(request: Request = None) -> Generator:
     # Fallback for background tasks or non-middleware requests
     db = SessionLocal()
     try:
+        if request and getattr(request.state, "schema", None):
+            set_schema(db, request.state.schema)
         yield db
     finally:
         db.close()

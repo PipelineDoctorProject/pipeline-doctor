@@ -23,8 +23,10 @@ export function hasAccessToken() {
 const api = axios.create({
   baseURL: "http://localhost:8000",
   withCredentials: true,
-  timeout: 15000,
+  timeout: 30000,
 });
+
+let refreshPromise = null;
 
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
@@ -78,7 +80,15 @@ api.interceptors.response.use(
     try {
 
       // try refresh token
-      const refreshResponse = await api.post("/auth/refresh");
+      if (!refreshPromise) {
+        refreshPromise = api
+          .post("/auth/refresh")
+          .finally(() => {
+            refreshPromise = null;
+          });
+      }
+
+      const refreshResponse = await refreshPromise;
       if (refreshResponse.data?.access_token) {
         setAccessToken(refreshResponse.data.access_token);
       }

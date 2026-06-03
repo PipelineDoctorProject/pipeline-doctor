@@ -206,9 +206,39 @@ Current approval rules depend on:
 - configured `expected_features`
 - valid target column
 
+For unsupervised models, `target_column` can be omitted when the remediation context marks `target_required=false`.
+
 ### `POST /remediation/{remediation_run_id}/reject`
 
 Admin-only rejection for a pending/active remediation run.
+
+If the run is already `pending_promotion` or `staged`, this rejects the candidate instead of canceling execution.
+
+### `POST /remediation/{remediation_run_id}/promote?review_notes=<text>`
+
+Admin-only candidate staging.
+
+Despite the historical endpoint name, the production behavior is staging:
+
+- creates an MLflow registered model version from the candidate artifact
+- points the configured staging alias, usually `staging`, at that version
+- records staged metadata in `remediation_action_logs`
+- moves the remediation run to `staged`
+
+This endpoint must not update the live `champion` alias.
+
+### `POST /remediation/{remediation_run_id}/confirm-deployment?deployment_notes=<text>`
+
+Admin-only deployment confirmation.
+
+Use this only after the external deployment pipeline has deployed the MLflow staging alias and serving checks have passed.
+
+This endpoint:
+
+- points the configured champion alias, usually `champion`, at the staged version
+- updates the OpsSight model record
+- records deployment metadata
+- moves the remediation run to `deployed`
 
 ### `GET /remediation/{remediation_run_id}`
 
