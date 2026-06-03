@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 import os
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 import pandas as pd
 from sqlalchemy.orm import Session
 
@@ -22,8 +22,10 @@ from app.schemas.remediation import (
 from app.services.remediation import decide_remediation
 from app.services.remediation.reporting import sync_incident_remediation_state
 from app.services.remediation.promotion_service import (
+    approve_candidate_for_staging,
+    confirm_candidate_deployment,
     get_candidate_result_for_run,
-    promote_candidate_model,
+    get_staged_promotion_result_for_run,
 )
 from app.services.remediation.retraining_service import (
     collect_retraining_context,
@@ -81,6 +83,8 @@ def get_remediation_context(
         "expected_features": context["expected_features"],
         "expected_features_source": context["expected_features_source"],
         "dataset_columns": context["dataset_columns"],
+        "training_mode": context["training_mode"],
+        "target_required": context["target_required"],
         "target_candidates": context["target_candidates"],
         "suggested_target_column": context["suggested_target_column"],
         "cleaned_data_available": context["cleaned_data_available"],
@@ -130,7 +134,7 @@ def list_remediation_logs(
 @router.post("/incident/{incident_id}/approve", response_model=RemediationDecisionResponse)
 def approve_retraining_for_incident(
     incident_id: int,
-    target_column: str,
+    target_column: str | None = Query(default=None),
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user),
 ):
@@ -177,7 +181,7 @@ def approve_retraining_for_incident(
         .filter(
             RemediationRun.incident_id == incident.id,
             RemediationRun.status.in_(
-                ["approved", "queued", "running", "cancel_requested", "pending_promotion"]
+                ["approved", "queued", "running", "cancel_requested", "pending_promotion", "staged"]
             ),
         )
         .order_by(RemediationRun.id.desc())
@@ -255,6 +259,8 @@ def reject_remediation_run(
         "blocked",
         "rejected",
         "canceled",
+        "staged",
+        "deployed",
         "promoted",
         "promotion_rejected",
     }:
@@ -272,10 +278,10 @@ def reject_remediation_run(
     incident = db.query(Incident).filter(Incident.id == remediation_run.incident_id).first()
     review_message_suffix = f" Notes: {review_notes}" if review_notes else ""
 
-    if remediation_run.status in {"pending_promotion", "completed"}:
+    if remediation_run.status in {"pending_promotion", "completed", "staged"}:
         remediation_run.status = "promotion_rejected"
         remediation_run.result_summary = (
-            f"Candidate promotion rejected by {current_user.email}.{review_message_suffix}"
+            f"Candidate promotion/deployment rejected by {current_user.email}.{review_message_suffix}"
         ).strip()
         db.add(
             RemediationActionLog(
@@ -359,7 +365,7 @@ def promote_remediation_candidate(
     current_user=Depends(require_tenant_user),
 ):
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can promote remediation candidates.")
+        raise HTTPException(status_code=403, detail="Only admins can stage remediation candidates.")
 
     remediation_run = (
         db.query(RemediationRun)
@@ -373,7 +379,7 @@ def promote_remediation_candidate(
         raise HTTPException(
             status_code=409,
             detail=(
-                "Only remediation runs with a completed candidate can be promoted. "
+                "Only remediation runs with a completed candidate can be staged. "
                 f"Current status is '{remediation_run.status}'."
             ),
         )
@@ -398,7 +404,7 @@ def promote_remediation_candidate(
         )
 
     try:
-        promotion_result = promote_candidate_model(
+        promotion_result = approve_candidate_for_staging(
             db=db,
             model_record=model_record,
             candidate_result=candidate_result,
@@ -408,17 +414,17 @@ def promote_remediation_candidate(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    remediation_run.status = "promoted"
+    remediation_run.status = "staged"
     remediation_run.result_summary = (
-        "Candidate promoted to the live model"
-        f" alias '{promotion_result['promoted_alias']}'"
+        "Candidate approved for staging"
+        f" alias '{promotion_result['staged_alias']}'"
         f" by {current_user.email}."
     )
     db.add(
         RemediationActionLog(
             remediation_run_id=remediation_run.id,
-            step_name="promotion",
-            status="promoted",
+            step_name="staging_approval",
+            status="staged",
             message=remediation_run.result_summary,
             payload=promotion_result,
         )
@@ -426,7 +432,7 @@ def promote_remediation_candidate(
     sync_incident_remediation_state(
         incident,
         remediation_run,
-        status="promoted",
+        status="staged",
         message=remediation_run.result_summary,
         result=promotion_result,
     )
@@ -437,6 +443,95 @@ def promote_remediation_candidate(
         "status": remediation_run.status,
         "action_type": remediation_run.action_type,
         "message": remediation_run.result_summary,
+    }
+
+
+@router.post("/{remediation_run_id}/confirm-deployment", response_model=RemediationDecisionResponse)
+def confirm_remediation_candidate_deployment(
+    remediation_run_id: int,
+    deployment_notes: str | None = None,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can confirm candidate deployment.")
+
+    remediation_run = (
+        db.query(RemediationRun)
+        .filter(RemediationRun.id == remediation_run_id)
+        .first()
+    )
+    if not remediation_run:
+        raise HTTPException(status_code=404, detail="Remediation run not found.")
+
+    if remediation_run.status != "staged":
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Only staged remediation candidates can be marked deployed. "
+                f"Current status is '{remediation_run.status}'."
+            ),
+        )
+
+    incident = db.query(Incident).filter(Incident.id == remediation_run.incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found.")
+
+    pipeline_run = db.query(PipelineRun).filter(PipelineRun.id == remediation_run.run_id).first()
+    if not pipeline_run:
+        raise HTTPException(status_code=404, detail="Pipeline run not found.")
+
+    model_record = db.query(MLModel).filter(MLModel.id == pipeline_run.model_id).first()
+    if not model_record:
+        raise HTTPException(status_code=404, detail="ML model not found for deployment confirmation.")
+
+    promotion_result = get_staged_promotion_result_for_run(db, remediation_run.id)
+    if not promotion_result:
+        raise HTTPException(
+            status_code=409,
+            detail="Staged candidate metadata could not be found for this remediation run.",
+        )
+
+    try:
+        deployment_result = confirm_candidate_deployment(
+            db=db,
+            model_record=model_record,
+            promotion_result=promotion_result,
+            deployed_by=current_user.email,
+            deployment_notes=deployment_notes,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    remediation_run.status = "deployed"
+    remediation_run.finished_at = datetime.utcnow()
+    remediation_run.result_summary = (
+        "Candidate deployment confirmed and champion alias updated"
+        f" by {current_user.email}."
+    )
+    db.add(
+        RemediationActionLog(
+            remediation_run_id=remediation_run.id,
+            step_name="deployment_confirmation",
+            status="deployed",
+            message=remediation_run.result_summary,
+            payload=deployment_result,
+        )
+    )
+    sync_incident_remediation_state(
+        incident,
+        remediation_run,
+        status="deployed",
+        message=remediation_run.result_summary,
+        result=deployment_result,
+    )
+    db.commit()
+
+    return {
+        "id": remediation_run.id,
+        "status": remediation_run.status,
+        "action_type": remediation_run.action_type,
+        "message": "Candidate staged. Deploy the staging alias, then confirm deployment to update champion.",
     }
 
 
@@ -456,7 +551,7 @@ def _validate_retraining_preconditions(
     db: Session,
     pipeline_run: PipelineRun,
     model_record: MLModel,
-    target_column: str,
+    target_column: str | None,
 ) -> None:
     try:
         prepare_retraining_plan(

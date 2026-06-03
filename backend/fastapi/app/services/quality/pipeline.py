@@ -1,4 +1,5 @@
 import os
+import math
 
 import mlflow
 import mlflow.pyfunc
@@ -22,6 +23,7 @@ from app.services.quality.pipeline_run_service import (
     update_pipeline_run_status,
 )
 from app.services.quality.schema_handler import handle_schema
+from app.services.quality.schema_evolution import build_feature_candidates
 from app.services.quality.storage import store_findings
 from app.services.quality.transformer import DataTransformer
 from app.services.quality.validator import DataValidator
@@ -94,12 +96,30 @@ def to_python_types(obj):
         return {key: to_python_types(value) for key, value in obj.items()}
     if isinstance(obj, list):
         return [to_python_types(value) for value in obj]
+    if isinstance(obj, tuple):
+        return [to_python_types(value) for value in obj]
+    if obj is None:
+        return None
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
     if isinstance(obj, (np.bool_,)):
         return bool(obj)
     if isinstance(obj, (np.integer,)):
         return int(obj)
     if isinstance(obj, (np.floating,)):
-        return float(obj)
+        value = float(obj)
+        return value if math.isfinite(value) else None
+    if isinstance(obj, pd.Series):
+        return [to_python_types(value) for value in obj.tolist()]
+    if isinstance(obj, pd.Index):
+        return [to_python_types(value) for value in obj.tolist()]
+    if isinstance(obj, np.ndarray):
+        return [to_python_types(value) for value in obj.tolist()]
+    try:
+        if pd.isna(obj):
+            return None
+    except TypeError:
+        pass
     return obj
 
 
@@ -218,6 +238,7 @@ def _generate_predictions(
     run_id: int,
     df: pd.DataFrame,
 ):
+    
     model, db_model = get_mlflow_model(db, model_id)
     if model is None:
         print("MLflow model not loaded. Skipping predictions.")
@@ -354,6 +375,10 @@ def run_data_quality_pipeline(
 
             if existing_event:
                 schema_event = existing_event
+                if extra_cols and not schema_event.feature_candidates:
+                    schema_event.feature_candidates = build_feature_candidates(df, extra_cols)
+                    db.add(schema_event)
+                    db.commit()
             else:
                 schema_event = SchemaChangeEvent(
                     model_id=model_id,
@@ -361,6 +386,7 @@ def run_data_quality_pipeline(
                     baseline_id=baseline.id,
                     new_columns=extra_cols,
                     missing_columns=missing_cols,
+                    feature_candidates=build_feature_candidates(df, extra_cols),
                     status="pending",
                 )
                 db.add(schema_event)

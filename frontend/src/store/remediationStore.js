@@ -15,13 +15,13 @@ export const getRemediationRunLogs = async (remediationRunId) => {
   return response.data;
 };
 
-export const approveRemediationForIncident = async (incidentId, targetColumn) => {
+export const approveRemediationForIncident = async (incidentId, targetColumn = null) => {
   const response = await api.post(
     `/remediation/incident/${incidentId}/approve`,
     null,
     {
       params: {
-        target_column: targetColumn,
+        target_column: targetColumn || undefined,
       },
     },
   );
@@ -37,6 +37,15 @@ export const promoteRemediationCandidate = async (remediationRunId, reviewNotes 
   const response = await api.post(`/remediation/${remediationRunId}/promote`, null, {
     params: {
       review_notes: reviewNotes || undefined,
+    },
+  });
+  return response.data;
+};
+
+export const confirmRemediationDeployment = async (remediationRunId, deploymentNotes = "") => {
+  const response = await api.post(`/remediation/${remediationRunId}/confirm-deployment`, null, {
+    params: {
+      deployment_notes: deploymentNotes || undefined,
     },
   });
   return response.data;

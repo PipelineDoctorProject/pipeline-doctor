@@ -80,7 +80,13 @@ const useAuthStore = create((set, get) => ({
 
       setAccessToken(response.data?.access_token);
 
-      const dashboardContext = await get().me();
+      let dashboardContext = await get().me();
+
+      if (!dashboardContext) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        setAccessToken(response.data?.access_token);
+        dashboardContext = await get().me();
+      }
 
       if (!dashboardContext) {
         throw {
@@ -107,6 +113,7 @@ const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
 
     set({ loading: true });
+    setAccessToken(null);
 
     try {
 

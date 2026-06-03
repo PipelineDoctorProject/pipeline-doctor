@@ -14,6 +14,8 @@ class SchemaChangeEvent(Base):
 
     new_columns = Column(JSON)
     missing_columns = Column(JSON)
+    feature_candidates = Column(JSON, nullable=True)
+    feature_decisions = Column(JSON, nullable=True)
 
     status = Column(String, default="pending")  # pending / approved / rejected
     created_at = Column(DateTime, default=datetime.utcnow)

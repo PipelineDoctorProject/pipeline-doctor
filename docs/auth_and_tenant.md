@@ -1,4 +1,4 @@
-# Current Sprint: Auth and Tenant Hardening
+# Auth and Tenant Hardening
 
 This workstream covers onboarding, invite flows, and tenant-isolation reliability.
 
@@ -28,7 +28,7 @@ This workstream covers onboarding, invite flows, and tenant-isolation reliabilit
 
 ---
 
-## Current Product Result
+## Product Result
 
 - new workspaces start with their own tenant schema and tenant tables
 - invited members only see their workspace data

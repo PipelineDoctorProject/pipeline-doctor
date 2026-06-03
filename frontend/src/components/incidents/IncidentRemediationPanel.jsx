@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import useAuthStore from "../../store/authStore";
 import {
   approveRemediationForIncident,
+  confirmRemediationDeployment,
   getRemediationContext,
   getRemediationRunLogs,
   getRemediationRunsForIncident,
@@ -28,7 +29,9 @@ const RUN_STATUS_STYLES = {
   running: "border-amber-200 bg-amber-50 text-amber-700",
   completed: "border-emerald-200 bg-emerald-50 text-emerald-700",
   pending_promotion: "border-violet-200 bg-violet-50 text-violet-700",
+  staged: "border-blue-200 bg-blue-50 text-blue-700",
   promoted: "border-emerald-200 bg-emerald-100 text-emerald-800",
+  deployed: "border-emerald-200 bg-emerald-100 text-emerald-800",
   promotion_rejected: "border-rose-200 bg-rose-50 text-rose-700",
   failed: "border-red-200 bg-red-50 text-red-700",
   blocked: "border-orange-200 bg-orange-50 text-orange-700",
@@ -54,6 +57,19 @@ function humanize(value) {
   return String(value || "unknown")
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+async function retryOnce(requestFn) {
+  try {
+    return await requestFn();
+  } catch (error) {
+    if (error?.code === "ERR_CANCELED") {
+      throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    return requestFn();
+  }
 }
 
 function StatusBadge({ status }) {
@@ -146,29 +162,39 @@ export default function IncidentRemediationPanel({
   const [submitting, setSubmitting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [promoting, setPromoting] = useState(false);
+  const [confirmingDeployment, setConfirmingDeployment] = useState(false);
   const [reviewNotes, setReviewNotes] = useState("");
+  const loadVersionRef = useRef(0);
 
-  const loadContext = useCallback(async () => {
+  const loadContext = useCallback(async (version = loadVersionRef.current) => {
     if (!incident?.id) return;
 
     try {
       setLoadingContext(true);
-      const data = await getRemediationContext(incident.id);
+      const data = await retryOnce(() => getRemediationContext(incident.id));
+      if (version !== loadVersionRef.current) return;
       setContext(data);
     } catch (error) {
       console.log(error);
-      toast.error("Failed to load remediation context");
+      if (version === loadVersionRef.current) {
+        toast.error("Failed to load remediation context", {
+          id: `remediation-context-${incident.id}`,
+        });
+      }
     } finally {
-      setLoadingContext(false);
+      if (version === loadVersionRef.current) {
+        setLoadingContext(false);
+      }
     }
   }, [incident?.id]);
 
-  const loadRuns = useCallback(async () => {
+  const loadRuns = useCallback(async (version = loadVersionRef.current) => {
     if (!incident?.id) return;
 
     try {
       setLoadingRuns(true);
-      const data = await getRemediationRunsForIncident(incident.id);
+      const data = await retryOnce(() => getRemediationRunsForIncident(incident.id));
+      if (version !== loadVersionRef.current) return;
       setRuns(data || []);
       const preferredRun = (data || []).find((run) =>
         ["queued", "approved", "running", "cancel_requested"].includes(
@@ -178,13 +204,19 @@ export default function IncidentRemediationPanel({
       setSelectedRunId(preferredRun?.id || data?.[0]?.id || null);
     } catch (error) {
       console.log(error);
-      toast.error("Failed to load remediation history");
+      if (version === loadVersionRef.current) {
+        toast.error("Failed to load remediation history", {
+          id: `remediation-runs-${incident.id}`,
+        });
+      }
     } finally {
-      setLoadingRuns(false);
+      if (version === loadVersionRef.current) {
+        setLoadingRuns(false);
+      }
     }
   }, [incident?.id]);
 
-  const loadLogs = useCallback(async (remediationRunId) => {
+  const loadLogs = useCallback(async (remediationRunId, version = loadVersionRef.current) => {
     if (!remediationRunId) {
       setLogs([]);
       return;
@@ -192,25 +224,34 @@ export default function IncidentRemediationPanel({
 
     try {
       setLoadingLogs(true);
-      const data = await getRemediationRunLogs(remediationRunId);
+      const data = await retryOnce(() => getRemediationRunLogs(remediationRunId));
+      if (version !== loadVersionRef.current) return;
       setLogs(data || []);
     } catch (error) {
       console.log(error);
-      toast.error("Failed to load remediation logs");
+      if (version === loadVersionRef.current) {
+        toast.error("Failed to load remediation logs", {
+          id: `remediation-logs-${remediationRunId}`,
+        });
+      }
     } finally {
-      setLoadingLogs(false);
+      if (version === loadVersionRef.current) {
+        setLoadingLogs(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    const version = loadVersionRef.current + 1;
+    loadVersionRef.current = version;
     setContext(null);
     setRuns([]);
     setLogs([]);
     setSelectedRunId(null);
     setTargetColumn("");
     setReviewNotes("");
-    loadContext();
-    loadRuns();
+    loadContext(version);
+    loadRuns(version);
   }, [incident?.id, loadContext, loadRuns]);
 
   useEffect(() => {
@@ -224,7 +265,7 @@ export default function IncidentRemediationPanel({
   }, [context, targetColumn]);
 
   useEffect(() => {
-    loadLogs(selectedRunId);
+    loadLogs(selectedRunId, loadVersionRef.current);
   }, [selectedRunId, loadLogs]);
 
   const activeRun = useMemo(
@@ -247,13 +288,20 @@ export default function IncidentRemediationPanel({
     [runs],
   );
 
+  const stagedRun = useMemo(
+    () =>
+      runs.find((run) => String(run.status || "").toLowerCase() === "staged") || null,
+    [runs],
+  );
+
   const latestRun = runs[0] || null;
   const canApprove = Boolean(
     isAdmin &&
       remediation?.allowed_to_execute &&
       remediation?.requires_approval &&
       !activeRun &&
-      !reviewRun,
+      !reviewRun &&
+      !stagedRun,
   );
   const canReject = Boolean(
     isAdmin &&
@@ -261,18 +309,39 @@ export default function IncidentRemediationPanel({
       ["queued", "approved", "running"].includes(String(activeRun.status || "").toLowerCase()),
   );
   const canPromote = Boolean(isAdmin && reviewRun);
-  const candidateMetrics = remediation?.candidate_metrics || null;
+  const canConfirmDeployment = Boolean(isAdmin && stagedRun);
+  const candidateLogPayload = useMemo(() => {
+    const matchingPayload = logs
+      .map((log) => log?.payload)
+      .find((payload) => payload?.candidate_model_uri || payload?.candidate_mlflow_run_id);
+    return matchingPayload || null;
+  }, [logs]);
+  const candidateMetrics =
+    remediation?.candidate_metrics || candidateLogPayload?.metrics || null;
+  const candidateModelUri =
+    remediation?.candidate_model_uri || candidateLogPayload?.candidate_model_uri || "";
+  const stagedModelUri =
+    remediation?.staged_model_uri ||
+    remediation?.promoted_model_uri ||
+    candidateLogPayload?.staged_model_uri ||
+    candidateLogPayload?.promoted_model_uri ||
+    "";
+  const targetRequired = context?.target_required !== false;
+  const trainingMode = context?.training_mode || "supervised";
 
   const handleApprove = async () => {
     const normalizedTarget = targetColumn.trim();
-    if (!normalizedTarget) {
+    if (targetRequired && !normalizedTarget) {
       toast.error("Enter the target column before approving retraining.");
       return;
     }
 
     try {
       setSubmitting(true);
-      const response = await approveRemediationForIncident(incident.id, normalizedTarget);
+      const response = await approveRemediationForIncident(
+        incident.id,
+        targetRequired ? normalizedTarget : null,
+      );
       toast.success(response.message || "Remediation approved.");
       await loadRuns();
       await loadLogs(selectedRunId);
@@ -309,15 +378,33 @@ export default function IncidentRemediationPanel({
     try {
       setPromoting(true);
       const response = await promoteRemediationCandidate(reviewRun.id, reviewNotes.trim());
-      toast.success(response.message || "Candidate promoted.");
+      toast.success(response.message || "Candidate staged.");
       await loadRuns();
       await loadLogs(reviewRun.id);
       await onRemediationChanged?.();
     } catch (error) {
       console.log(error);
-      toast.error(error?.response?.data?.detail || "Failed to promote the candidate.");
+      toast.error(error?.response?.data?.detail || "Failed to stage the candidate.");
     } finally {
       setPromoting(false);
+    }
+  };
+
+  const handleConfirmDeployment = async () => {
+    if (!stagedRun) return;
+
+    try {
+      setConfirmingDeployment(true);
+      const response = await confirmRemediationDeployment(stagedRun.id, reviewNotes.trim());
+      toast.success(response.message || "Deployment confirmed.");
+      await loadRuns();
+      await loadLogs(stagedRun.id);
+      await onRemediationChanged?.();
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.response?.data?.detail || "Failed to confirm deployment.");
+    } finally {
+      setConfirmingDeployment(false);
     }
   };
 
@@ -445,6 +532,9 @@ export default function IncidentRemediationPanel({
                     Framework: {humanize(context?.model_framework || "unknown")}
                   </p>
                   <p className="mt-1 text-[12px] text-slate-500">
+                    Training mode: {humanize(trainingMode)}
+                  </p>
+                  <p className="mt-1 text-[12px] text-slate-500">
                     Dataset columns: {context?.dataset_columns?.length || 0}
                   </p>
                 </div>
@@ -474,26 +564,37 @@ export default function IncidentRemediationPanel({
 
               {canApprove ? (
                 <div className="mt-3 space-y-4">
-                  <div>
-                    <label className="block text-[12px] font-medium text-slate-700">
-                      Target column
-                    </label>
-                    <input
-                      value={targetColumn}
-                      onChange={(event) => setTargetColumn(event.target.value)}
-                      list={`target-columns-${incident.id}`}
-                      placeholder="Enter target column"
-                      className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-[14px] text-slate-900 outline-none transition focus:border-blue-300 focus:bg-white"
-                    />
-                    <datalist id={`target-columns-${incident.id}`}>
-                      {(context?.target_candidates || []).map((column) => (
-                        <option key={column} value={column} />
-                      ))}
-                    </datalist>
-                    <p className="mt-2 text-[12px] leading-5 text-slate-500">
-                      Suggested targets: {(context?.target_candidates || []).slice(0, 6).join(", ") || "None detected yet."}
-                    </p>
-                  </div>
+                  {targetRequired ? (
+                    <div>
+                      <label className="block text-[12px] font-medium text-slate-700">
+                        Target column
+                      </label>
+                      <input
+                        value={targetColumn}
+                        onChange={(event) => setTargetColumn(event.target.value)}
+                        list={`target-columns-${incident.id}`}
+                        placeholder="Enter target column"
+                        className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-[14px] text-slate-900 outline-none transition focus:border-blue-300 focus:bg-white"
+                      />
+                      <datalist id={`target-columns-${incident.id}`}>
+                        {(context?.target_candidates || []).map((column) => (
+                          <option key={column} value={column} />
+                        ))}
+                      </datalist>
+                      <p className="mt-2 text-[12px] leading-5 text-slate-500">
+                        Suggested targets: {(context?.target_candidates || []).slice(0, 6).join(", ") || "None detected yet."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                      <p className="text-[13px] font-semibold text-blue-900">
+                        Feature-only clustering retrain
+                      </p>
+                      <p className="mt-1 text-[12px] leading-5 text-blue-800">
+                        This model is treated as unsupervised, so remediation will refit the clustering estimator using the resolved feature columns. No target column is required.
+                      </p>
+                    </div>
+                  )}
 
                   <button
                     onClick={handleApprove}
@@ -501,7 +602,11 @@ export default function IncidentRemediationPanel({
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-blue-600 px-4 text-[13px] font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <CheckCircle2 size={15} />
-                    {submitting ? "Approving..." : "Approve retraining"}
+                    {submitting
+                      ? "Approving..."
+                      : targetRequired
+                        ? "Approve retraining"
+                        : "Approve clustering retrain"}
                   </button>
                 </div>
               ) : canReject ? (
@@ -533,10 +638,10 @@ export default function IncidentRemediationPanel({
                 <div className="mt-3 space-y-4">
                   <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
                     <p className="text-[13px] font-semibold text-violet-900">
-                      Candidate run #{reviewRun.id} is ready for promotion review.
+                      Candidate run #{reviewRun.id} is ready for staging review.
                     </p>
                     <p className="mt-1 text-[12px] leading-5 text-violet-800">
-                      Review the candidate metrics and notes, then promote it to the live alias or reject it.
+                      Review the candidate metrics and notes, then stage it for deployment or reject it. The live champion alias will not change yet.
                     </p>
                   </div>
 
@@ -545,7 +650,7 @@ export default function IncidentRemediationPanel({
                       Candidate model URI
                     </p>
                     <p className="mt-1 break-all text-[12px] leading-5 text-slate-600">
-                      {remediation?.candidate_model_uri || "Candidate artifact URI is not available."}
+                      {candidateModelUri || "Candidate artifact URI is not available."}
                     </p>
                     {candidateMetrics && (
                       <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -573,7 +678,7 @@ export default function IncidentRemediationPanel({
                     <textarea
                       value={reviewNotes}
                       onChange={(event) => setReviewNotes(event.target.value)}
-                      placeholder="Optional review notes for this promotion decision"
+                      placeholder="Optional review notes for this staging decision"
                       className="mt-2 min-h-[96px] w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-[14px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white"
                     />
                   </div>
@@ -585,7 +690,7 @@ export default function IncidentRemediationPanel({
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-[13px] font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <CheckCircle2 size={15} />
-                      {promoting ? "Promoting..." : "Promote candidate"}
+                      {promoting ? "Staging..." : "Stage candidate"}
                     </button>
                     <button
                       onClick={handleRejectCandidate}
@@ -596,6 +701,43 @@ export default function IncidentRemediationPanel({
                       {rejecting ? "Submitting..." : "Reject candidate"}
                     </button>
                   </div>
+                </div>
+              ) : canConfirmDeployment ? (
+                <div className="mt-3 space-y-4">
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <p className="text-[13px] font-semibold text-blue-900">
+                      Candidate run #{stagedRun.id} is staged for deployment.
+                    </p>
+                    <p className="mt-1 text-[12px] leading-5 text-blue-800">
+                      Your deployment pipeline should now deploy the MLflow staging alias. Confirm deployment only after smoke tests and serving health checks pass.
+                    </p>
+                    {stagedModelUri && (
+                      <p className="mt-2 break-all rounded-md bg-white/70 px-3 py-2 text-[12px] leading-5 text-blue-900">
+                        Staged model URI: {stagedModelUri}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-medium text-slate-700">
+                      Deployment notes
+                    </label>
+                    <textarea
+                      value={reviewNotes}
+                      onChange={(event) => setReviewNotes(event.target.value)}
+                      placeholder="Optional deployment confirmation notes"
+                      className="mt-2 min-h-[96px] w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-[14px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white"
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleConfirmDeployment}
+                    disabled={confirmingDeployment}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-[13px] font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <CheckCircle2 size={15} />
+                    {confirmingDeployment ? "Confirming..." : "Confirm deployment"}
+                  </button>
                 </div>
               ) : (
                 <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">

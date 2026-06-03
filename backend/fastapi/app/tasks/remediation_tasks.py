@@ -1,7 +1,9 @@
 from datetime import datetime
 
+from billiard.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 
+from app.config import settings
 from app.core.celery_app import celery
 from app.db.session import SessionLocal
 from app.models.incident import Incident
@@ -20,15 +22,14 @@ logger = get_task_logger(__name__)
 
 @celery.task(
     bind=True,
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_kwargs={"max_retries": 1},
+    soft_time_limit=settings.REMEDIATION_TASK_SOFT_TIME_LIMIT_SECONDS,
+    time_limit=settings.REMEDIATION_TASK_TIME_LIMIT_SECONDS,
 )
 def run_remediation_task(
     self,
     remediation_run_id: int,
     tenant_id: str | None,
-    target_column: str,
+    target_column: str | None,
 ):
     from app.services.remediation.retraining_service import run_retraining
 
@@ -180,6 +181,34 @@ def run_remediation_task(
                     message=str(exc),
                 )
             db.commit()
+    except SoftTimeLimitExceeded as exc:
+        logger.error("Remediation task exceeded its soft time limit.", exc_info=True)
+        remediation_run = locals().get("remediation_run")
+        incident = locals().get("incident")
+        if remediation_run:
+            remediation_run.status = "failed"
+            remediation_run.finished_at = datetime.utcnow()
+            remediation_run.result_summary = (
+                "Remediation timed out while loading artifacts or training the candidate model."
+            )
+            db.add(
+                RemediationActionLog(
+                    remediation_run_id=remediation_run.id,
+                    step_name="timeout",
+                    status="failed",
+                    message=remediation_run.result_summary,
+                    payload={"error": str(exc)},
+                )
+            )
+            if incident:
+                sync_incident_remediation_state(
+                    incident,
+                    remediation_run,
+                    status="failed",
+                    message=remediation_run.result_summary,
+                )
+            db.commit()
+        raise
     except Exception as exc:
         logger.error("Remediation task failed: %s", exc, exc_info=True)
         remediation_run = locals().get("remediation_run")

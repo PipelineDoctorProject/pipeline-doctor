@@ -280,3 +280,12 @@ This distinction is intentional:
 - `backend/fastapi/app/services/quality/transformer.py`
 - `backend/fastapi/app/services/quality/pipeline.py`
 - `backend/fastapi/app/api/routes/data_quality.py`
+
+---
+
+## Related Docs
+
+- [schema_evolution.md](./schema_evolution.md)
+- [drift_detection.md](./drift_detection.md)
+- [remediation.md](./remediation.md)
+- [automation_and_scheduler.md](./automation_and_scheduler.md)

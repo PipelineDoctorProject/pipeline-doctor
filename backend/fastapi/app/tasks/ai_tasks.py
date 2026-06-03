@@ -10,7 +10,7 @@ from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
 from app.db.session import SessionLocal
 from app.models.tenant import Tenant
-from app.utils.schema_utils import set_schema
+from app.utils.schema_utils import create_schema, set_schema
 from app.services.ai.context_builder import build_pipeline_context
 from app.services.ai_orchestration.supervisor import run_root_cause_analysis
 from app.services.incidents.report_builder import build_final_incident_report
@@ -26,6 +26,30 @@ STEP_NAMES = {
     2: "parser",
     3: "reporting",
 }
+
+
+def _summarize_context(context: dict) -> str:
+    dq_count = len(context.get("quality_findings", []) or [])
+    drift_count = len(context.get("drift_findings", []) or [])
+    schema_count = len(context.get("schema_changes", []) or [])
+    run_info = context.get("pipeline_run", {}) or {}
+    return (
+        f"run_id={run_info.get('id')} status={run_info.get('status')} "
+        f"dq_findings={dq_count} drift_findings={drift_count} "
+        f"schema_changes={schema_count}"
+    )
+
+
+def _summarize_analysis(analysis_state: dict) -> str:
+    report = analysis_state.get("report", {}) or {}
+    issues = report.get("issues", []) or []
+    failure_types = report.get("failure_types", []) or []
+    return (
+        f"severity={report.get('severity')} "
+        f"failure_types={len(failure_types)} "
+        f"issues={len(issues)} "
+        f"report_status={report.get('report_status')}"
+    )
 
 
 def _publish_step(run_id: int, step_index: int, status: str, message: str, payload: dict = None):
@@ -98,6 +122,7 @@ def run_doctor_agent_task(
             )
 
             if tenant and tenant.schema_name:
+                create_schema(db, tenant.schema_name)
                 set_schema(db, tenant.schema_name)
 
         pipeline_run = (
@@ -164,7 +189,7 @@ def run_doctor_agent_task(
             pipeline_run_id=pipeline_run_id
         )
 
-        logger.info(f"Built AI context: {context}")
+        logger.info("Built AI context summary: %s", _summarize_context(context))
 
         # ==========================================
         # STEP 0 — DETECTION (context built)
@@ -207,7 +232,7 @@ def run_doctor_agent_task(
             run=pipeline_run
         )
 
-        logger.info(f"AI RCA Analysis Complete: {analysis_state}")
+        logger.info("AI RCA analysis complete: %s", _summarize_analysis(analysis_state))
 
         # STEP 1 done — STEP 2 parser
         _publish_step(

@@ -48,6 +48,8 @@ class RemediationContextResponse(BaseModel):
     expected_features: list[str] = []
     expected_features_source: str | None = None
     dataset_columns: list[str] = []
+    training_mode: str = "supervised"
+    target_required: bool = True
     target_candidates: list[str] = []
     suggested_target_column: str | None = None
     cleaned_data_available: bool

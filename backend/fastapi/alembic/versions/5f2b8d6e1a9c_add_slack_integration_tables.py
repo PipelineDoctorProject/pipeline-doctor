@@ -1,7 +1,7 @@
 """add slack integration tables
 
 Revision ID: 5f2b8d6e1a9c
-Revises: 2e7e9301d754
+Revises: b771d77d183c
 Create Date: 2026-05-24 20:10:00.000000
 """
 
@@ -12,7 +12,7 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = "5f2b8d6e1a9c"
-down_revision = "2e7e9301d754"
+down_revision = "b771d77d183c"
 branch_labels = None
 depends_on = None
 

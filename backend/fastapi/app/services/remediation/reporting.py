@@ -39,12 +39,21 @@ def sync_incident_remediation_state(
         remediation["candidate_mlflow_run_id"] = result.get("candidate_mlflow_run_id")
         remediation["feature_columns"] = result.get("feature_columns")
         remediation["feature_source"] = result.get("feature_source")
+        remediation["staged_model_uri"] = result.get("staged_model_uri")
+        remediation["staged_model_version"] = result.get("staged_model_version")
+        remediation["staged_model_name"] = result.get("staged_model_name")
+        remediation["staged_alias"] = result.get("staged_alias")
         remediation["promoted_model_uri"] = result.get("promoted_model_uri")
         remediation["promoted_model_version"] = result.get("promoted_model_version")
         remediation["promoted_model_name"] = result.get("promoted_model_name")
         remediation["promoted_alias"] = result.get("promoted_alias")
         remediation["review_notes"] = result.get("review_notes")
         remediation["promoted_by"] = result.get("promoted_by")
+        remediation["deployment_required"] = result.get("deployment_required")
+        remediation["deployed_alias"] = result.get("deployed_alias")
+        remediation["deployed_model_uri"] = result.get("deployed_model_uri")
+        remediation["deployment_status"] = result.get("deployment_status")
+        remediation["deployed_by"] = result.get("deployed_by")
 
     report_updates = _build_final_report_updates(status, remediation_message, result)
     final_report.update(report_updates)
@@ -72,8 +81,11 @@ def _build_final_report_updates(
 ) -> dict[str, Any]:
     normalized_status = str(status or "").lower()
     candidate_metrics = (result or {}).get("metrics")
-    promoted_alias = (result or {}).get("promoted_alias")
-    promoted_version = (result or {}).get("promoted_model_version")
+    staged_alias = (result or {}).get("staged_alias") or (result or {}).get("promoted_alias")
+    staged_version = (
+        (result or {}).get("staged_model_version")
+        or (result or {}).get("promoted_model_version")
+    )
 
     if normalized_status == "queued":
         return {
@@ -150,24 +162,38 @@ def _build_final_report_updates(
             ),
         }
 
-    if normalized_status == "promoted":
+    if normalized_status == "staged":
         alias_summary = (
-            f" as alias '{promoted_alias}'"
-            if promoted_alias
+            f" as alias '{staged_alias}'"
+            if staged_alias
             else ""
         )
         version_summary = (
-            f" version {promoted_version}"
-            if promoted_version
+            f" version {staged_version}"
+            if staged_version
             else ""
         )
         return {
-            "report_status": "remediation_promoted",
-            "action_taken": "Candidate model was approved and promoted to live serving.",
+            "report_status": "candidate_staged_for_deployment",
+            "action_taken": "Candidate model was approved and staged for deployment.",
+            "manual_action_required": True,
+            "timeline_summary": (
+                "Detection completed, AI reasoning finished, remediation executed, candidate review passed,"
+                f" and the candidate was staged{alias_summary}{version_summary}. Deployment confirmation is still required."
+            ),
+        }
+
+    if normalized_status == "deployed":
+        deployed_alias = (result or {}).get("deployed_alias") or staged_alias
+        deployed_uri = (result or {}).get("deployed_model_uri")
+        return {
+            "report_status": "remediation_deployed",
+            "action_taken": "Deployment was confirmed and the champion alias was updated.",
             "manual_action_required": False,
             "timeline_summary": (
                 "Detection completed, AI reasoning finished, remediation executed, candidate review passed,"
-                f" and the model was promoted{alias_summary}{version_summary}."
+                f" deployment was confirmed, and active monitoring now tracks alias '{deployed_alias}'."
+                + (f" Model URI: {deployed_uri}." if deployed_uri else "")
             ),
         }
 
