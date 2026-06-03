@@ -30,3 +30,8 @@ class Incident(Base):
         back_populates="incident",
         cascade="all, delete-orphan",
     )
+    reports = relationship(
+        "IncidentReport",
+        back_populates="incident",
+        cascade="all, delete-orphan",
+    )

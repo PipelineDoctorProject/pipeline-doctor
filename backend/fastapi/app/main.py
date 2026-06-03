@@ -23,6 +23,7 @@ from app.api.routes import (
     agent_trace,
     remediation,
     slack,
+    reports,
 )
 
 from app.middleware.auth_middleware import AuthMiddleware
@@ -95,6 +96,7 @@ app.include_router(tenant.router)
 app.include_router(agent_trace.router)  # WS /ws/agent-trace/{run_id}
 app.include_router(remediation.router)
 app.include_router(slack.router)
+app.include_router(reports.router)
 
 
 

@@ -218,6 +218,7 @@ def approve_retraining_for_incident(
         )
     )
     sync_incident_remediation_state(
+        db,
         incident,
         remediation_run,
         status="queued",
@@ -294,6 +295,7 @@ def reject_remediation_run(
         )
         if incident:
             sync_incident_remediation_state(
+                db,
                 incident,
                 remediation_run,
                 status="promotion_rejected",
@@ -322,6 +324,7 @@ def reject_remediation_run(
         )
         if incident:
             sync_incident_remediation_state(
+                db,
                 incident,
                 remediation_run,
                 status="cancel_requested",
@@ -342,6 +345,7 @@ def reject_remediation_run(
         )
         if incident:
             sync_incident_remediation_state(
+                db,
                 incident,
                 remediation_run,
                 status="rejected",
@@ -430,6 +434,7 @@ def promote_remediation_candidate(
         )
     )
     sync_incident_remediation_state(
+        db,
         incident,
         remediation_run,
         status="staged",
@@ -519,6 +524,7 @@ def confirm_remediation_candidate_deployment(
         )
     )
     sync_incident_remediation_state(
+        db,
         incident,
         remediation_run,
         status="deployed",
