@@ -266,6 +266,31 @@ Important payloads:
 - staging result: `staged_model_uri`, `staged_model_version`, `staged_alias`
 - deployment result: `deployed_model_uri`, `deployed_alias`, `deployment_status`
 
+### `incident_reports`
+
+Versioned production reports for an incident.
+
+Important fields:
+
+- `incident_id`
+- `pipeline_run_id`
+- `model_id`
+- `version`
+- `status`
+- `severity`
+- `summary`
+- `executive_narrative`
+- `root_cause`
+- `key_findings`
+- `remediation`
+- `model_context`
+- `next_actions`
+- `timeline`
+- `evidence_hash`
+- `created_at`
+
+The first report version is created after RCA completes. Later remediation events can create newer versions when a candidate is created, staged, rejected, or deployed.
+
 ---
 
 ## Provisioning and Repair Notes
@@ -295,6 +320,7 @@ tenant.ml_models -------- tenant.baselines
               +-- tenant.incident_groups -- tenant.incidents
               |                                |
               |                                +-- tenant.remediation_runs -- tenant.remediation_action_logs
+              |                                +-- tenant.incident_reports
               |
               +-- tenant.agent_runs -- tenant.agent_step_logs
 ```

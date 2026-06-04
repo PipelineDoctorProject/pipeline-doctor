@@ -85,6 +85,7 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 | [remediation.md](./remediation.md) | Approval, retraining, candidate staging, rejection, and deployment confirmation |
 | [model_lifecycle.md](./model_lifecycle.md) | MLflow aliases, candidate/staging/champion lifecycle, and production deployment contract |
 | [ml_integration.md](./ml_integration.md) | MLflow loading, feature filtering, supervised vs unsupervised behavior |
+| [reports.md](./reports.md) | Production report generation, report versions, remediation-aware reporting, and PDF-style UI |
 | [slack.md](./slack.md) | Slack OAuth, default channel readiness, and one-alert-per-run design |
 | [ai_orchestration.md](./ai_orchestration.md) | Doctor RCA agent, final report persistence, and trace steps |
 | [realtime_tracing.md](./realtime_tracing.md) | Live RCA traces and incident refresh behavior |
@@ -108,6 +109,7 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 - Run-level incident grouping prevents Slack spam from many low-level findings.
 - WebSocket incident updates refresh pages without manual reloads.
 - Slack delivers one top-level run alert per incident group.
+- Full production reports summarize RCA evidence, remediation state, candidate status, and next actions.
 - Remediation creates MLflow candidates without mutating the live champion.
 - Candidate staging and champion deployment confirmation are split into separate human-reviewed steps.
 
@@ -148,3 +150,5 @@ In production, OpsSight should not be the system that blindly deploys models int
 - OpsSight confirms deployment and starts monitoring the champion alias.
 
 This keeps observability, approval, model registry, and serving deployment responsibilities cleanly separated.
+
+Reports are part of that contract. The first report version is created after RCA, then later report versions are generated when remediation reaches important lifecycle points such as candidate creation, staging, rejection, or deployment confirmation.

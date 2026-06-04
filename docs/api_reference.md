@@ -34,6 +34,19 @@ Refresh the access token from the refresh cookie.
 
 Clear auth cookies.
 
+### `GET /dashboard/me`
+
+Return the authenticated user's current dashboard context.
+
+This is the endpoint to use when scripts need the current user's workspace and tenant id. The project does not expose `GET /auth/me`.
+
+Important response fields include:
+
+- user identity
+- role
+- workspace metadata
+- `workspace.tenant_id`
+
 ### `POST /onboarding/company`
 
 Create the workspace after OTP verification.
@@ -52,6 +65,12 @@ Admin-only member invitation.
 ### `POST /invite/accept`
 
 Accept member invite and set password.
+
+### `DELETE /tenant/{tenant_id}`
+
+Admin-only tenant deletion for local reset and controlled cleanup.
+
+Use this carefully. In local development, first call `GET /dashboard/me` to find the current `workspace.tenant_id`, then call this endpoint with the same access token.
 
 ---
 
@@ -247,6 +266,40 @@ Get one remediation run.
 ### `GET /remediation/{remediation_run_id}/logs`
 
 Get remediation action logs.
+
+---
+
+## Reports
+
+### `GET /reports/incidents/{incident_id}`
+
+List all report versions for an incident.
+
+Reports are versioned because the incident story changes over time. RCA creates the initial report, and remediation lifecycle changes can create newer versions.
+
+### `GET /reports/incidents/{incident_id}/latest`
+
+Return the latest production report for an incident.
+
+The frontend uses this to open the PDF-style report page from the incident drawer.
+
+### `GET /reports/{report_id}`
+
+Return a specific report version.
+
+Important report fields include:
+
+- `version`
+- `status`
+- `severity`
+- `summary`
+- `executive_narrative`
+- `root_cause`
+- `key_findings`
+- `remediation`
+- `model_context`
+- `next_actions`
+- `timeline`
 
 ---
 

@@ -166,6 +166,8 @@ At this point:
 - the incident drawer shows `Pending Promotion`
 - the admin must inspect the MLflow run and OpsSight logs
 
+In local development, candidates can be written to the configured remediation candidate tracking URI. This may be the local MLflow server even when the source model originally came from another registry. That separation is intentional: remediation should not mutate a protected source registry before review.
+
 ---
 
 ## Stage Candidate
@@ -212,6 +214,8 @@ After deployment confirmation, future monitoring should load:
 models:/<model_name>@champion
 ```
 
+In local development, it is normal to see the same MLflow model version carrying both `staging` and `champion` after the full stage-and-confirm flow. That means the candidate was first staged for review and then confirmed as the live champion. In production, the time between those two aliases may be longer because CI/CD, canary deployment, and serving health checks happen between staging and confirmation.
+
 ---
 
 ## Reject and Cancel Behavior
@@ -254,6 +258,8 @@ The UI should show:
 - candidate model URI
 - staged model URI
 - step-by-step remediation logs
+
+The Full Report page should be used alongside the drawer. RCA creates the first report version, and remediation updates the report as the lifecycle progresses. See [reports.md](./reports.md).
 
 ---
 
@@ -309,6 +315,7 @@ Typical steps:
 
 - [model_lifecycle.md](./model_lifecycle.md)
 - [ml_integration.md](./ml_integration.md)
+- [reports.md](./reports.md)
 - [data_quality.md](./data_quality.md)
 - [schema_evolution.md](./schema_evolution.md)
 - [automation_and_scheduler.md](./automation_and_scheduler.md)
