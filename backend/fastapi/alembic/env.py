@@ -30,6 +30,7 @@ from app.models import (
     RemediationActionLog,
     SlackWorkspace,
     SlackChannel,
+    IncidentReport,
 )
 
 # Load environment variables

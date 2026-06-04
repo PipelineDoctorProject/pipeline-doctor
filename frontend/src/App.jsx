@@ -21,6 +21,7 @@ import IncidentsPage from "./pages/incidents/IncidentsPage";
 import ModelsPage from "./pages/models/Modelspage";
 import OnboardingPage from "./pages/onboarding/Onboarding";
 import PipelinesPage from "./pages/pipelines/PipelinesPage";
+import IncidentReportPage from "./pages/reports/IncidentReportPage";
 import SchemaPage from "./pages/schema/Schema";
 import SlackPage from "./pages/integrations/SlackPage";
 
@@ -111,6 +112,7 @@ export default function App() {
           <Route path="/data-quality" element={<DataQualityPage />} />
           <Route path="/drift" element={<DriftPage />} />
           <Route path="/models" element={<ModelsPage />} />
+          <Route path="/reports/incidents/:incidentId" element={<IncidentReportPage />} />
           <Route path="/schemas" element={<SchemaPage />} />
           <Route path="/integrations/slack" element={<SlackPage />} />
         </Route>

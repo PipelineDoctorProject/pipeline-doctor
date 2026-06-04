@@ -40,6 +40,7 @@ def create_schema(db, schema_name: str):
 
     _repair_incident_group_run_fk(db, schema_name)
     _repair_remediation_fks(db, schema_name)
+    _repair_slack_fks(db, schema_name)
     _repair_schema_change_event_columns(db, schema_name)
     db.commit()
 
@@ -162,6 +163,17 @@ def _repair_remediation_fks(db: Session, schema_name: str) -> None:
         src_column="incident_id",
         fk_name="remediation_runs_incident_id_fkey",
         ref_table="incidents",
+    )
+
+
+def _repair_slack_fks(db: Session, schema_name: str) -> None:
+    _repair_simple_tenant_fk(
+        db=db,
+        schema_name=schema_name,
+        src_table="slack_channels",
+        src_column="workspace_id",
+        fk_name="slack_channels_workspace_id_fkey",
+        ref_table="slack_workspaces",
     )
 
 

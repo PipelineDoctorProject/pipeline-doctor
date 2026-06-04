@@ -82,6 +82,17 @@ Deployment confirmation means the staged model has been deployed by the external
 models:/<model_name>@champion
 ```
 
+### Local alias interpretation
+
+In local testing, after a successful `Stage candidate` followed by `Confirm deployment`, the same MLflow version can show both aliases:
+
+```text
+@staging
+@champion
+```
+
+That is correct after the full flow completes. `staging` records that the candidate passed review, and `champion` records that the same version was confirmed as live. In production, teams often keep staging and champion separated until deployment automation finishes canary checks.
+
 ---
 
 ## Full Flow From Incident
@@ -104,6 +115,8 @@ models:/<model_name>@champion
 15. OpsSight model metadata is updated
 16. Future pipeline runs monitor the new champion
 ```
+
+The report system follows the same lifecycle. RCA creates an initial report version, candidate creation can move the report to review state, staging records the candidate-ready state, and deployment confirmation records the deployed state.
 
 ---
 
@@ -219,11 +232,14 @@ For a local end-to-end test:
 12. Verify MLflow registered model has `champion`.
 13. Trigger a new DAG run and confirm OpsSight monitors the champion version.
 
+If MLflow shows a newer version with both `@staging` and `@champion`, the local lifecycle completed successfully. The next monitoring run should now load the champion alias for that model.
+
 ---
 
 ## Related Docs
 
 - [remediation.md](./remediation.md)
 - [ml_integration.md](./ml_integration.md)
+- [reports.md](./reports.md)
 - [automation_and_scheduler.md](./automation_and_scheduler.md)
 - [api_reference.md](./api_reference.md)

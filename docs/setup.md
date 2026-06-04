@@ -137,6 +137,34 @@ Frontend URL:
 
 ---
 
+## Local Tenant Reset
+
+If you need to delete the current local tenant and start again, first get the authenticated user's dashboard context:
+
+```powershell
+$token = "YOUR_ACCESS_TOKEN"
+
+$me = Invoke-RestMethod `
+  -Method Get `
+  -Uri "http://localhost:8000/dashboard/me" `
+  -Headers @{ Authorization = "Bearer $token" }
+
+$tenantId = $me.workspace.tenant_id
+```
+
+Then delete that tenant:
+
+```powershell
+Invoke-RestMethod `
+  -Method Delete `
+  -Uri "http://localhost:8000/tenant/$tenantId" `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+Use `/dashboard/me`, not `/auth/me`. The `/auth/me` endpoint is not part of the current API.
+
+---
+
 ## Current Runtime Notes
 
 ### Data outputs
@@ -205,3 +233,4 @@ npm run dev
 - [authentication.md](./authentication.md)
 - [data_quality.md](./data_quality.md)
 - [automation_and_scheduler.md](./automation_and_scheduler.md)
+- [reports.md](./reports.md)

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies.auth import require_tenant_user
+from app.models.tenant import Tenant
 from app.schemas.slack import SlackChannelSelectionRequest, SlackConnectResponse
 from app.services.slack_service import (
     build_connect_url,
@@ -19,6 +20,7 @@ from app.services.slack_service import (
     save_default_channel,
     upsert_workspace_installation,
 )
+from app.utils.schema_utils import set_schema
 
 router = APIRouter(prefix="/slack", tags=["Slack"])
 
@@ -26,6 +28,18 @@ router = APIRouter(prefix="/slack", tags=["Slack"])
 def _require_admin(user) -> None:
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Only workspace admins can manage Slack.")
+
+
+def _use_current_tenant_schema(db: Session, user) -> None:
+    tenant = (
+        db.query(Tenant)
+        .filter(Tenant.id == user.tenant_id)
+        .first()
+    )
+    if not tenant or not tenant.schema_name:
+        raise HTTPException(status_code=403, detail="Workspace not found.")
+
+    set_schema(db, tenant.schema_name)
 
 
 @router.get("/connect", response_model=SlackConnectResponse)
@@ -57,6 +71,15 @@ def slack_callback(
 
     try:
         state_payload = decode_oauth_state(state)
+        tenant = (
+            db.query(Tenant)
+            .filter(Tenant.id == state_payload["tenant_id"])
+            .first()
+        )
+        if not tenant or not tenant.schema_name:
+            return RedirectResponse(build_frontend_callback_url(False, "Slack connection failed because the workspace no longer exists."))
+
+        set_schema(db, tenant.schema_name)
         installation = exchange_code_for_installation(code)
         upsert_workspace_installation(
             db,
@@ -77,6 +100,7 @@ def get_slack_status(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user),
 ):
+    _use_current_tenant_schema(db, current_user)
     workspace = get_workspace_for_tenant(db, current_user.tenant_id)
     default_channel = get_default_channel(workspace) if workspace else None
     default_channel_status = None
@@ -145,6 +169,7 @@ def get_slack_channels(
     current_user=Depends(require_tenant_user),
 ):
     _require_admin(current_user)
+    _use_current_tenant_schema(db, current_user)
     workspace = get_workspace_for_tenant(db, current_user.tenant_id)
     if not workspace:
         raise HTTPException(status_code=404, detail="Slack is not connected for this workspace.")
@@ -159,6 +184,7 @@ def update_default_channel(
     current_user=Depends(require_tenant_user),
 ):
     _require_admin(current_user)
+    _use_current_tenant_schema(db, current_user)
     workspace = get_workspace_for_tenant(db, current_user.tenant_id)
     if not workspace:
         raise HTTPException(status_code=404, detail="Slack is not connected for this workspace.")
@@ -185,6 +211,7 @@ def remove_slack_connection(
     current_user=Depends(require_tenant_user),
 ):
     _require_admin(current_user)
+    _use_current_tenant_schema(db, current_user)
     workspace = get_workspace_for_tenant(db, current_user.tenant_id)
     if not workspace:
         raise HTTPException(status_code=404, detail="Slack is not connected for this workspace.")

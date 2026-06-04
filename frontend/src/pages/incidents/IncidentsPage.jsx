@@ -874,6 +874,7 @@ export default function IncidentsPage() {
                     rcaReport={selectedRcaReport}
                     guidance={selectedRcaIncident?.guidance}
                     agentRuns={agentRuns}
+                    incidentId={selectedRcaIncident?.id}
                   />
                 </div>
               )}

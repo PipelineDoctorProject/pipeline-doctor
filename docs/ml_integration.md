@@ -154,6 +154,18 @@ The candidate run stores:
 
 At this point, the candidate is not live.
 
+### Candidate registry selection
+
+Candidate remediation runs can use a dedicated candidate tracking URI:
+
+```env
+REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI=http://mlflow:5000
+```
+
+This lets local development and production keep candidate artifacts in a controlled registry. It also prevents remediation from accidentally writing to a protected source-model registry before the candidate is reviewed.
+
+The source model URI and candidate registry URI do not have to be the same. The source model is used as context; the candidate registry is where OpsSight stores the proposed replacement.
+
 ---
 
 ## MLflow Aliases
@@ -202,6 +214,8 @@ Recommended production setup:
 8. Admin confirms deployment.
 9. OpsSight updates `champion` tracking and monitors the new version.
 
+If the same local MLflow version has both `staging` and `champion`, that means the local flow has already staged and confirmed deployment. In production, a deployment pipeline normally runs between those two events.
+
 ---
 
 ## Cache Behavior
@@ -238,5 +252,6 @@ Cache should be cleared when:
 
 - [model_lifecycle.md](./model_lifecycle.md)
 - [remediation.md](./remediation.md)
+- [reports.md](./reports.md)
 - [schema_evolution.md](./schema_evolution.md)
 - [automation_and_scheduler.md](./automation_and_scheduler.md)

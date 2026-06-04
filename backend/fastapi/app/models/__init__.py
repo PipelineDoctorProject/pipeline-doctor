@@ -15,6 +15,7 @@ from app.models.remediation_run import RemediationRun
 from app.models.remediation_action_log import RemediationActionLog
 from app.models.slack_workspace import SlackWorkspace
 from app.models.slack_channel import SlackChannel
+from app.models.incident_report import IncidentReport
 
 __all__ = [
     "MLModel",
@@ -34,4 +35,5 @@ __all__ = [
     "RemediationActionLog",
     "SlackWorkspace",
     "SlackChannel",
+    "IncidentReport",
 ]

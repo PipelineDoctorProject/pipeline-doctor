@@ -13,6 +13,7 @@ from app.models.remediation_run import RemediationRun
 from app.models.remediation_action_log import RemediationActionLog
 from app.models.slack_channel import SlackChannel
 from app.models.slack_workspace import SlackWorkspace
+from app.models.incident_report import IncidentReport
 
 
 TENANT_MODELS = [
@@ -30,5 +31,6 @@ TENANT_MODELS = [
     RemediationRun,
     RemediationActionLog,
     SlackChannel,
-    SlackWorkspace
+    SlackWorkspace,
+    IncidentReport,
 ]

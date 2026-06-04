@@ -3,11 +3,15 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from app.models.incident import Incident
 from app.models.remediation_run import RemediationRun
+from app.services.incidents.report_service import create_incident_report_version
 
 
 def sync_incident_remediation_state(
+    db: Session | None,
     incident: Incident,
     remediation_run: RemediationRun,
     *,
@@ -60,6 +64,15 @@ def sync_incident_remediation_state(
     payload["remediation"] = remediation
     payload["final_report"] = final_report
     incident.description = json.dumps(payload, default=str)
+
+    if db is not None and final_report:
+        create_incident_report_version(
+            db,
+            incident=incident,
+            rca_payload=payload,
+            generator="deterministic_lifecycle",
+            generator_model=payload.get("model"),
+        )
 
 
 def _parse_payload(description: str | None) -> dict[str, Any]:
