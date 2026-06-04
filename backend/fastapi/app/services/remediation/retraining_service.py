@@ -273,8 +273,10 @@ def run_retraining(
     with open(artifact_path, "wb") as file_handle:
         pickle.dump(estimator, file_handle)
 
-    tracking_uri = resolve_mlflow_tracking_uri(model_record.mlflow_tracking_uri)
-    mlflow.set_tracking_uri(tracking_uri or MLFLOW_TRACKING_URI)
+    candidate_tracking_uri = resolve_mlflow_tracking_uri(
+        settings.REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI
+    )
+    mlflow.set_tracking_uri(candidate_tracking_uri or MLFLOW_TRACKING_URI)
 
     with mlflow.start_run(run_name=f"retraining_candidate_run_{run_id}") as active_run:
         mlflow.set_tags(
@@ -330,7 +332,7 @@ def run_retraining(
         "artifact_path": artifact_path,
         "candidate_mlflow_run_id": candidate_run_id,
         "candidate_model_uri": candidate_model_uri,
-        "candidate_tracking_uri": tracking_uri or MLFLOW_TRACKING_URI,
+        "candidate_tracking_uri": candidate_tracking_uri or MLFLOW_TRACKING_URI,
         "source_model_name": model_record.mlflow_model_name or model_record.name,
         "source_model_version": model_record.version,
         "source_model_uri": source_model_uri,

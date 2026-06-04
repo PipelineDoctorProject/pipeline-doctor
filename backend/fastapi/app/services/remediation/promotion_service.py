@@ -12,6 +12,16 @@ from app.models.remediation_action_log import RemediationActionLog
 from app.services.quality.pipeline import clear_mlflow_model_cache
 
 
+def _resolve_candidate_registry_uri(candidate_result: dict[str, Any] | None = None) -> str:
+    """Use the controlled remediation registry for candidate lifecycle actions."""
+    if candidate_result:
+        candidate_tracking_uri = candidate_result.get("candidate_tracking_uri")
+        if candidate_tracking_uri:
+            return resolve_mlflow_tracking_uri(str(candidate_tracking_uri))
+
+    return resolve_mlflow_tracking_uri(settings.REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI)
+
+
 def get_candidate_result_for_run(
     db: Session,
     remediation_run_id: int,
@@ -69,7 +79,7 @@ def approve_candidate_for_staging(
             "This model is not linked to an MLflow registered model, so candidate promotion cannot continue."
         )
 
-    tracking_uri = resolve_mlflow_tracking_uri(model_record.mlflow_tracking_uri)
+    tracking_uri = _resolve_candidate_registry_uri(candidate_result)
     client = MlflowClient(tracking_uri=tracking_uri)
 
     try:
@@ -104,6 +114,7 @@ def approve_candidate_for_staging(
     return {
         "candidate_model_uri": candidate_model_uri,
         "candidate_mlflow_run_id": candidate_run_id,
+        "candidate_tracking_uri": tracking_uri,
         "staged_alias": promotion_alias,
         "staged_model_name": model_record.mlflow_model_name,
         "staged_model_version": str(created_version.version),
@@ -145,7 +156,7 @@ def confirm_candidate_deployment(
     if not model_name or not model_version:
         raise ValueError("Staged model name/version is missing, so deployment cannot be confirmed.")
 
-    tracking_uri = resolve_mlflow_tracking_uri(model_record.mlflow_tracking_uri)
+    tracking_uri = _resolve_candidate_registry_uri(promotion_result)
     client = MlflowClient(tracking_uri=tracking_uri)
     champion_alias = settings.REMEDIATION_CHAMPION_ALIAS.strip() or "champion"
 
@@ -169,6 +180,7 @@ def confirm_candidate_deployment(
 
     return {
         **promotion_result,
+        "candidate_tracking_uri": tracking_uri,
         "deployed_alias": champion_alias,
         "deployed_model_uri": f"models:/{model_name}@{champion_alias}",
         "deployment_status": "confirmed",

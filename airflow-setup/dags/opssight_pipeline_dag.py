@@ -10,10 +10,9 @@ A production-oriented Apache Airflow DAG that:
 import os
 from datetime import datetime, timedelta
 
-import pandas as pd
 import requests
 from airflow import DAG
-from airflow.exceptions import AirflowException
+from airflow.exceptions import AirflowException, AirflowFailException
 from airflow.hooks.base import BaseHook
 from airflow.models.param import Param
 from airflow.models import Variable
@@ -83,7 +82,7 @@ def _build_auth_headers(api_url, conn):
         )
 
         if response.status_code != 200:
-            raise AirflowException(
+            raise AirflowFailException(
                 f"OpsSight login failed with {response.status_code}: {response.text}"
             )
 
@@ -163,6 +162,8 @@ def _resolve_model_id(kwargs, conn, api_url, headers):
 
 
 def load_data(**_kwargs):
+    import pandas as pd
+
     print("=" * 60)
     print("TASK 1: Loading data from source...")
     print("=" * 60)
