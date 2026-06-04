@@ -1,244 +1,164 @@
 # Automation and Scheduling
 
-This document explains the background automation added this week.
-
-The project now uses Celery, Redis, and Airflow together to keep monitoring and RCA execution automatic.
-
-New RCA creation is now centralized through the doctor task. The main validation pipeline queues the task, and the task itself persists the final RCA incident after writing the trace steps.
+This document explains how PipelineDoctor uses Airflow, Celery, and Redis in the current setup.
 
 ---
 
-## Automation Architecture Diagram
+## Current Background Flow
 
-```mermaid
-flowchart LR
-    A[Airflow DAG] --> B[FastAPI /data-quality/validate]
-    B --> C[Validation + Cleaning]
-    C --> D[Drift Detection]
-    D --> E[Queue Doctor Agent Task]
-    E --> F[Celery Worker]
-    G[Celery Beat] --> H[Doctor Monitoring Sweep]
-    H --> F
-    F --> I[(Redis)]
-    F --> J[(Database)]
+```text
+Airflow or UI upload
+    |
+FastAPI quality pipeline
+    |
+raw validation -> cleaning -> quarantine -> post-clean gate
+    |
+    +--> gate fail: mark run failed, queue RCA
+    |
+    +--> gate pass: predictions -> drift -> queue RCA
+                               |
+                               +--> grouped incidents
+                               +--> optional Slack alert
 ```
 
-### What This Diagram Means
-
-- Airflow is one entry path into the backend.
-- The backend pipeline performs deterministic monitoring first.
-- Doctor RCA is queued after that monitoring phase.
-- Celery Beat also triggers periodic sweeps as a safety automation layer.
-- Redis supports queue transport and heartbeat/tracing communication.
+Heavy or asynchronous work is handled by Celery workers.
 
 ---
 
-## What Was Added
+## Runtime Components
 
-- scheduled doctor-agent monitoring sweep
-- persistent Celery Beat heartbeat
-- doctor RCA execution in background workers
-- Redis-backed task and realtime transport
-- Airflow ingestion path into the backend
-- unified RCA persistence through `run_doctor_agent_task`
-
----
-
-## Core Files
-
-| File | Responsibility |
+| Component | Purpose |
 |---|---|
-| `backend/fastapi/app/tasks/scheduler_tasks.py` | Monitoring sweep and beat heartbeat |
-| `backend/fastapi/app/tasks/ai_tasks.py` | Doctor RCA worker task |
-| `backend/fastapi/app/core/celery_app.py` | Celery app configuration |
-| `airflow-setup/dags/opssight_pipeline_dag.py` | Example Airflow DAG |
-| `docker-compose.yml` | Runtime orchestration for API, worker, beat, Redis, MLflow, and Airflow |
+| FastAPI API | request entry point |
+| Redis | Celery broker, result backend, Pub/Sub bridge |
+| Celery worker | RCA, remediation, scheduled jobs, email |
+| Celery beat | scheduler heartbeat and doctor sweep |
+| Airflow | external pipeline trigger path |
 
 ---
 
-## Celery Roles
+## Celery Worker Responsibilities
 
-### Celery Worker
+The worker currently handles:
 
-Runs:
+- doctor RCA execution
+- remediation execution
+- scheduled monitoring tasks
+- email tasks
 
-- RCA doctor agent
-- scheduled monitoring jobs
-- email jobs
+### Doctor RCA
 
-The doctor agent is now responsible for:
+The doctor task is the single owner of new RCA persistence:
 
-- creating `AgentRun`
-- writing `AgentStepLog`
-- persisting the final RCA incident/report
+1. create `AgentRun`
+2. publish live step updates
+3. write `AgentStepLog`
+4. persist the final RCA incident/report
 
-### Celery Beat
+### Remediation
 
-Dispatches:
+Approved remediation runs execute through the worker and write:
+
+- `remediation_runs`
+- `remediation_action_logs`
+
+---
+
+## Celery Beat Responsibilities
+
+Celery Beat currently dispatches:
 
 - `record_beat_heartbeat`
 - `trigger_doctor_monitoring`
 
-### Redis
+### Beat heartbeat
 
-Used for:
-
-- Celery broker
-- Celery result backend
-- WebSocket Pub/Sub
-
-### Celery + Redis Role Diagram
-
-```mermaid
-flowchart TD
-    A[Celery Beat] --> B[Redis Broker]
-    C[FastAPI API] --> B
-    B --> D[Celery Worker]
-    D --> E[Doctor RCA]
-    D --> F[Heartbeat Task]
-    D --> G[Monitoring Sweep]
-    D --> H[Redis Pub/Sub]
-    H --> I[WebSocket Layer]
-```
-
----
-
-## Doctor Monitoring Sweep
-
-**File:** `backend/fastapi/app/tasks/scheduler_tasks.py`
-
-The periodic doctor-monitoring task:
-
-1. loops through tenants
-2. enters each tenant schema
-3. finds the latest pipeline run
-4. checks whether a doctor `AgentRun` already exists
-5. queues `run_doctor_agent_task(...)` only when needed
-
-This avoids duplicate RCA executions for the same latest run.
-
-In addition to the scheduled sweep, the main validation pipeline now also queues the doctor task immediately after drift processing for the current run. That gives new runs a trace-backed RCA without waiting for the next sweep.
-
-### Monitoring Sweep Diagram
-
-```mermaid
-flowchart TD
-    A[trigger_doctor_monitoring] --> B[Load Tenants]
-    B --> C[Enter Tenant Schema]
-    C --> D[Find Latest Pipeline Run]
-    D --> E{Existing AgentRun?}
-    E -- Yes --> F[Skip Duplicate]
-    E -- No --> G[Queue run_doctor_agent_task]
-```
-
----
-
-## Beat Heartbeat
-
-Celery Beat writes a small heartbeat payload into Redis so the backend can verify the scheduler is alive.
+Beat writes a heartbeat into Redis so health endpoints can detect whether scheduling is alive.
 
 Redis key:
 
 `celery:beat:last_heartbeat`
 
-This is useful for operational health checks.
+---
 
-### Heartbeat Flow Diagram
+## Doctor Monitoring Sweep
 
-```mermaid
-flowchart LR
-    A[Celery Beat Schedule] --> B[record_beat_heartbeat]
-    B --> C[Write payload to Redis]
-    C --> D[Backend health check can read heartbeat]
-```
+The scheduled doctor sweep:
+
+1. loops through tenants
+2. enters each tenant schema
+3. finds the latest run
+4. checks whether a doctor `AgentRun` already exists
+5. queues RCA only when needed
+
+This avoids duplicate RCA runs for the same latest batch.
+
+In addition to the scheduled sweep, the validation pipeline queues RCA immediately after the quality pipeline finishes its own allowed work.
+
+Important:
+
+- the doctor task can still be queued when the quality gate fails
+- that allows failed runs to produce trace-backed RCA instead of silently stopping
 
 ---
 
 ## Airflow Integration
 
-The Airflow DAG in `airflow-setup/dags/opssight_pipeline_dag.py`:
+The Airflow DAG:
 
-1. loads the newest CSV from `airflow-setup/data/`
-2. authenticates with the OpsSight backend
-3. sends the file to `/data-quality/validate?model_id=...`
+1. locates an input CSV
+2. authenticates to the OpsSight API using an Airflow Connection
+3. sends the file to `/data-quality/validate` with a resolved model id, or `/data-quality/validate-auto`
 
-### Airflow Execution Diagram
+### Production auth rule
 
-```mermaid
-sequenceDiagram
-    participant A as Airflow load_data
-    participant D as Airflow push_to_opssight
-    participant B as FastAPI Backend
-    participant C as Validation Pipeline
-    participant W as Celery Worker
+Do not hardcode API credentials or JWT tokens in `docker-compose.yml`.
 
-    A->>D: pass CSV file path through XCom
-    D->>B: POST /auth/login
-    D->>B: POST /data-quality/validate
-    B->>C: run validation + cleaning + drift
-    C->>W: queue doctor agent RCA
-    W->>W: create AgentRun + step logs + final RCA
-```
+Use Airflow Connection `opssight_api` instead:
 
-### Request Timeout Behavior
+- connection type: `http`
+- host: `api`
+- port: `8000`
+- auth option A: login/password (workspace user credentials)
+- auth option B: set `extra.api_token` for service-token style auth
 
-The DAG uses explicit HTTP timeouts so long backend work does not hang forever:
+Connection id can be overridden with:
 
-- login request timeout is longer than the old 30-second default
-- validate/upload request timeout is longer because validation, drift, and RCA queueing can take noticeably longer
+- `OPSSIGHT_CONN_ID` (defaults to `opssight_api`)
 
-If Airflow cannot finish the backend request in time, the task usually becomes:
+### Model routing rule
 
-- `up_for_retry`
+Model targeting is now runtime-driven:
 
-rather than staying permanently running.
+1. `dag_run.conf.model_id` (highest priority)
+2. Airflow Variable `opssight_model_id`
+3. connection extra `model_id`
+4. `dag_run.conf.model_name`
+5. Airflow Variable `opssight_model_name`
+6. connection extra `model_name`
+7. fallback to `/data-quality/validate-auto` (schema-based matching)
 
----
+Do not set a model id/name in the root `.env` for production. That would make the whole Airflow deployment point at one model. Use DAG trigger config for ad-hoc runs, or Airflow Variables/Connection extras for a specific scheduled pipeline.
 
-## Important Auth Rule for Airflow
+### Access token rule
 
-Airflow must use the **website login credentials**, not the Airflow UI login.
+When using login/password, the DAG should:
 
-Use:
-
-- `OPSSIGHT_API_EMAIL`
-- `OPSSIGHT_API_PASSWORD`
-
-Do not confuse them with:
-
-- Airflow UI login at `localhost:8080`
-
-### Why Static Tokens Fail
-
-The backend access token expires after 30 minutes. That means a manually copied `OPSSIGHT_API_TOKEN` will eventually fail with `401 Unauthorized`.
-
-The DAG now prefers:
-
-1. `POST /auth/login`
+1. call `POST /auth/login`
 2. read the returned `access_token`
-3. call `/data-quality/validate?...`
+3. call the validation endpoint
 
-This makes scheduled runs stable across time.
-
-### Common Airflow Failure Pattern
-
-If `push_to_opssight` enters `up_for_retry`, check the Airflow task log first.
-
-Typical reasons:
-
-- backend login request timed out
-- backend validate request timed out
-- temporary backend or Docker network instability
+This avoids static long-lived tokens in code/config.
 
 ---
 
-## Docker Runtime Notes
+## Local Docker Runtime Notes
 
-The root `docker-compose.yml` is now the only compose file needed for the backend stack.
+The root `docker-compose.yml` is the active backend compose file.
 
 It includes:
 
-- FastAPI API
+- API
 - Celery worker
 - Celery beat
 - Redis
@@ -248,45 +168,113 @@ It includes:
 - Airflow scheduler
 - Airflow webserver
 
-The old `airflow-setup/docker-compose.yml` is no longer used.
+Current local stability settings include:
 
-Frontend still runs separately outside Docker.
+- explicit DNS for API and worker containers
+- reduced Celery worker concurrency
+- reduced Airflow webserver workers
+- reduced Airflow scheduler parsing processes
 
-### Current Airflow Stability Notes
+### One-time Airflow setup (local/prod-like)
 
-The root `docker-compose.yml` now includes a lighter Airflow runtime profile to reduce instability in local Docker environments:
+Configure connection/variables through Airflow (or a secrets backend), not in compose:
 
-- webserver workers reduced to `1`
-- scheduler parsing processes reduced to `1`
-- SQLAlchemy pre-ping enabled for Airflow DB connections
+```bash
+airflow connections add 'opssight_api' \
+  --conn-type 'http' \
+  --conn-host 'api' \
+  --conn-port '8000' \
+  --conn-login '<workspace_user_email>' \
+  --conn-password '<workspace_user_password>'
+```
 
-These changes help avoid stale UI states caused by:
+Optional scheduled-pipeline model default:
 
-- intermittent `airflow-db` name-resolution failures
-- webserver worker OOM kills
-- temporary DAG deactivation in the Airflow UI
+```bash
+airflow variables set opssight_model_name '<model_name>'
+```
+
+Manual development run examples:
+
+```bash
+airflow dags trigger opssight_daily_pipeline --conf '{"model_id": 1}'
+```
+
+```bash
+airflow dags trigger opssight_daily_pipeline --conf '{"model_name": "spotify-kmeans-recommender"}'
+```
+
+With a custom input file:
+
+```bash
+airflow dags trigger opssight_daily_pipeline --conf '{"model_name": "spotify-kmeans-recommender", "input_path": "/opt/airflow/data/bad_drift_quality_with_mood.csv"}'
+```
+
+With schema-based model matching:
+
+```bash
+airflow dags trigger opssight_daily_pipeline --conf '{"input_path": "/opt/airflow/data/schema_validation_mood.csv"}'
+```
+
+### Development vs production configuration
+
+In development, it is acceptable to trigger the DAG manually from the Airflow UI and paste a JSON config. This lets one local Airflow deployment test multiple OpsSight models without editing `.env`.
+
+In production, each scheduled pipeline should get model context from one of these safer places:
+
+- DAG trigger config generated by the upstream orchestration system
+- Airflow Variables for a dedicated scheduled DAG
+- Airflow Connection extras
+- a secrets backend
+
+Do not use root `.env` variables for per-customer model id/name. A single global `.env` value would make every DAG run target the same model and would break multi-tenant production behavior.
+
+### User credential handling
+
+For local development, the Airflow connection can use a workspace user's email/password.
+
+For production, prefer a service identity or short-lived token flow:
+
+- create a dedicated OpsSight service account per tenant or workspace
+- restrict it to required ingestion permissions
+- store credentials in Airflow Connections or a secrets backend
+- rotate credentials periodically
+- avoid embedding JWTs in DAG files or Docker Compose
+
+The current login/password path verifies credentials by calling OpsSight `/auth/login`, then uses the returned access token for the validation request.
+
+Recommended environment variables (inject from secret manager / CI):
+
+- `AIRFLOW_CONN_OPSSIGHT_API`
+- `AIRFLOW_VAR_OPSSIGHT_API_URL`
+- `AIRFLOW_ADMIN_USERNAME`, `AIRFLOW_ADMIN_PASSWORD`, `AIRFLOW_ADMIN_EMAIL`
+- `AIRFLOW_FERNET_KEY`, `AIRFLOW_WEBSERVER_SECRET_KEY`
 
 ---
 
-## Daily Startup
+## Operational Expectations
 
-Backend stack:
+### If the quality gate fails
 
-```bash
-docker compose up -d
-```
+- run status becomes `failed`
+- prediction and drift are skipped
+- RCA is still queued
 
-Frontend:
+### If the quality gate passes
 
-```bash
-cd frontend
-npm run dev
-```
+- accepted cleaned data is saved
+- prediction can run
+- drift can run
+- incidents can be grouped and published live
+- RCA is queued
 
 ---
 
-## Related Docs
+## Related Files
 
-- [setup.md](./setup.md)
-- [ai_orchestration.md](./ai_orchestration.md)
-- [realtime_tracing.md](./realtime_tracing.md)
+- `backend/fastapi/app/tasks/ai_tasks.py`
+- `backend/fastapi/app/tasks/remediation_tasks.py`
+- `backend/fastapi/app/tasks/scheduler_tasks.py`
+- `backend/fastapi/app/core/celery_app.py`
+- `airflow-setup/dags/opssight_pipeline_dag.py`
+- `docker-compose.yml`

@@ -2,14 +2,15 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useAuthStore from "../../store/authStore";
 
 import Logo2 from "../../assets/logo2.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const createCompany = useAuthStore((state) => state.createCompany);
 
@@ -17,9 +18,8 @@ export default function OnboardingPage() {
 
   const workspace = useAuthStore((state) => state.workspace);
 
-  const [step, setStep] = useState(
-    workspace?.tenant_id ? 2 : 1
-  );
+  const inviteStepRequested = searchParams.get("step") === "invite";
+  const [step, setStep] = useState(inviteStepRequested ? 2 : 1);
 
   const [companyName, setCompanyName] = useState("");
 
@@ -28,15 +28,35 @@ export default function OnboardingPage() {
   const [members, setMembers] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isStepTransitioning, setIsStepTransitioning] = useState(false);
+  const transitionTimerRef = useRef(null);
 
   useEffect(() => {
-    if (workspace?.tenant_id) {
-      setStep(2);
-    }
-  }, [workspace]);
+    setStep(inviteStepRequested ? 2 : 1);
+  }, [inviteStepRequested]);
 
-  const handleCreateCompany = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (step !== 2) {
+      setIsStepTransitioning(false);
+      return;
+    }
+
+    setIsStepTransitioning(true);
+    transitionTimerRef.current = window.setTimeout(() => {
+      setIsStepTransitioning(false);
+      transitionTimerRef.current = null;
+    }, 600);
+  }, [step]);
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCreateCompany = async () => {
 
     if (!companyName.trim()) return;
 
@@ -44,8 +64,7 @@ export default function OnboardingPage() {
 
     try {
       await createCompany(companyName);
-
-      setStep(2);
+      navigate("/onboarding?step=invite", { replace: true });
     } catch (err) {
       alert(err?.detail || "Company Creation Failed");
     } finally {
@@ -70,6 +89,8 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = async () => {
+    if (isStepTransitioning) return;
+
     try {
       for (const email of members) {
         await inviteMember(email);
@@ -149,10 +170,7 @@ export default function OnboardingPage() {
                   </p>
                 </div>
 
-                <form
-                  onSubmit={handleCreateCompany}
-                  className="mt-14"
-                >
+                <div className="mt-14">
                   <div className="space-y-6">
                     <div>
                       <label className="mb-3 block text-[12px] font-medium text-[#6b7280]">
@@ -166,6 +184,12 @@ export default function OnboardingPage() {
                         onChange={(e) =>
                           setCompanyName(e.target.value)
                         }
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleCreateCompany();
+                          }
+                        }}
                         className="h-[56px] w-full rounded-[14px] border border-[#e5e7eb] bg-[#fafafa] px-5 text-[15px] text-[#111827] outline-none transition focus:border-[#3563ff] focus:bg-white"
                       />
                     </div>
@@ -176,7 +200,8 @@ export default function OnboardingPage() {
                       </p>
 
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={handleCreateCompany}
                         disabled={isLoading}
                         className="h-[50px] rounded-[14px] bg-[#3563ff] px-6 text-[14px] font-medium text-white transition hover:bg-[#2957f5] disabled:opacity-50"
                       >
@@ -186,7 +211,7 @@ export default function OnboardingPage() {
                       </button>
                     </div>
                   </div>
-                </form>
+                </div>
               </>
             )}
 
@@ -261,23 +286,25 @@ export default function OnboardingPage() {
 
                   {/* ACTIONS */}
                   <div className="flex items-center justify-between pt-6">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate("/dashboard")
-                      }
-                      className="text-[13px] font-medium text-[#6b7280] transition hover:text-[#111827]"
-                    >
-                      Skip For Now
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate("/dashboard")
+                        }
+                        disabled={isStepTransitioning}
+                        className="text-[13px] font-medium text-[#6b7280] transition hover:text-[#111827]"
+                      >
+                        Skip For Now
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={handleFinish}
-                      className="h-[50px] rounded-[14px] bg-[#3563ff] px-6 text-[14px] font-medium text-white transition hover:bg-[#2957f5]"
-                    >
-                      Finish Setup
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleFinish}
+                        disabled={isStepTransitioning}
+                        className="h-[50px] rounded-[14px] bg-[#3563ff] px-6 text-[14px] font-medium text-white transition hover:bg-[#2957f5] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Finish Setup
+                      </button>
                   </div>
                 </div>
               </>

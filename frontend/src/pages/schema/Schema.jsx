@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   ArrowUpRight,
+  Check,
   Database,
   FileSpreadsheet,
   Plus,
   Search,
+  X,
 } from "lucide-react";
 
 import UploadBaselineModal from "../schema/UploadBaselineModal";
 import {
   activateBaseline,
+  approveSchemaChange,
   getBaselines,
+  getPendingSchemaEvents,
+  rejectSchemaChange,
 } from "../../store/baselineStorre";
 
 const statusStyles = {
@@ -65,6 +71,10 @@ export default function SchemaPage() {
   const [query, setQuery] = useState("");
   const [activatingId, setActivatingId] = useState(null);
   const [activationError, setActivationError] = useState("");
+  const [pendingEvents, setPendingEvents] = useState([]);
+  const [schemaActionError, setSchemaActionError] = useState("");
+  const [schemaActionLoading, setSchemaActionLoading] = useState(null);
+  const [approvedFeatureSelections, setApprovedFeatureSelections] = useState({});
 
   async function fetchBaselines() {
     try {
@@ -78,6 +88,8 @@ export default function SchemaPage() {
       });
     } catch (err) {
       console.log(err);
+      setBaselines([]);
+      setSelectedBaseline(null);
     } finally {
       setLoading(false);
     }
@@ -109,6 +121,33 @@ export default function SchemaPage() {
   }, [baselines, query]);
 
   const inspectedBaseline = selectedBaseline || filteredBaselines[0] || null;
+
+  async function fetchPendingSchemaEvents(modelId) {
+    if (!modelId) {
+      setPendingEvents([]);
+      return;
+    }
+
+    try {
+      const events = await getPendingSchemaEvents(modelId);
+      setPendingEvents(events || []);
+      setApprovedFeatureSelections((current) => {
+        const next = {};
+        for (const event of events || []) {
+          const eventId = String(event.id);
+          next[eventId] = current[eventId] || [];
+        }
+        return next;
+      });
+    } catch (err) {
+      console.log(err);
+      setPendingEvents([]);
+    }
+  }
+
+  useEffect(() => {
+    fetchPendingSchemaEvents(inspectedBaseline?.model_id);
+  }, [inspectedBaseline?.model_id]);
 
   async function handleActivateBaseline(baseline) {
     if (baseline.is_active || activatingId) return;
@@ -151,6 +190,57 @@ export default function SchemaPage() {
       );
     } finally {
       setActivatingId(null);
+    }
+  }
+
+  function toggleFeatureSelection(eventId, column) {
+    setApprovedFeatureSelections((current) => {
+      const key = String(eventId);
+      const selected = current[key] || [];
+      const nextSelected = selected.includes(column)
+        ? selected.filter((item) => item !== column)
+        : [...selected, column];
+
+      return {
+        ...current,
+        [key]: nextSelected,
+      };
+    });
+  }
+
+  async function handleApproveSchemaEvent(event) {
+    setSchemaActionError("");
+    setSchemaActionLoading(`approve-${event.id}`);
+
+    try {
+      await approveSchemaChange(
+        event.id,
+        approvedFeatureSelections[String(event.id)] || [],
+      );
+      await fetchBaselines();
+      await fetchPendingSchemaEvents(event.model_id);
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || "Could not approve this schema change.",
+      );
+    } finally {
+      setSchemaActionLoading(null);
+    }
+  }
+
+  async function handleRejectSchemaEvent(event) {
+    setSchemaActionError("");
+    setSchemaActionLoading(`reject-${event.id}`);
+
+    try {
+      await rejectSchemaChange(event.id);
+      await fetchPendingSchemaEvents(event.model_id);
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || "Could not reject this schema change.",
+      );
+    } finally {
+      setSchemaActionLoading(null);
     }
   }
 
@@ -461,6 +551,172 @@ export default function SchemaPage() {
               </div>
 
               <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+                {schemaActionError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700">
+                    {schemaActionError}
+                  </div>
+                )}
+
+                <div>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-[13px] font-semibold text-slate-950">
+                        Schema Evolution
+                      </h3>
+                      <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                        New columns stay excluded from cleaned data and
+                        retraining until an admin approves the schema update and
+                        selected feature use.
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold ${
+                        pendingEvents.length
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {pendingEvents.length
+                        ? `${pendingEvents.length} pending`
+                        : "No pending changes"}
+                    </span>
+                  </div>
+
+                  {pendingEvents.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-[13px] leading-6 text-slate-500">
+                      This model has no pending schema evolution requests. Run a
+                      DAG/upload with a new column to create a review item here.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {pendingEvents.map((event) => {
+                        const selected =
+                          approvedFeatureSelections[String(event.id)] || [];
+                        const candidates = event.feature_candidates || [];
+
+                        return (
+                          <div
+                            key={event.id}
+                            className="rounded-lg border border-amber-200 bg-amber-50/40 p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-950">
+                                  <AlertTriangle
+                                    size={15}
+                                    className="text-amber-600"
+                                  />
+                                  Schema change from run #{event.pipeline_run_id}
+                                </div>
+                                <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                                  Extra columns:{" "}
+                                  {(event.new_columns || []).join(", ") || "-"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 space-y-2">
+                              {candidates.length === 0 && (
+                                <div className="rounded-md border border-slate-200 bg-white px-3 py-3 text-[12px] text-slate-500">
+                                  Feature candidate details are unavailable for
+                                  this older event. Re-run the pipeline with the
+                                  new column to generate feature recommendations.
+                                </div>
+                              )}
+                              {candidates.map((candidate) => {
+                                const column = candidate.column;
+                                const checked = selected.includes(column);
+                                const canApprove = Boolean(
+                                  candidate.safe_as_feature,
+                                );
+
+                                return (
+                                  <label
+                                    key={column}
+                                    className={`block rounded-md border bg-white p-3 ${
+                                      canApprove
+                                        ? "border-slate-200"
+                                        : "border-slate-200 opacity-75"
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <input
+                                        type="checkbox"
+                                        disabled={!canApprove}
+                                        checked={checked}
+                                        onChange={() =>
+                                          toggleFeatureSelection(
+                                            event.id,
+                                            column,
+                                          )
+                                        }
+                                        className="mt-1 h-4 w-4 rounded border-slate-300"
+                                      />
+
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className="text-[13px] font-semibold text-slate-900">
+                                            {column}
+                                          </span>
+                                          <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-600">
+                                            {candidate.dtype || "object"}
+                                          </span>
+                                          <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                                            {candidate.encoding_strategy ||
+                                              "monitor only"}
+                                          </span>
+                                        </div>
+                                        <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                                          {candidate.reason}
+                                        </p>
+                                        <p className="mt-1 text-[11px] text-slate-400">
+                                          Unique {candidate.unique_count ?? 0} /
+                                          missing{" "}
+                                          {(
+                                            Number(
+                                              candidate.missing_ratio || 0,
+                                            ) * 100
+                                          ).toFixed(1)}
+                                          %
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap justify-end gap-2">
+                              <button
+                                type="button"
+                                disabled={
+                                  schemaActionLoading === `reject-${event.id}`
+                                }
+                                onClick={() => handleRejectSchemaEvent(event)}
+                                className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                              >
+                                <X size={14} />
+                                Reject
+                              </button>
+                              <button
+                                type="button"
+                                disabled={
+                                  schemaActionLoading === `approve-${event.id}`
+                                }
+                                onClick={() => handleApproveSchemaEvent(event)}
+                                className="inline-flex h-9 items-center gap-2 rounded-md bg-slate-950 px-3 text-[12px] font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                              >
+                                <Check size={14} />
+                                Approve schema
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <h3 className="mb-3 text-[13px] font-semibold text-slate-950">
                     Schema Fields

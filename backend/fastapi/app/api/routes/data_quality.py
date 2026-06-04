@@ -4,13 +4,13 @@ import os
 import uuid
 from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
-from app.services.quality.pipeline import run_data_quality_pipeline
 from app.models.data_quality import DataQualityFinding
 from app.models.baseline import Baseline
 from app.schemas.data_quality import DataQualityResponse
 from app.schemas.explanations import InsightExplanationResponse
 from app.services.quality.data_loader import load_dataset
 from app.services.ai_explanations import build_data_quality_explanation
+from app.services.access_control import require_accessible_model
 
 router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
 
@@ -100,6 +100,9 @@ def list_data_quality_findings(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    if model_id is not None:
+        require_accessible_model(db, model_id, current_user.tenant_id)
+
     query = db.query(DataQualityFinding)
     if model_id is not None:
         query = query.filter(DataQualityFinding.model_id == model_id)
@@ -113,6 +116,10 @@ async def validate_data(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    from app.services.quality.pipeline import run_data_quality_pipeline
+
+    require_accessible_model(db, model_id, current_user.tenant_id)
+
     file_path = await save_upload(file)
 
     result = run_data_quality_pipeline(
@@ -131,6 +138,8 @@ async def validate_data_auto(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    from app.services.quality.pipeline import run_data_quality_pipeline
+
     file_path = await save_upload(file)
     match = infer_model_from_active_baselines(db, file_path)
     result = run_data_quality_pipeline(

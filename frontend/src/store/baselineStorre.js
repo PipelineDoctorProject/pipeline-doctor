@@ -45,3 +45,26 @@ export const activateBaseline = async (
 
   return response.data;
 };
+
+export const getPendingSchemaEvents = async (modelId) => {
+  if (!modelId) return [];
+
+  const response = await api.get(`/schema/pending/${modelId}`);
+  return response.data;
+};
+
+export const approveSchemaChange = async (
+  eventId,
+  approvedFeatureColumns = [],
+) => {
+  const response = await api.post(`/schema/approve/${eventId}`, {
+    approved_feature_columns: approvedFeatureColumns,
+  });
+
+  return response.data;
+};
+
+export const rejectSchemaChange = async (eventId) => {
+  const response = await api.post(`/schema/reject/${eventId}`);
+  return response.data;
+};

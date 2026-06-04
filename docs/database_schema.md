@@ -1,186 +1,326 @@
 # Database Schema
 
-PipelineDoctor uses **PostgreSQL** (hosted on Supabase). The schema is split into two layers:
-- **`public` schema** — Shared tables for auth, tenants, and core pipeline data.
-- **Tenant schemas** — Isolated tables per company (e.g., `tenant_acme_a1b2c3`).
+PipelineDoctor uses PostgreSQL with schema-based multi-tenancy.
 
-Migrations are managed by **Alembic**.
+There are two layers:
 
----
-
-## 👤 `users` table
-
-Stores all platform users across all tenants.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID (PK) | Auto-generated |
-| `email` | String (Unique) | Login identifier |
-| `hashed_password` | String | Bcrypt hash. Null for invited users |
-| `tenant_id` | String (FK) | Links to `tenants.id`. Null before onboarding |
-| `is_verified` | Boolean | `False` until OTP verified |
-| `otp_code` | String | Temporary code, cleared after use |
-| `role` | String | `admin` (creator) or `member` (invited) |
-| `invite_token` | String | UUID token for team invitations |
-| `invite_accepted` | Boolean | Whether the invite link was used |
+- `public` schema for shared identity and integration metadata
+- one tenant schema per workspace for monitoring and incident data
 
 ---
 
-## 🏢 `tenants` table
+## Public Schema
 
-Represents a company / organization.
+### `users`
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID (PK) | Auto-generated |
-| `name` | String | Company display name |
-| `schema_name` | String (Unique) | e.g., `tenant_acme_a1b2c3` — the PostgreSQL schema |
+Cross-workspace user identities.
 
----
+Important fields:
 
-## 🤖 `ml_models` table
+- `email`
+- `hashed_password`
+- `tenant_id`
+- `role`
+- `is_verified`
+- `invite_token`
+- `invite_accepted`
 
-Stores MLflow model metadata registered by users.
+### `tenants`
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `name` | String | Friendly model name |
-| `version` | String | User-defined version label |
-| `framework` | String | e.g., `sklearn`, `xgboost` |
-| `mlflow_model_name` | String | Exact name in MLflow registry |
-| `mlflow_alias` | String | e.g., `champion`. Default used if null |
-| `mlflow_run_id` | String | Optional: specific MLflow run ID |
-| `mlflow_tracking_uri` | String | Remote MLflow server URL |
-| `expected_features` | JSON | Ordered list of feature column names |
-| `created_at` | Timestamp | Record creation time |
+Workspace registry.
 
----
+Important fields:
 
-## 📊 `baselines` table
+- `id`
+- `name`
+- `schema_name`
 
-Stores statistical profiles of training/reference data.
+### `slack_workspaces`
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `model_id` | Integer (FK) | Links to `ml_models.id` |
-| `version` | Integer | Increments per upload (v1, v2...) |
-| `schema` | JSON | `{ "column_name": "dtype" }` map |
-| `profile` | JSON | `{ "column": { "min", "max", "unique_values" } }` |
-| `status` | String | `draft` → `approved` |
-| `is_active` | Boolean | Only one active baseline per model |
-| `file_path` | String | Path to the uploaded CSV file |
+One Slack installation per tenant.
 
----
+Important fields:
 
-## 🏃 `pipeline_runs` table
+- `tenant_id`
+- `slack_team_id`
+- `slack_team_name`
+- `bot_token`
+- `bot_user_id`
+- `scope`
+- `connected_by_user_id`
 
-A record for every execution of `run_auto_runner.py`.
+### `slack_channels`
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `model_id` | Integer (FK) | Which model was used |
-| `baseline_version` | Integer | Baseline version used |
-| `status` | String | `running` / `completed` / `failed` |
-| `cleaned_data_path` | String | Path to the output cleaned CSV |
-| `created_at` | Timestamp | When the run started |
+Saved default or known Slack channels for a workspace connection.
+
+Important fields:
+
+- `workspace_id`
+- `slack_channel_id`
+- `slack_channel_name`
+- `is_default`
 
 ---
 
-## 🔄 `schema_change_events` table
+## Tenant Schema Tables
 
-Tracks detected changes in incoming CSV structure vs the active baseline.
+Each tenant schema contains the operational monitoring tables for that workspace.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `model_id` | Integer (FK) | Which model's pipeline detected this |
-| `pipeline_run_id` | Integer (FK) | The specific run that triggered it |
-| `baseline_id` | Integer (FK) | Which baseline was active |
-| `new_columns` | JSON | List of added columns (e.g., `["name"]`) |
-| `missing_columns` | JSON | List of removed columns |
-| `status` | String | `pending` → `approved` / `rejected` |
+### `ml_models`
+
+Registered monitored models.
+
+Important fields:
+
+- `name`
+- `version`
+- `framework`
+- `mlflow_model_name`
+- `mlflow_alias`
+- `mlflow_tracking_uri`
+- `expected_features`
+
+### `baselines`
+
+Approved or draft reference datasets used for quality and drift.
+
+Important fields:
+
+- `model_id`
+- `version`
+- `schema`
+- `profile`
+- `status`
+- `is_active`
+- `file_path`
+
+### `pipeline_runs`
+
+One record per validation pipeline execution.
+
+Important fields:
+
+- `model_id`
+- `baseline_version`
+- `status`
+- `file_path`
+- `cleaned_data_path`
+- `schema_changed`
+- `created_at`
+
+Current status values used by the pipeline are:
+
+- `running`
+- `success`
+- `failed`
+
+Note:
+
+- the accepted cleaned dataset path is stored in DB
+- the quarantine path is currently file-based output, not a separate DB column
+
+### `schema_change_events`
+
+Tracks extra or missing columns against the active baseline.
+
+Important fields:
+
+- `pipeline_run_id`
+- `baseline_id`
+- `new_columns`
+- `missing_columns`
+- `status`
+
+### `data_quality_findings`
+
+Raw quality findings captured from the incoming batch.
+
+Important fields:
+
+- `pipeline_run_id`
+- `column_name`
+- `check_type`
+- `success`
+- `details`
+- `created_at`
+
+### `prediction_logs`
+
+Saved model predictions for a run.
+
+Important fields:
+
+- `run_id`
+- `input_data`
+- `prediction`
+- `created_at`
+
+### `drift_findings`
+
+Per-feature drift records.
+
+Important fields:
+
+- `run_id`
+- `feature_name`
+- `psi_score`
+- `ks_score`
+- `ks_pvalue`
+- `drift_score`
+- `drift_detected`
+- `severity`
+
+### `incident_groups`
+
+Run-level alert grouping.
+
+Important fields:
+
+- `run_id`
+- `title`
+- `summary`
+- `severity`
+- `status`
+- `primary_incident_id`
+
+This is what keeps the incident list centered on one top-level alert per run.
+
+### `incidents`
+
+Detailed underlying incidents and RCA entries.
+
+Important fields:
+
+- `run_id`
+- `group_id`
+- `title`
+- `description`
+- `failure_type`
+- `finding_type`
+- `finding_id`
+- `severity`
+- `status`
+
+### `agent_runs`
+
+One doctor RCA execution per monitored run when queued.
+
+### `agent_step_logs`
+
+Persisted RCA trace steps for:
+
+- detection
+- reasoning
+- parser
+- reporting
+
+### `remediation_runs`
+
+Approved, blocked, staged, or deployed remediation executions tied to incidents.
+
+Important fields:
+
+- `incident_id`
+- `run_id`
+- `tenant_id`
+- `action_type`
+- `status`
+- `trigger_mode`
+- `created_by`
+- `result_summary`
+- `started_at`
+- `finished_at`
+
+Common statuses:
+
+- `queued`
+- `running`
+- `cancel_requested`
+- `canceled`
+- `failed`
+- `blocked`
+- `rejected`
+- `pending_promotion`
+- `staged`
+- `promotion_rejected`
+- `deployed`
+
+Older local data may contain `promoted` from the earlier single-step promotion flow.
+
+### `remediation_action_logs`
+
+Per-step remediation execution log.
+
+Important fields:
+
+- `remediation_run_id`
+- `step_name`
+- `status`
+- `message`
+- `payload`
+- `created_at`
+
+Important payloads:
+
+- candidate result: `candidate_model_uri`, `candidate_mlflow_run_id`, `metrics`, `feature_columns`
+- staging result: `staged_model_uri`, `staged_model_version`, `staged_alias`
+- deployment result: `deployed_model_uri`, `deployed_alias`, `deployment_status`
+
+### `incident_reports`
+
+Versioned production reports for an incident.
+
+Important fields:
+
+- `incident_id`
+- `pipeline_run_id`
+- `model_id`
+- `version`
+- `status`
+- `severity`
+- `summary`
+- `executive_narrative`
+- `root_cause`
+- `key_findings`
+- `remediation`
+- `model_context`
+- `next_actions`
+- `timeline`
+- `evidence_hash`
+- `created_at`
+
+The first report version is created after RCA completes. Later remediation events can create newer versions when a candidate is created, staged, rejected, or deployed.
 
 ---
 
-## 🔍 `data_quality_findings` table
+## Provisioning and Repair Notes
 
-One row per check per column per pipeline run.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `run_id` | Integer (FK) | Links to `pipeline_runs.id` |
-| `column_name` | String | Which column was checked |
-| `check_type` | String | `null_ratio` / `range` / `categorical` |
-| `success` | Boolean | `True` = passed, `False` = failed |
-| `details` | String | Human-readable description |
+- new workspaces create a dedicated tenant schema
+- required tenant tables are created in that schema
+- startup repair can backfill older half-created tenant schemas
+- request middleware sets `search_path` to `<tenant_schema>, public`
 
 ---
 
-## 🌊 `drift_findings` table
+## Relationship Overview
 
-One row per feature per pipeline run.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `run_id` | Integer (FK) | Links to `pipeline_runs.id` |
-| `feature_name` | String | Column name (or `prediction_output`) |
-| `psi_score` | Float | Population Stability Index score |
-| `ks_score` | Float | KS test statistic |
-| `ks_pvalue` | Float | KS p-value |
-| `drift_score` | Float | `max(psi_score, ks_score)` |
-| `drift_detected` | Boolean | `True` if `drift_score > 0.2` |
-| `severity` | String | `low` / `medium` / `high` / `critical` |
-| `created_at` | Timestamp | When the finding was saved |
-
----
-
-## 🚨 `incidents` table
-
-Auto-created when drift severity is `high` or `critical`.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `run_id` | Integer (FK) | Links to `pipeline_runs.id` |
-| `title` | String | Short description |
-| `description` | String | Full details with PSI/KS scores |
-| `failure_type` | String | `data_drift` or `concept_drift` |
-| `finding_type` | String | `drift` |
-| `finding_id` | Integer | FK to `drift_findings.id` |
-| `severity` | String | `high` or `critical` |
-| `status` | String | `open` (default) |
-| `created_at` | Timestamp | When the incident was opened |
-
----
-
-## 🔮 `prediction_logs` table
-
-One row per row of data per pipeline run.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | Integer (PK) | Auto-increment |
-| `run_id` | Integer (FK) | Links to `pipeline_runs.id` |
-| `input_data` | JSON | `{ "features": [val1, val2, ...] }` |
-| `prediction` | JSON | `{ "value": 1 }` |
-| `created_at` | Timestamp | Inference timestamp |
-
----
-
-## 🗺️ Entity Relationship Overview
-
-```
-users ──────────── tenants
-  │
-ml_models ─────── baselines
-  │
-pipeline_runs ──┬─ data_quality_findings
-                ├─ schema_change_events
-                ├─ drift_findings ──── incidents
-                └─ prediction_logs
+```text
+public.users -------------------- public.tenants
+        |                                |
+        |                                +-- public.slack_workspaces -- public.slack_channels
+        |
+tenant.ml_models -------- tenant.baselines
+        |
+        +-- tenant.pipeline_runs
+              |
+              +-- tenant.data_quality_findings
+              +-- tenant.prediction_logs
+              +-- tenant.drift_findings
+              +-- tenant.schema_change_events
+              +-- tenant.incident_groups -- tenant.incidents
+              |                                |
+              |                                +-- tenant.remediation_runs -- tenant.remediation_action_logs
+              |                                +-- tenant.incident_reports
+              |
+              +-- tenant.agent_runs -- tenant.agent_step_logs
 ```

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "../api/client";
+import api, { hasAccessToken, setAccessToken } from "../api/client";
 import { inviteMemberApi } from "../api/invite";
 
 const useAuthStore = create((set, get) => ({
@@ -11,6 +11,24 @@ const useAuthStore = create((set, get) => ({
   loading: false,
   checkingAuth: true,
   onboardingStep: 1,
+  authCheckVersion: 0,
+
+  bootstrapAuth: async () => {
+
+    if (!hasAccessToken()) {
+      set({
+        user: null,
+        isAuthenticated: false,
+        workspace: null,
+        dashboardData: null,
+        checkingAuth: false,
+      });
+
+      return null;
+    }
+
+    return get().me();
+  },
 
   signup: async (email, password) => {
 
@@ -60,7 +78,21 @@ const useAuthStore = create((set, get) => ({
         otp,
       });
 
-      await get().me();
+      setAccessToken(response.data?.access_token);
+
+      let dashboardContext = await get().me();
+
+      if (!dashboardContext) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        setAccessToken(response.data?.access_token);
+        dashboardContext = await get().me();
+      }
+
+      if (!dashboardContext) {
+        throw {
+          detail: "We verified your OTP, but could not load your workspace session.",
+        };
+      }
 
       set({
         loading: false,
@@ -81,6 +113,7 @@ const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
 
     set({ loading: true });
+    setAccessToken(null);
 
     try {
 
@@ -89,7 +122,15 @@ const useAuthStore = create((set, get) => ({
         password,
       });
 
-      await get().me();
+      setAccessToken(response.data?.access_token);
+
+      const dashboardContext = await get().me();
+
+      if (!dashboardContext) {
+        throw {
+          detail: "Login succeeded, but we could not load your workspace session.",
+        };
+      }
 
       set({
         loading: false,
@@ -99,6 +140,7 @@ const useAuthStore = create((set, get) => ({
 
     } catch (error) {
 
+      setAccessToken(null);
       set({
         loading: false,
       });
@@ -120,12 +162,44 @@ const useAuthStore = create((set, get) => ({
       }
     );
 
-    await get().me();
+    setAccessToken(response.data?.access_token);
 
-    set({
+    const workspace = {
+      tenant_id: response.data?.tenant_id,
+      workspace_name: response.data?.workspace_name || company_name,
+      schema_name: response.data?.schema_name,
+    };
+
+    set((state) => ({
       loading: false,
       onboardingStep: 2,
-    });
+      isAuthenticated: true,
+      checkingAuth: false,
+      workspace,
+      dashboardData: {
+        ...(state.dashboardData || {}),
+        user: state.user || state.dashboardData?.user || null,
+        workspace,
+        is_onboarded: true,
+      },
+    }));
+
+    const dashboardContext = await get().me();
+
+    if (!dashboardContext) {
+      set((state) => ({
+        user: state.user || state.dashboardData?.user || null,
+        isAuthenticated: true,
+        checkingAuth: false,
+        workspace,
+        dashboardData: {
+          ...(state.dashboardData || {}),
+          user: state.user || state.dashboardData?.user || null,
+          workspace,
+          is_onboarded: true,
+        },
+      }));
+    }
 
     return response.data;
 
@@ -147,6 +221,7 @@ const useAuthStore = create((set, get) => ({
       console.log(error);
     }
 
+    setAccessToken(null);
     set({
       user: null,
       isAuthenticated: false,
@@ -161,6 +236,9 @@ const useAuthStore = create((set, get) => ({
   },
 
   me: async () => {
+    const authCheckVersion = get().authCheckVersion + 1;
+
+    set({ authCheckVersion });
 
     try {
 
@@ -170,6 +248,10 @@ const useAuthStore = create((set, get) => ({
           skipAuthRefresh: true,
         }
       );
+
+      if (get().authCheckVersion !== authCheckVersion) {
+        return response.data;
+      }
 
       set({
         user: response.data.user,
@@ -182,6 +264,13 @@ const useAuthStore = create((set, get) => ({
       return response.data;
 
     } catch (error) {
+      if (get().authCheckVersion !== authCheckVersion) {
+        return null;
+      }
+
+      if (error?.response?.status === 401) {
+        setAccessToken(null);
+      }
 
       set({
         user: null,

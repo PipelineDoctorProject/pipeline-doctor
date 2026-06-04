@@ -1,9 +1,11 @@
 import {
   AlertTriangle,
   Brain,
+  FileText,
   Lightbulb,
   Wrench,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const SEVERITY_STYLES = {
   critical: "border-red-200 bg-red-50 text-red-700",
@@ -77,7 +79,7 @@ function OverviewBlock({ icon: Icon, title, tone, children }) {
   );
 }
 
-export default function IncidentReasoningCard({ rcaReport, guidance, agentRuns = [] }) {
+export default function IncidentReasoningCard({ rcaReport, guidance, agentRuns = [], incidentId }) {
   const latestRun = agentRuns[0] ?? null;
 
   if (!rcaReport && !guidance?.cause) return null;
@@ -106,6 +108,15 @@ export default function IncidentReasoningCard({ rcaReport, guidance, agentRuns =
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {incidentId && (
+            <Link
+              to={`/reports/incidents/${incidentId}`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-violet-200 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-700 hover:bg-violet-50"
+            >
+              <FileText size={12} />
+              Full report
+            </Link>
+          )}
           <SeverityBadge severity={severity} />
         </div>
       </div>

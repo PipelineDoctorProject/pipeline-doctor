@@ -9,6 +9,25 @@ from app.config.settings import (
 )
 
 
+def _build_server():
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.starttls()
+    server.login(MAIL_USERNAME, MAIL_PASSWORD)
+    return server
+
+
+def _send_html_email(email: str, subject: str, body: str):
+    msg = MIMEMultipart()
+    msg["From"] = MAIL_FROM
+    msg["To"] = email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "html"))
+
+    server = _build_server()
+    server.sendmail(MAIL_FROM, email, msg.as_string())
+    server.quit()
+
+
 def send_otp_email(email: str, otp: str):
 
     subject = "PipelineDoctor OTP Verification"
@@ -23,31 +42,9 @@ def send_otp_email(email: str, otp: str):
     <p>This code expires in 10 minutes.</p>
     """
 
-    msg = MIMEMultipart()
-
-    msg["From"] = MAIL_FROM
-    msg["To"] = email
-    msg["Subject"] = subject
-
-    msg.attach(MIMEText(body, "html"))
-
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-
-        server.starttls()
-
-        server.login(MAIL_USERNAME, MAIL_PASSWORD)
-
-        server.sendmail(
-            MAIL_FROM,
-            email,
-            msg.as_string()
-        )
-
-        server.quit()
-
+        _send_html_email(email, subject, body)
         print("OTP email sent")
-
     except Exception as e:
         print("Email error:", e)
 
@@ -85,40 +82,45 @@ def send_invite_email(
     </p>
     """
 
-    msg = MIMEMultipart()
+    try:
+        _send_html_email(email, subject, body)
+        print("Invite email sent")
+    except Exception as e:
+        print("Email error:", e)
 
-    msg["From"] = MAIL_FROM
-    msg["To"] = email
-    msg["Subject"] = subject
 
-    msg.attach(
-        MIMEText(body, "html")
-    )
+def send_incident_alert_email(
+    *,
+    email: str,
+    incident_title: str,
+    severity: str,
+    run_id: int,
+    failure_type: str,
+    status: str,
+    description: str,
+    delivery_reason: str,
+):
+    subject = f"PipelineDoctor Alert: {severity.upper()} incident detected"
+
+    body = f"""
+    <h2>PipelineDoctor Incident Alert</h2>
+
+    <p>{delivery_reason}</p>
+
+    <p><strong>Title:</strong> {incident_title}</p>
+    <p><strong>Severity:</strong> {severity}</p>
+    <p><strong>Failure Type:</strong> {failure_type}</p>
+    <p><strong>Run ID:</strong> {run_id}</p>
+    <p><strong>Status:</strong> {status}</p>
+
+    <h3>Summary</h3>
+    <p>{description}</p>
+
+    <p>Please review the incident in PipelineDoctor as soon as possible.</p>
+    """
 
     try:
-
-        server = smtplib.SMTP(
-            "smtp.gmail.com",
-            587
-        )
-
-        server.starttls()
-
-        server.login(
-            MAIL_USERNAME,
-            MAIL_PASSWORD
-        )
-
-        server.sendmail(
-            MAIL_FROM,
-            email,
-            msg.as_string()
-        )
-
-        server.quit()
-
-        print("Invite email sent")
-
+        _send_html_email(email, subject, body)
+        print(f"Incident alert email sent to {email}")
     except Exception as e:
-
         print("Email error:", e)

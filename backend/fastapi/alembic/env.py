@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Load models
 from app.models.base import Base
+from app.models.tenant_tables import TENANT_MODELS
 
 #  ensure all models are imported
 from app.models import (
@@ -24,7 +25,12 @@ from app.models import (
     Tenant,
     User,
     AgentRun,
-    AgentStepLog
+    AgentStepLog,
+    RemediationRun,
+    RemediationActionLog,
+    SlackWorkspace,
+    SlackChannel,
+    IncidentReport,
 )
 
 # Load environment variables
@@ -59,6 +65,8 @@ def get_database_url():
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "table":
         if name.startswith("django_") or name.startswith("auth_"):
+            return False
+        if name in {model.__tablename__ for model in TENANT_MODELS}:
             return False
     return True
 

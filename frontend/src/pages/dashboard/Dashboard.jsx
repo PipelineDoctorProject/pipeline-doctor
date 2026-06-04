@@ -1,4 +1,5 @@
 import useDashboard from "../../hooks/useDashboard";
+import { useState } from "react";
 import { 
   Activity, 
   Database, 
@@ -8,11 +9,14 @@ import {
   ArrowRight,
   GitBranch,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import InviteMembersModal from "../../components/common/InviteMembersModal";
 
 export default function DashboardPage() {
   const { dashboardData, loading } = useDashboard();
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   if (loading) {
     return (
@@ -26,16 +30,35 @@ export default function DashboardPage() {
 
   const stats = dashboardData?.stats || { total_models: 0, total_runs: 0, open_incidents: 0 };
   const user = dashboardData?.user;
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="space-y-5">
+      <InviteMembersModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+      />
+
       {/* HEADER */}
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]">
-        <div className="border-b border-slate-200 px-6 py-5">
-          <h1 className="text-[30px] font-semibold leading-tight text-slate-950">Overview</h1>
-          <p className="mt-2 max-w-[720px] text-[14px] leading-6 text-slate-500">
-            Welcome back, {user?.email}. Here is the high-level health and activity summary of your machine learning infrastructure.
-          </p>
+        <div className="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-[30px] font-semibold leading-tight text-slate-950">Overview</h1>
+            <p className="mt-2 max-w-[720px] text-[14px] leading-6 text-slate-500">
+              Welcome back, {user?.email}. Here is the high-level health and activity summary of your machine learning infrastructure.
+            </p>
+          </div>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsInviteModalOpen(true)}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[13px] font-semibold text-white transition hover:bg-blue-700"
+            >
+              <UserPlus size={15} />
+              Invite members
+            </button>
+          )}
         </div>
       </section>
 
@@ -173,6 +196,15 @@ export default function DashboardPage() {
             <Link to="/incidents" className="inline-flex items-center justify-between rounded-md bg-white px-3 py-2 text-[12px] font-semibold text-blue-800">
               Incidents <ArrowRight size={13} />
             </Link>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsInviteModalOpen(true)}
+                className="inline-flex items-center justify-between rounded-md bg-white px-3 py-2 text-[12px] font-semibold text-blue-800"
+              >
+                Invite Members <UserPlus size={13} />
+              </button>
+            )}
           </div>
         </div>
       </section>

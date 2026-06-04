@@ -6,17 +6,22 @@ from app.core.security import hash_password, verify_password
 from app.core.jwt import create_access_token, decode_token, create_refresh_token
 from app.utils.otp_utils import generate_otp
 from app.tasks.email_tasks import send_otp_email_task
+from app.config.settings import get_auth_cookie_settings
+
+
+AUTH_COOKIE_SETTINGS = get_auth_cookie_settings()
 
 
 def signup_user(db: Session, email: str, password: str):
+    normalized_email = email.strip().lower()
 
-    if db.query(User).filter(User.email == email).first():
+    if db.query(User).filter(User.email == normalized_email).first():
         raise HTTPException(400, "User already exists")
 
     otp = generate_otp()
 
     user = User(
-        email=email,
+        email=normalized_email,
         hashed_password=hash_password(password),
         otp_code=otp,
         is_verified=False,
@@ -26,14 +31,15 @@ def signup_user(db: Session, email: str, password: str):
     db.add(user)
     db.commit()
 
-    send_otp_email_task.delay(email, otp)
+    send_otp_email_task.delay(normalized_email, otp)
 
     return {"message": "OTP sent"}
 
 
 def verify_otp(db: Session, email: str, otp: str):
+    normalized_email = email.strip().lower()
 
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == normalized_email).first()
 
     if not user or user.otp_code != otp:
         raise HTTPException(400, "Invalid OTP")
@@ -58,10 +64,11 @@ def verify_otp(db: Session, email: str, otp: str):
 
 
 def login_user(db: Session, email: str, password: str):
+    normalized_email = email.strip().lower()
 
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == normalized_email).first()
 
-    if not user or not verify_password(password, user.hashed_password):
+    if not user or not user.hashed_password or not verify_password(password, user.hashed_password):
         raise HTTPException(401, "Invalid credentials")
 
     access_token = create_access_token({
@@ -122,12 +129,16 @@ def logout_user(response):
 
     response.delete_cookie(
         key="access_token",
-        path="/"
+        path="/",
+        secure=AUTH_COOKIE_SETTINGS["secure"],
+        samesite=AUTH_COOKIE_SETTINGS["samesite"],
     )
 
     response.delete_cookie(
         key="refresh_token",
-        path="/"
+        path="/",
+        secure=AUTH_COOKIE_SETTINGS["secure"],
+        samesite=AUTH_COOKIE_SETTINGS["samesite"],
     )
 
     return {

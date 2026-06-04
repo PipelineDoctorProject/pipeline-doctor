@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load .env file
@@ -7,6 +8,11 @@ load_dotenv()
 
 BASELINE_UPLOAD_DIR = "uploads/baselines"
 os.makedirs(BASELINE_UPLOAD_DIR, exist_ok=True)
+
+CLEANED_OUTPUT_DIR = os.getenv("CLEANED_OUTPUT_DIR", "cleaned")
+QUARANTINE_OUTPUT_DIR = os.getenv("QUARANTINE_OUTPUT_DIR", os.path.join(CLEANED_OUTPUT_DIR, "quarantine"))
+os.makedirs(CLEANED_OUTPUT_DIR, exist_ok=True)
+os.makedirs(QUARANTINE_OUTPUT_DIR, exist_ok=True)
 
 
 # JWT Config
@@ -19,6 +25,10 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = int(os.getenv("DB_PORT", 5432))
 DB_NAME = os.getenv("DB_NAME")
+DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "4"))
+DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "0"))
+DB_POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "15"))
+DB_POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "300"))
 
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
@@ -37,6 +47,72 @@ LOCAL_MLFLOW_URIS = {
     "http://127.0.0.1:5000",
     "http://localhost:5000",
 }
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+SLACK_CLIENT_ID = os.getenv("SLACK_CLIENT_ID")
+SLACK_CLIENT_SECRET = os.getenv("SLACK_CLIENT_SECRET")
+SLACK_REDIRECT_URI = os.getenv("SLACK_REDIRECT_URI")
+SLACK_BOT_SCOPES = os.getenv(
+    "SLACK_BOT_SCOPES",
+    "chat:write,chat:write.public,channels:read,channels:join,groups:read",
+)
+
+# Data quality defaults
+DATA_QUALITY_NULL_RATIO_THRESHOLD = float(os.getenv("DATA_QUALITY_NULL_RATIO_THRESHOLD", "0.30"))
+DATA_QUALITY_ROW_ISSUE_THRESHOLD = float(os.getenv("DATA_QUALITY_ROW_ISSUE_THRESHOLD", "0.70"))
+DATA_QUALITY_MIN_CLEAN_ROW_COUNT = int(os.getenv("DATA_QUALITY_MIN_CLEAN_ROW_COUNT", "10"))
+DATA_QUALITY_MIN_CLEAN_ROW_RATIO = float(os.getenv("DATA_QUALITY_MIN_CLEAN_ROW_RATIO", "0.50"))
+DATA_QUALITY_CATEGORICAL_LIMIT = int(os.getenv("DATA_QUALITY_CATEGORICAL_LIMIT", "50"))
+DATA_QUALITY_HIGH_CARDINALITY_LIMIT = int(os.getenv("DATA_QUALITY_HIGH_CARDINALITY_LIMIT", "200"))
+DATA_QUALITY_HIGH_CARDINALITY_RATIO = float(os.getenv("DATA_QUALITY_HIGH_CARDINALITY_RATIO", "0.20"))
+
+# Remediation and retraining defaults
+REMEDIATION_MIN_TRAINING_ROWS = int(os.getenv("REMEDIATION_MIN_TRAINING_ROWS", "25"))
+REMEDIATION_MAX_TARGET_NULL_RATIO = float(os.getenv("REMEDIATION_MAX_TARGET_NULL_RATIO", "0.10"))
+REMEDIATION_MAX_CLASS_COUNT = int(os.getenv("REMEDIATION_MAX_CLASS_COUNT", "20"))
+REMEDIATION_MAX_CLASS_UNIQUE_RATIO = float(os.getenv("REMEDIATION_MAX_CLASS_UNIQUE_RATIO", "0.35"))
+REMEDIATION_MIN_CLASS_COUNT = int(os.getenv("REMEDIATION_MIN_CLASS_COUNT", "3"))
+REMEDIATION_TEST_SIZE = float(os.getenv("REMEDIATION_TEST_SIZE", "0.20"))
+REMEDIATION_STAGING_ALIAS = os.getenv("REMEDIATION_STAGING_ALIAS", "staging")
+REMEDIATION_CHAMPION_ALIAS = os.getenv("REMEDIATION_CHAMPION_ALIAS", "champion")
+REMEDIATION_PROMOTION_ALIAS = os.getenv("REMEDIATION_PROMOTION_ALIAS", REMEDIATION_STAGING_ALIAS)
+REMEDIATION_TASK_SOFT_TIME_LIMIT_SECONDS = int(os.getenv("REMEDIATION_TASK_SOFT_TIME_LIMIT_SECONDS", "300"))
+REMEDIATION_TASK_TIME_LIMIT_SECONDS = int(os.getenv("REMEDIATION_TASK_TIME_LIMIT_SECONDS", "360"))
+REMEDIATION_MLFLOW_REQUEST_TIMEOUT_SECONDS = int(os.getenv("REMEDIATION_MLFLOW_REQUEST_TIMEOUT_SECONDS", "30"))
+REMEDIATION_MLFLOW_MAX_RETRIES = int(os.getenv("REMEDIATION_MLFLOW_MAX_RETRIES", "1"))
+REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI = os.getenv(
+    "REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI",
+    MLFLOW_TRACKING_URI,
+)
+REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS = [
+    path.strip()
+    for path in os.getenv("REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS", "model").split(",")
+    if path.strip()
+]
+
+
+def get_allowed_origins() -> list[str]:
+    origins = {FRONTEND_URL}
+    parsed = urlparse(FRONTEND_URL)
+
+    if parsed.hostname == "localhost":
+        origins.add(FRONTEND_URL.replace("localhost", "127.0.0.1"))
+    elif parsed.hostname == "127.0.0.1":
+        origins.add(FRONTEND_URL.replace("127.0.0.1", "localhost"))
+
+    return sorted(origins)
+
+
+def get_auth_cookie_settings() -> dict[str, object]:
+    parsed = urlparse(FRONTEND_URL)
+    is_local_http = parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1"}
+    secure = not is_local_http
+
+    return {
+        "httponly": True,
+        "secure": secure,
+        "samesite": "Lax" if not secure else "None",
+        "path": "/",
+    }
 
 
 def resolve_mlflow_tracking_uri(configured_uri: str | None = None) -> str:

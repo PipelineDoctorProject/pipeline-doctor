@@ -23,6 +23,19 @@ router = APIRouter(
 )
 
 
+def _cookie_settings(request: Request) -> dict:
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    scheme = (forwarded_proto or request.url.scheme or "").lower()
+    secure = scheme == "https"
+
+    return {
+        "httponly": True,
+        "secure": secure,
+        "samesite": "none" if secure else "lax",
+        "path": "/",
+    }
+
+
 # ======================================
 # SIGNUP
 # ======================================
@@ -45,6 +58,7 @@ def signup_route(
 @router.post("/verify-otp")
 def verify_otp_route(
     data: VerifyOTPRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -55,29 +69,28 @@ def verify_otp_route(
         otp=data.otp
     )
 
+    cookie_options = _cookie_settings(request)
+
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **cookie_options,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 60 * 24 * 7
+        max_age=60 * 60 * 24 * 7,
+        **cookie_options,
     )
 
     return {
         "message": "OTP verified",
-        "onboarding_required": result["onboarding_required"]
+        "onboarding_required": result["onboarding_required"],
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "token_type": "bearer",
     }
 
 
@@ -87,6 +100,7 @@ def verify_otp_route(
 @router.post("/login")
 def login_route(
     data: LoginRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -97,24 +111,20 @@ def login_route(
         password=data.password
     )
 
+    cookie_options = _cookie_settings(request)
+
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **cookie_options,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 60 * 24 * 7
+        max_age=60 * 60 * 24 * 7,
+        **cookie_options,
     )
 
     return {
@@ -151,15 +161,14 @@ def refresh_token_route(
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **_cookie_settings(request),
     )
 
     return {
-        "message": "Token refreshed"
+        "message": "Token refreshed",
+        "access_token": result["access_token"],
+        "token_type": result["token_type"],
     }
 
 # ======================================

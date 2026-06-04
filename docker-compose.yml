@@ -4,11 +4,20 @@ services:
       context: ./backend/fastapi
     image: pipeline-doctor-backend:local
     container_name: pipeline-doctor-api
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     env_file:
       - ./backend/fastapi/.env
     environment:
       REDIS_URL: redis://redis:6379/0
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI: ${REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS: ${REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS:-model,candidate_model}
+      DB_POOL_SIZE: ${API_DB_POOL_SIZE:-8}
+      DB_MAX_OVERFLOW: ${API_DB_MAX_OVERFLOW:-0}
+      DB_POOL_TIMEOUT: ${API_DB_POOL_TIMEOUT:-30}
+      DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-300}
     command: >
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
@@ -28,12 +37,21 @@ services:
   celery-worker:
     image: pipeline-doctor-backend:local
     container_name: pipeline-doctor-celery-worker
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     env_file:
       - ./backend/fastapi/.env
     environment:
       REDIS_URL: redis://redis:6379/0
       MLFLOW_TRACKING_URI: http://mlflow:5000
-    command: celery -A app.core.celery_app:celery worker -Q ai,scheduler,emails -l info
+      REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI: ${REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS: ${REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS:-model,candidate_model}
+      DB_POOL_SIZE: ${WORKER_DB_POOL_SIZE:-2}
+      DB_MAX_OVERFLOW: ${WORKER_DB_MAX_OVERFLOW:-0}
+      DB_POOL_TIMEOUT: ${WORKER_DB_POOL_TIMEOUT:-15}
+      DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-300}
+    command: celery -A app.core.celery_app:celery worker -Q ai,scheduler,emails -l info --concurrency=2 --max-tasks-per-child=20
     depends_on:
       redis:
         condition: service_healthy
@@ -48,11 +66,20 @@ services:
   celery-beat:
     image: pipeline-doctor-backend:local
     container_name: pipeline-doctor-celery-beat
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     env_file:
       - ./backend/fastapi/.env
     environment:
       REDIS_URL: redis://redis:6379/0
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI: ${REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS: ${REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS:-model,candidate_model}
+      DB_POOL_SIZE: ${BEAT_DB_POOL_SIZE:-1}
+      DB_MAX_OVERFLOW: ${BEAT_DB_MAX_OVERFLOW:-0}
+      DB_POOL_TIMEOUT: ${BEAT_DB_POOL_TIMEOUT:-15}
+      DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-300}
     command: celery -A app.core.celery_app:celery beat -l info --schedule /app/celerybeat/celerybeat-schedule
     depends_on:
       redis:
@@ -68,7 +95,7 @@ services:
       - ./backend/fastapi/.env
     command: >
       sh -c "mkdir -p /app/mlartifacts &&
-             mlflow server --backend-store-uri postgresql+psycopg2://mlflow:mlflow@mlflow-db/mlflow --default-artifact-root /app/mlartifacts --workers 1 --host 0.0.0.0 --port 5000"
+             mlflow server --backend-store-uri postgresql+psycopg2://mlflow:mlflow@mlflow-db/mlflow --default-artifact-root /app/mlartifacts --workers 1 --host 0.0.0.0 --port 5000 --allowed-hosts mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000"
     ports:
       - "5000:5000"
     volumes:
@@ -129,21 +156,29 @@ services:
   airflow-init:
     image: apache/airflow:2.8.0
     container_name: pipeline-doctor-airflow-init
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
-      AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=}
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
-      OPSSIGHT_API_URL: "http://api:8000"
-      OPSSIGHT_MODEL_ID: "2"
-      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
-      OPSSIGHT_API_PASSWORD: "1234"
-      OPSSIGHT_API_TOKEN: ""
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-opssight_secret_key}
+      OPSSIGHT_CONN_ID: ${OPSSIGHT_CONN_ID:-opssight_api}
+      AIRFLOW_CONN_OPSSIGHT_API: ${AIRFLOW_CONN_OPSSIGHT_API:-}
+      AIRFLOW_VAR_OPSSIGHT_API_URL: ${AIRFLOW_VAR_OPSSIGHT_API_URL:-http://api:8000}
+      AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-change-me}
+      AIRFLOW_ADMIN_FIRSTNAME: ${AIRFLOW_ADMIN_FIRSTNAME:-Airflow}
+      AIRFLOW_ADMIN_LASTNAME: ${AIRFLOW_ADMIN_LASTNAME:-Admin}
+      AIRFLOW_ADMIN_EMAIL: ${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
     command: >
-      bash -c "airflow db migrate &&
-               airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@opssight.ai ||
+      bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
+               until pg_isready -h airflow-db -U airflow >/dev/null 2>&1; do echo 'Waiting for airflow-db readiness...'; sleep 2; done &&
+               airflow db migrate &&
+               airflow users create --username $$AIRFLOW_ADMIN_USERNAME --password $$AIRFLOW_ADMIN_PASSWORD --firstname $$AIRFLOW_ADMIN_FIRSTNAME --lastname $$AIRFLOW_ADMIN_LASTNAME --role Admin --email $$AIRFLOW_ADMIN_EMAIL ||
                echo Airflow admin user already exists"
     volumes:
       - ./airflow-setup/dags:/opt/airflow/dags
@@ -160,22 +195,29 @@ services:
   airflow-webserver:
     image: apache/airflow:2.8.0
     container_name: pipeline-doctor-airflow-webserver
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
-      AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_RECYCLE: "300"
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=}
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-opssight_secret_key}
       AIRFLOW__WEBSERVER__WORKERS: "1"
-      OPSSIGHT_API_URL: "http://api:8000"
-      OPSSIGHT_MODEL_ID: "2"
-      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
-      OPSSIGHT_API_PASSWORD: "1234"
-      OPSSIGHT_API_TOKEN: ""
+      AIRFLOW__WEBSERVER__WEB_SERVER_MASTER_TIMEOUT: "300"
+      AIRFLOW__WEBSERVER__WEB_SERVER_WORKER_TIMEOUT: "300"
+      AIRFLOW__WEBSERVER__SHOW_TRIGGER_FORM_IF_NO_PARAMS: "true"
+      OPSSIGHT_CONN_ID: ${OPSSIGHT_CONN_ID:-opssight_api}
+      AIRFLOW_CONN_OPSSIGHT_API: ${AIRFLOW_CONN_OPSSIGHT_API:-}
+      AIRFLOW_VAR_OPSSIGHT_API_URL: ${AIRFLOW_VAR_OPSSIGHT_API_URL:-http://api:8000}
     command: >
-      bash -c "rm -f /opt/airflow/airflow-webserver.pid &&
+      bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
+               until pg_isready -h airflow-db -U airflow >/dev/null 2>&1; do echo 'Waiting for airflow-db readiness...'; sleep 2; done &&
+               rm -f /opt/airflow/airflow-webserver.pid &&
                exec airflow webserver"
     ports:
       - "8080:8080"
@@ -201,22 +243,27 @@ services:
   airflow-scheduler:
     image: apache/airflow:2.8.0
     container_name: pipeline-doctor-airflow-scheduler
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
-      AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+      AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_RECYCLE: "300"
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=}
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__WEBSERVER__SECRET_KEY: "opssight_secret_key"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-opssight_secret_key}
       AIRFLOW__SCHEDULER__PARSING_PROCESSES: "1"
       AIRFLOW__SCHEDULER__STANDALONE_DAG_PROCESSOR: "false"
-      OPSSIGHT_API_URL: "http://api:8000"
-      OPSSIGHT_MODEL_ID: "2"
-      OPSSIGHT_API_EMAIL: "thabsheerporuthiyil@gmail.com"
-      OPSSIGHT_API_PASSWORD: "1234"
-      OPSSIGHT_API_TOKEN: ""
-    command: scheduler
+      OPSSIGHT_CONN_ID: ${OPSSIGHT_CONN_ID:-opssight_api}
+      AIRFLOW_CONN_OPSSIGHT_API: ${AIRFLOW_CONN_OPSSIGHT_API:-}
+      AIRFLOW_VAR_OPSSIGHT_API_URL: ${AIRFLOW_VAR_OPSSIGHT_API_URL:-http://api:8000}
+    command: >
+      bash -c "until getent hosts airflow-db >/dev/null 2>&1; do echo 'Waiting for airflow-db DNS...'; sleep 2; done &&
+               until pg_isready -h airflow-db -U airflow >/dev/null 2>&1; do echo 'Waiting for airflow-db readiness...'; sleep 2; done &&
+               exec airflow scheduler"
     volumes:
       - ./airflow-setup/dags:/opt/airflow/dags
       - ./airflow-setup/data:/opt/airflow/data

@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
+from app.config.settings import get_allowed_origins
+from app.db.session import SessionLocal
+from app.models.tenant import Tenant
+from app.utils.schema_utils import ensure_all_tenant_schemas
 
 from app.api.routes import (
     health,
@@ -17,11 +21,28 @@ from app.api.routes import (
     dashboard,
     tenant,
     agent_trace,
+    remediation,
+    slack,
+    reports,
 )
 
 from app.middleware.auth_middleware import AuthMiddleware
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+def repair_existing_tenant_schemas():
+    db = SessionLocal()
+
+    try:
+        tenants = db.query(Tenant).all()
+        repaired_schemas = ensure_all_tenant_schemas(db, tenants)
+        print(
+            f"Tenant schema repair complete for {len(repaired_schemas)} schema(s)."
+        )
+    finally:
+        db.close()
 
 
 
@@ -43,9 +64,7 @@ from app.api.routes import (health,
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173"
-    ],
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,6 +94,10 @@ app.include_router(upload_baseline.router)
 app.include_router(schema.router)
 app.include_router(tenant.router)
 app.include_router(agent_trace.router)  # WS /ws/agent-trace/{run_id}
+app.include_router(remediation.router)
+app.include_router(slack.router)
+app.include_router(reports.router)
+
 
 
 # ==========================================

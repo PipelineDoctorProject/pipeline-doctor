@@ -1,210 +1,236 @@
 # Local Development Setup
 
-This guide walks you through setting up PipelineDoctor on your local machine from scratch.
+This is the current recommended local setup for PipelineDoctor.
 
----
+The project is now Docker-first for the backend stack:
 
-## 📋 Prerequisites
-
-| Tool | Version | Purpose |
-|---|---|---|
-| Python | 3.10+ | Backend runtime |
-| PostgreSQL | 14+ | Database (or use Supabase) |
-| MLflow | Any | Model registry |
-| Git | Any | Version control |
-
----
-
-## 1️⃣ Clone & Enter the Project
-
-```bash
-git clone <your-repo-url>
-cd pipeline-doctor/backend/fastapi
-```
-
----
-
-## 2️⃣ Create a Virtual Environment
-
-```bash
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Mac/Linux
-source venv/bin/activate
-```
-
----
-
-## 3️⃣ Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 4️⃣ Configure Environment Variables
-
-Create a `.env` file in `backend/fastapi/`:
-
-```env
-# Database (Supabase or local PostgreSQL)
-DB_NAME=postgres
-DB_USER=postgres.your_project_ref
-DB_PASSWORD=your_password
-DB_HOST=aws-0-ap-south-1.pooler.supabase.com
-DB_PORT=5432
-
-# JWT
-SECRET_KEY=your_super_secret_key_here
-ALGORITHM=HS256
-
-# Email (for OTP and invites)
-MAIL_USERNAME=your@gmail.com
-MAIL_PASSWORD=your_app_password
-MAIL_FROM=your@gmail.com
-MAIL_PORT=587
-MAIL_SERVER=smtp.gmail.com
-MAIL_FROM_NAME=PipelineDoctor
-```
-
-> **Note:** For Gmail, use an [App Password](https://myaccount.google.com/apppasswords), not your regular password.
-
----
-
-## 5️⃣ Run Database Migrations
-
-```bash
-alembic upgrade head
-```
-
-This creates all required tables in your PostgreSQL database.
-
----
-
-## 6️⃣ Start the MLflow Server
-
-In a **separate terminal**:
-
-```bash
-mlflow server --host 127.0.0.1 --port 5000
-```
-
-Open `http://127.0.0.1:5000` to verify it's running.
-
----
-
-## 7️⃣ Train & Register the Demo Model
-
-```bash
-python app/ml/train_register_model.py
-```
-
-Then go to `http://127.0.0.1:5000`, open the **Models** tab, and assign the `champion` alias to Version 1 of `PipelineDoctorDemoModel`.
-
----
-
-## 8️⃣ Start the FastAPI Backend
-
-```bash
-uvicorn app.main:app --reload
-```
-
-- API runs at: `http://127.0.0.1:8000`
-- Swagger UI at: `http://127.0.0.1:8000/docs`
-
----
-
-## 9️⃣ Register Your Model via Swagger
-
-Open Swagger at `/docs` and call `POST /ml-models/`:
-
-```json
-{
-  "name": "Demo Model",
-  "version": "1.0",
-  "mlflow_model_name": "PipelineDoctorDemoModel",
-  "mlflow_alias": "champion",
-  "mlflow_tracking_uri": "http://127.0.0.1:5000",
-  "expected_features": ["age", "salary", "bonus"]
-}
-```
-
----
-
-## 🔟 Upload a Baseline CSV
-
-Use `POST /baseline/upload?model_id=1` and upload your reference CSV.
-
----
-
-## 1️⃣1️⃣ Run the Pipeline
-
-Drop a production CSV into `uploads/incoming/` and run:
-
-```bash
-python run_auto_runner.py
-```
-
-Check your database for:
-- `prediction_logs` — AI predictions
-- `drift_findings` — Statistical drift scores
-- `incidents` — Auto-created alerts
-
----
-
-## 🗂️ Project Structure
-
-```
-pipeline-doctor/
-├── backend/
-│   └── fastapi/
-│       ├── app/
-│       │   ├── api/routes/       ← FastAPI route handlers
-│       │   ├── core/             ← JWT, security utils
-│       │   ├── middleware/       ← Auth middleware
-│       │   ├── models/           ← SQLAlchemy DB models
-│       │   ├── schemas/          ← Pydantic request/response schemas
-│       │   ├── services/
-│       │   │   ├── auth/         ← Signup, login, OTP, invite
-│       │   │   ├── quality/      ← Baseline, validator, pipeline
-│       │   │   └── drift/        ← Data drift, concept drift
-│       │   ├── utils/            ← Email, OTP, schema utils
-│       │   └── main.py           ← FastAPI app entry point
-│       ├── alembic/              ← Database migrations
-│       ├── uploads/              ← Incoming / processed / baseline CSVs
-│       └── run_auto_runner.py    ← Pipeline execution entry point
-├── docs/                         ← Project documentation (you are here)
-├── agents/                       ← AI reasoning agents (Stage 8)
-└── frontend/                     ← Frontend application
-```
-
----
-
-## Docker Backend Stack
-
-If you want the backend services in Docker while keeping the frontend outside Docker:
-
-1. Start the backend stack:
-
-```bash
-docker compose up --build
-```
-
-This starts:
-- FastAPI API on `http://localhost:8000`
-- MLflow on `http://localhost:5000`
+- FastAPI API
 - Celery worker
 - Celery beat
 - Redis
+- MLflow
+- Airflow webserver, scheduler, and DB
 
-2. Start the frontend separately from `frontend/`:
+The frontend still runs separately with Vite.
+
+---
+
+## Prerequisites
+
+| Tool | Purpose |
+|---|---|
+| Docker Desktop | backend stack |
+| Node.js 18+ | frontend dev server |
+| Git | source control |
+
+Optional:
+
+- Python, if you want to run backend scripts outside Docker
+
+---
+
+## Environment File
+
+Create or update:
+
+`backend/fastapi/.env`
+
+Minimum important values:
+
+```env
+# Database
+DB_NAME=postgres
+DB_USER=...
+DB_PASSWORD=...
+DB_HOST=...
+DB_PORT=5432
+
+# JWT
+SECRET_KEY=replace_with_a_real_32_plus_byte_secret
+ALGORITHM=HS256
+
+# Email
+MAIL_USERNAME=...
+MAIL_PASSWORD=...
+MAIL_FROM=...
+MAIL_PORT=587
+MAIL_SERVER=smtp.gmail.com
+MAIL_FROM_NAME=PipelineDoctor
+
+# Slack
+SLACK_CLIENT_ID=...
+SLACK_CLIENT_SECRET=...
+SLACK_REDIRECT_URI=http://localhost:8000/slack/callback
+
+# Optional quality overrides
+DATA_QUALITY_NULL_RATIO_THRESHOLD=0.30
+DATA_QUALITY_ROW_ISSUE_THRESHOLD=0.70
+DATA_QUALITY_MIN_CLEAN_ROW_COUNT=10
+DATA_QUALITY_MIN_CLEAN_ROW_RATIO=0.50
+```
+
+Important:
+
+- use a real `SECRET_KEY` before production deployment
+- Gmail requires an app password, not your normal mailbox password
+
+---
+
+## Start The Backend Stack
+
+From the repo root:
 
 ```bash
+docker compose up -d --build
+```
+
+This starts:
+
+- API on `http://localhost:8000`
+- MLflow on `http://localhost:5000`
+- Airflow on `http://localhost:8080`
+- Redis on `localhost:6379`
+
+Useful checks:
+
+```bash
+docker compose ps
+docker logs --tail 100 pipeline-doctor-api
+```
+
+---
+
+## Start The Frontend
+
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-Airflow is included in the same root compose file, so the full non-frontend stack comes up together.
+Frontend URL:
+
+- `http://localhost:5173`
+
+---
+
+## First-Run Product Flow
+
+### 1. Create the first admin
+
+1. Sign up on the frontend
+2. Verify OTP
+3. Go through onboarding step 1 and create the workspace
+4. Stay on onboarding step 2 and invite members or skip
+5. Land on the dashboard
+
+### 2. Connect integrations
+
+- register or verify an ML model
+- upload an approved baseline
+- optionally connect Slack and choose a default channel
+
+### 3. Run monitoring
+
+- trigger an Airflow DAG
+- or upload a CSV through the Data Quality page / API
+
+---
+
+## Local Tenant Reset
+
+If you need to delete the current local tenant and start again, first get the authenticated user's dashboard context:
+
+```powershell
+$token = "YOUR_ACCESS_TOKEN"
+
+$me = Invoke-RestMethod `
+  -Method Get `
+  -Uri "http://localhost:8000/dashboard/me" `
+  -Headers @{ Authorization = "Bearer $token" }
+
+$tenantId = $me.workspace.tenant_id
+```
+
+Then delete that tenant:
+
+```powershell
+Invoke-RestMethod `
+  -Method Delete `
+  -Uri "http://localhost:8000/tenant/$tenantId" `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+Use `/dashboard/me`, not `/auth/me`. The `/auth/me` endpoint is not part of the current API.
+
+---
+
+## Current Runtime Notes
+
+### Data outputs
+
+- accepted cleaned files are stored in `/app/cleaned`
+- quarantined removed rows are stored in `/app/cleaned/quarantine`
+- these directories are backed by the `backend_cleaned` Docker volume
+
+### Rebuild behavior
+
+When backend code changes, rebuild the API container:
+
+```bash
+docker compose up -d --build --force-recreate api
+```
+
+When worker-task code changes, also rebuild:
+
+```bash
+docker compose up -d --build --force-recreate celery-worker celery-beat
+```
+
+### Frontend refresh
+
+If Vite does not pick up a change automatically:
+
+```bash
+cd frontend
+npm run dev
+```
+
+---
+
+## This Week's Runtime Hardening
+
+The local stack now includes these stability choices:
+
+- explicit DNS for API and worker containers
+- MLflow allowed-hosts widened for container-to-container access
+- Celery worker tuned down to `--concurrency=2 --max-tasks-per-child=20`
+- Airflow webserver reduced to one worker
+- Airflow scheduler parsing reduced for more stable local Docker behavior
+
+---
+
+## Daily Startup
+
+Backend:
+
+```bash
+docker compose up -d
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+---
+
+## Related Docs
+
+- [README.md](./README.md)
+- [authentication.md](./authentication.md)
+- [data_quality.md](./data_quality.md)
+- [automation_and_scheduler.md](./automation_and_scheduler.md)
+- [reports.md](./reports.md)

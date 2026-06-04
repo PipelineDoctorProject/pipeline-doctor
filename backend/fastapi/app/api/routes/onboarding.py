@@ -17,6 +17,7 @@ from app.schemas.onboarding import (
 from app.services.auth.onboarding_service import (
     create_company
 )
+from app.api.routes.auth import _cookie_settings
 
 router = APIRouter(
     prefix="/onboarding",
@@ -46,29 +47,28 @@ def create_company_route(
         company_name=data.company_name
     )
 
-    # Update cookies with tenant-aware tokens
+    cookie_options = _cookie_settings(request)
+
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 30
+        max_age=60 * 30,
+        **cookie_options,
     )
 
     response.set_cookie(
         key="refresh_token",
         value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        max_age=60 * 60 * 24 * 7
+        max_age=60 * 60 * 24 * 7,
+        **cookie_options,
     )
 
     return {
         "message": result["message"],
         "tenant_id": result["tenant_id"],
-        "schema_name": result["schema_name"]
+        "workspace_name": result["workspace_name"],
+        "schema_name": result["schema_name"],
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "token_type": "bearer",
     }

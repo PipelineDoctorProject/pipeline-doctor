@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.drift_finding import DriftFinding
 from app.models.incident import Incident
+from app.services.incidents.grouping import attach_incident_to_group
 
 def save_drift_finding_and_incident(
     db: Session, 
@@ -47,5 +48,7 @@ def save_drift_finding_and_incident(
             severity=severity
         )
         db.add(incident)
+        db.flush()
+        attach_incident_to_group(db, incident=incident)
 
     return incident

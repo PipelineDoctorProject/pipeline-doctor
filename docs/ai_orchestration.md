@@ -1,8 +1,8 @@
 # AI Orchestration (LangGraph RCA)
 
-This document explains the AI root cause analysis system added this week.
+This document explains the current AI root cause analysis system.
 
-The goal of the orchestration layer is to convert failed monitoring evidence into a structured RCA report that users can read directly in the incident drawer.
+The goal of the orchestration layer is to convert failed monitoring evidence into a structured RCA report that users can read directly in the incident drawer and in the Full Report page.
 
 The important runtime rule now is:
 
@@ -24,8 +24,10 @@ flowchart TD
     F --> G[Parsing]
     G --> H[Reporting]
     H --> I[Persist RCA Incident]
+    H --> M[Create Initial Incident Report Version]
     H --> J[Write AgentStepLogs]
     I --> K[Incident Drawer Uses Stored RCA]
+    M --> N[Full Report Page Uses Latest Report]
     J --> L[Incident Drawer Uses Stored Trace]
 ```
 
@@ -35,6 +37,7 @@ flowchart TD
 - The doctor task is the single execution owner for new RCA runs.
 - `AgentRun` and `AgentStepLog` are created before and during RCA execution.
 - The final RCA incident is only persisted in the reporting step, so report and trace stay aligned.
+- The first production report version is created from the completed RCA evidence.
 
 ---
 
@@ -46,6 +49,7 @@ For a monitored pipeline run, the AI layer:
 2. asks the RCA model to reason about the likely cause
 3. parses the response into a structured report
 4. persists the report during the reporting step so trace logs and RCA output stay in sync
+5. creates the initial versioned incident report for the Full Report UI
 
 ---
 
@@ -111,7 +115,7 @@ The parser also guards against under-reporting by comparing parsed severity with
 
 ### Reporting
 
-The system creates the final RCA payload and persists it to the incident during the doctor task's reporting step.
+The system creates the final RCA payload and persists it to the incident during the doctor task's reporting step. It also seeds the versioned production report that can later be updated by remediation events.
 
 That means a completed RCA now has:
 
@@ -120,6 +124,8 @@ That means a completed RCA now has:
 - stored `AgentStepLog` rows
 
 from the same execution flow.
+
+Later remediation state changes can create newer report versions. This means the RCA report explains why the incident happened, while the production report can explain what happened after approval, candidate creation, staging, rejection, or deployment confirmation.
 
 ---
 
@@ -243,5 +249,6 @@ That mismatch is historical data, not the intended current design.
 
 ## Related Docs
 
+- [reports.md](./reports.md)
 - [realtime_tracing.md](./realtime_tracing.md)
 - [automation_and_scheduler.md](./automation_and_scheduler.md)
