@@ -19,6 +19,7 @@ from app.services.slack_service import (
     list_workspace_channels,
     save_default_channel,
     upsert_workspace_installation,
+    validate_expected_workspace,
 )
 from app.utils.schema_utils import set_schema
 
@@ -44,6 +45,8 @@ def _use_current_tenant_schema(db: Session, user) -> None:
 
 @router.get("/connect", response_model=SlackConnectResponse)
 def create_connect_url(
+    workspace_name: str | None = Query(default=None, min_length=1, max_length=120),
+    slack_team_id: str | None = Query(default=None, max_length=32),
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user),
 ):
@@ -52,6 +55,8 @@ def create_connect_url(
         "connect_url": build_connect_url(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
+            expected_team_name=workspace_name,
+            expected_team_id=slack_team_id,
         )
     }
 
@@ -81,6 +86,11 @@ def slack_callback(
 
         set_schema(db, tenant.schema_name)
         installation = exchange_code_for_installation(code)
+        validate_expected_workspace(
+            installation,
+            expected_team_name=state_payload.get("expected_team_name"),
+            expected_team_id=state_payload.get("expected_team_id"),
+        )
         upsert_workspace_installation(
             db,
             tenant_id=state_payload["tenant_id"],
