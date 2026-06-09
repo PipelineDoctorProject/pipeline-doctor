@@ -103,8 +103,41 @@ def login_user(db: Session, email: str, password: str):
 
     user = db.query(User).filter(User.email == normalized_email).first()
 
-    if not user or not user.hashed_password or not verify_password(password, user.hashed_password):
-        raise HTTPException(401, "Invalid credentials")
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "ACCOUNT_NOT_FOUND",
+                "message": "No OpsSight account exists for this email. Please create an account first.",
+            },
+        )
+
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "EMAIL_NOT_VERIFIED",
+                "message": "Please verify your email with the OTP before logging in.",
+            },
+        )
+
+    if not user.hashed_password:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "PASSWORD_NOT_SET",
+                "message": "Your invite is pending password setup. Please use the invitation link from your email.",
+            },
+        )
+
+    if not verify_password(password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "code": "INVALID_PASSWORD",
+                "message": "The password you entered is incorrect. Please try again.",
+            },
+        )
 
     access_token = create_access_token({
         "user_id": user.id

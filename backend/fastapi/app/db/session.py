@@ -11,6 +11,7 @@ from app.config.settings import (
     DB_HOST,
     DB_PORT,
     DB_NAME,
+    DB_SSLMODE,
     DB_POOL_SIZE,
     DB_MAX_OVERFLOW,
     DB_POOL_TIMEOUT,
@@ -36,7 +37,7 @@ engine = create_engine(
     pool_size=DB_POOL_SIZE,
     max_overflow=DB_MAX_OVERFLOW,
     connect_args={
-        "sslmode": "require",
+        "sslmode": DB_SSLMODE,
         "connect_timeout": 5,
         "keepalives": 1,
         "keepalives_idle": 30,

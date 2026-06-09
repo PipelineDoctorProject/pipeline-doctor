@@ -16,13 +16,29 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const getLoginErrorMessage = (err) => {
+    const detail = err?.detail;
+
+    if (detail?.message) {
+      return detail.message;
+    }
+
+    if (typeof detail === "string") {
+      return detail;
+    }
+
+    return "We could not log you in. Please check your details and try again.";
+  };
 
   const handleLogin = async (e) => {
 
     e.preventDefault();
 
+    setLoginError("");
     setIsLoading(true);
 
     try {
@@ -33,7 +49,7 @@ export default function LoginPage() {
 
     } catch (err) {
 
-      alert(err?.detail || "Login failed");
+      setLoginError(getLoginErrorMessage(err));
 
     } finally {
 
@@ -117,6 +133,11 @@ export default function LoginPage() {
                 onSubmit={handleLogin}
                 className="space-y-5"
               >
+                {loginError && (
+                  <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] leading-6 text-red-700">
+                    {loginError}
+                  </div>
+                )}
 
                 {/* EMAIL */}
                 <div>

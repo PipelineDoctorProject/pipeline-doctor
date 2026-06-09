@@ -1,0 +1,501 @@
+id,name,artist,genres,danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,liveness,valence,tempo,duration_ms,time_signature,cluster,cluster_label
+2ZFN9XIaJmVwrEaM6bk7fk,Saaz Yeh Keena Saaz Yeh Kya Jaane,Farida Khanum,['sufi'],0.251,0.665,8,-9.947,1,0.0526,0.707,0.000741,0.0713,0.46,125.194,529480,3,0,Energetic Happy
+7z6zdepQjteu5Lw1TjaMee,Wo Jali Hai Ya Khafi Hai,Muhammad Samie,['qawwali'],0.483,0.603,6,-8.688,1,0.0732,0.0991,0.0,0.131,0.635,123.87,507742,4,2,Instrumental Calm
+187MtrYAgpgOoNHKuYRwzm,Main Kamli Maiya Di Kamli,Gurdas Maan,['sufi'],0.61,0.813,8,-6.003,1,0.0445,0.629,4.65e-06,0.113,0.878,124.318,762880,4,0,Energetic Happy
+3CVVB4tLAEWPb2w2O8rYHj,Bandiya Jehan Diya,Sain Zahoor Ahmed,['qawwali'],0.569,0.569,11,-7.488,0,0.0302,0.833,5.57e-05,0.382,0.673,99.566,516423,4,1,Dance Party
+5KwO40SuQ1xoIWc9WV46je,"Roothe Ho Tum (from ""Aina"")",Nayyara Noor,['sufi'],0.25,0.619,0,-7.075,0,0.0343,0.979,0.0121,0.155,0.394,185.012,210307,3,0,Energetic Happy
+0MFdPneORsAeu1ZEYgJUJz,Shakalakka Baby,Vasundhara Das,['bollywood'],0.793,0.725,11,-8.443,0,0.178,0.00475,5.35e-06,0.0707,0.803,185.974,338480,4,2,Instrumental Calm
+0XkAuBCDswQUPXi8jrxg34,Phir Se Daras Dikhao,Anuradha Paudwal,['ghazal'],0.417,0.475,0,-9.887,1,0.0346,0.885,0.0,0.0514,0.682,153.009,347360,4,1,Dance Party
+6hPlYSx7wsnDE48NypYeuT,"Get Here - Recorded At RAK Studios, London",Sam Smith,[],0.495,0.216,8,-9.294,1,0.0369,0.925,0.0,0.108,0.303,138.678,169227,4,1,Dance Party
+4OW3e4X6sfVgwRKw5FG0Vs,Tere Ishq Mein,Rekha Bhardwaj,['bollywood'],0.499,0.474,9,-7.261,1,0.0304,0.245,0.0,0.289,0.286,176.049,341133,4,2,Instrumental Calm
+0hBemn8Gjx5ePccYGaTYzw,Fallin',Alicia Keys,[],0.653,0.609,11,-7.519,0,0.037,0.263,0.00101,0.233,0.482,123.982,210200,3,2,Instrumental Calm
+2wi8pAa1ceXtFmdwJ91zVa,Kare Badra,Habib Wali Muhammad,['ghazal'],0.6,0.441,5,-12.791,1,0.056,0.949,0.000169,0.117,0.798,107.569,330413,4,1,Dance Party
+4kV4N9D1iKVxx1KLvtTpjS,"break up with your girlfriend, i'm bored",Ariana Grande,[],0.726,0.554,5,-5.29,0,0.0917,0.0421,0.0,0.106,0.335,187.221,190440,4,2,Instrumental Calm
+0RYtqGkXO88wtPMlHbzMeW,Kevat Prasang,Anup Jalota,['ghazal'],0.665,0.538,1,-9.157,1,0.0455,0.271,0.0,0.349,0.691,111.011,408816,4,2,Instrumental Calm
+7eCt4ywZK9lgWbphHyGyCi,Qarar,Ali Haider,['sufi'],0.656,0.839,1,-5.984,1,0.0309,0.721,0.0236,0.0836,0.68,118.148,297066,4,2,Instrumental Calm
+49QVOdWgGagzLrThkIqtK6,Scared Of Love,Juice WRLD,[],0.619,0.551,11,-4.845,0,0.106,0.0351,0.0,0.166,0.161,157.989,170539,4,2,Instrumental Calm
+1en8cRQFezaNadUD13BLMt,Shaam E Firaaq Ab Na Pooch,Farida Khanum,['ghazal'],0.328,0.398,4,-9.337,1,0.0356,0.983,0.446,0.195,0.501,90.87,439925,4,4,Rap / Spoken
+0GRDB1z4YZkgunWu6wx43u,Tuu kanssain tanssimaan,Kari Hirvonen,['pop'],0.608,0.898,9,-3.357,0,0.0924,0.448,0.0,0.148,0.909,187.221,180899,4,2,Instrumental Calm
+0e3gi36ySaA3LDYajiRXKt,Orkant/Balance Pon It,Major Lazer,[],0.849,0.92,1,-4.191,1,0.143,0.0184,1.68e-05,0.522,0.71,154.038,279445,4,2,Instrumental Calm
+3Xb60mFpNodFvek8iuujaN,Jawani Zindagani Hai,Musarrat Nazir,['ghazal'],0.492,0.515,5,-6.601,0,0.029,0.766,0.000254,0.111,0.327,120.508,327973,4,1,Dance Party
+3OlsvFnLbu7E4Oi4nFy1cK,Kehde Ghar Jawan,Nusrat Fateh Ali Khan,['qawwali'],0.423,0.696,2,-12.121,0,0.162,0.0845,0.0,0.442,0.764,132.41,845505,4,0,Energetic Happy
+0WdCvksPhCngFBJLqElLwJ,Yaadan Teriyan,Nusrat Fateh Ali Khan,['qawwali'],0.568,0.527,2,-12.95,0,0.0401,0.317,9.23e-06,0.0772,0.863,113.121,431415,4,2,Instrumental Calm
+1rv170ZsobLD7RP5mLGQW7,Pehli Wari Ehnan Akhian,Ghulam Ali,['ghazal'],0.491,0.327,2,-17.283,0,0.0854,0.953,0.77,0.242,0.807,103.043,473262,4,4,Rap / Spoken
+0fOkthps9Udf6can1TnybK,"Gulabi Ankhen - From ""The Train""",Mohammed Rafi,['bollywood'],0.579,0.797,9,-5.049,1,0.0698,0.679,5.22e-06,0.36,0.744,136.052,198267,4,0,Energetic Happy
+4VGUWnfa85yzlm560TEt7G,Prakat Hui Maa,Suresh Wadkar,['bollywood'],0.597,0.786,10,-7.783,0,0.0546,0.515,0.0,0.383,0.956,103.054,267424,4,0,Energetic Happy
+3T17XjHdrICPdzyHF3KlhZ,Pani Ki Chadron Se (2023 Remastered),Sajjad Ali,['sufi'],0.606,0.771,11,-9.906,1,0.0329,0.0466,0.0347,0.355,0.659,100.176,414353,4,2,Instrumental Calm
+0RmEvvW1IbEW69MR3sqjG2,Kane Me,Otherview,['pop'],0.691,0.881,11,-3.676,0,0.0512,0.0104,0.0,0.33,0.552,156.061,191960,4,2,Instrumental Calm
+6kxvhHRIBrwR1fNYqAFaNg,Sharabi Ja,Lata Mangeshkar,['bollywood'],0.467,0.472,3,-12.677,1,0.103,0.832,0.296,0.309,0.873,135.544,265600,4,1,Dance Party
+4cAG58iGj7cEDBgwi5vQMx,Tum Naraz Ho,Sajjad Ali,['sufi'],0.519,0.525,3,-11.652,1,0.0349,0.686,0.00672,0.152,0.407,111.303,419613,4,1,Dance Party
+0vcWBc2ZJADF8zS8YTxctM,Kash Yeh Duaa Meri,Amjad Sabri,['qawwali'],0.381,0.829,6,-5.749,1,0.0909,0.568,0.0,0.393,0.599,170.821,347784,3,0,Energetic Happy
+1iPoKQ7HdU7Fih4NE5rIY5,Raj Wekh Liye Data Non,Sher Miandad Khan Qawwal,['qawwali'],0.515,0.868,0,-5.685,1,0.05,0.526,1.94e-06,0.226,0.941,122.744,611558,4,0,Energetic Happy
+59tCtWJnK91yQU1Z68Rttk,Hasta el cielo,Andrés Calamaro,['pop'],0.711,0.487,7,-7.263,1,0.0324,0.305,1.29e-06,0.201,0.954,81.597,140930,4,2,Instrumental Calm
+57iDy0t6KHmyWRgfXv2qoL,Dilan De Sode Kitay Nain,Javed Bashir,"['qawwali', 'sufi']",0.515,0.618,6,-13.413,1,0.149,0.322,0.0,0.31,0.866,94.279,905073,4,3,Acoustic Chill
+7xQr232ujJVxWX37fLdZRT,Chenda Kane Chenda,Kailash Kher,['bollywood'],0.528,0.778,9,-6.828,1,0.0966,0.233,0.0,0.284,0.793,122.967,279827,4,0,Energetic Happy
+0T5xmhpJMRiQepk2E0JIGk,Hum To Mashhor Hue Hain,Anuradha Paudwal,['bollywood'],0.384,0.448,5,-9.896,1,0.0345,0.906,3.66e-05,0.085,0.604,181.064,309227,4,1,Dance Party
+4hU6cvmz18OGzJOS6FycoO,Na Kisi Ki Aankh Ka,Mehdi Hassan,['ghazal'],0.491,0.221,1,-18.19,0,0.0307,0.954,0.0126,0.228,0.467,111.189,357000,4,1,Dance Party
+4lbuA9ReWFi11YaprlqVHQ,"Likha Hai Teri Ankhon Mein (From ""Teen Devian"")",Lata Mangeshkar,['bollywood'],0.465,0.478,6,-9.789,1,0.0562,0.951,0.000494,0.142,0.945,161.673,255533,4,1,Dance Party
+3DC32LAuRjMRfDzGnG8wP8,Say My Name (feat. Bebe Rexha & J Balvin) - Lucas & Steve Extended Mix,David Guetta,[],0.744,0.639,1,-5.811,1,0.142,0.0113,0.0,0.047,0.596,147.992,236848,4,2,Instrumental Calm
+0MxZqRxjv6OJSgYX8Pl5y1,Main Pyar Banu Tera Dilbar,Anuradha Paudwal,['ghazal'],0.511,0.613,2,-8.605,1,0.0305,0.683,0.000392,0.628,0.72,135.011,319960,4,0,Energetic Happy
+1hGUadsGOFLZ6TXqpn1bGD,Leh De Menu TV Balma,Reshma,['sufi'],0.519,0.543,8,-12.41,0,0.0453,0.699,0.0,0.321,0.773,104.255,412473,4,1,Dance Party
+0LNjcShyokSftNZID8TekZ,Rang,Fareed Ayaz Abu Muhammad Qawwal,['qawwali'],0.542,0.408,6,-13.488,1,0.0726,0.723,0.0,0.45,0.731,109.619,745707,4,1,Dance Party
+4XuPJpDEh4wFonGri6RzlJ,Apne Hi Rang Mein Rang Do Sabir - Islamic,Rais Anis Sabri,['qawwali'],0.602,0.526,8,-11.448,1,0.26,0.725,0.0,0.328,0.91,103.511,880039,4,3,Acoustic Chill
+711gt65lkV8fxdYs0FYzQm,"Tumse Mila Tha Pyar - From ""Khatta Meetha""",Lata Mangeshkar,['bollywood'],0.417,0.519,9,-6.773,1,0.0413,0.765,0.0483,0.118,0.648,144.431,234773,4,1,Dance Party
+10kb5eApW2WUfPDroGyJ3R,Dil Diyaan Mann Kay Choorra Chhankay,Noor Jehan,['ghazal'],0.463,0.475,10,-11.859,0,0.0627,0.97,0.0391,0.448,0.895,177.985,251429,4,1,Dance Party
+2GelJAONleRBBNLbsI2gDN,Dum Dum Maar Bum Bum,Anuradha Paudwal,['ghazal'],0.612,0.655,1,-9.559,1,0.099,0.726,0.0,0.483,0.926,170.03,367954,4,0,Energetic Happy
+3PBv55RawnCZMwdKr9RHEs,Jutt (Original Motion Picture Soundtrack),Mika Singh,['bollywood'],0.84,0.71,4,-6.847,1,0.164,0.457,1.95e-06,0.166,0.845,125.097,211680,4,2,Instrumental Calm
+154zlVDOk9LbkBZ9pGQ8JT,Yeh Pyar Tha Ya Kuchh Aur Tha,Sudha Malhotra,['bollywood'],0.278,0.676,2,-7.546,1,0.0784,0.602,1.19e-05,0.427,0.342,187.221,431200,4,0,Energetic Happy
+4R07KIkFvSZ8MmGs0IyS1N,Je Toon Rab Nahin Te Rab Das - Complete Original Recording,Nusrat Fateh Ali Khan,"['qawwali', 'sufi']",0.502,0.746,1,-5.727,1,0.0623,0.752,0.000144,0.661,0.682,147.288,837953,4,0,Energetic Happy
+0stvz0y5jQMn4KyTAv3ALs,Ya Ghous Paak Aj Karam Karo,Maulvi Haider Hassan Qawwal,['qawwali'],0.5,0.76,2,-4.613,1,0.0935,0.305,1.88e-05,0.361,0.941,187.221,880620,4,0,Energetic Happy
+4eWQlBRaTjPPUlzacqEeoQ,Never Be the Same,Camila Cabello,[],0.637,0.713,0,-4.333,1,0.0747,0.181,0.000637,0.137,0.243,157.923,226973,4,2,Instrumental Calm
+2S0PSTnv7mgsVUFqKWQC8e,"Kabhi Jo Baadal Barse (From ""Jackpot"")",Arijit Singh,['bollywood'],0.452,0.449,0,-6.702,0,0.0293,0.261,0.0,0.143,0.215,149.802,254300,4,2,Instrumental Calm
+4ZlqbRfLEkL44BPR1Qacu2,Tere Bina Chan Sajna,Naseebo Lal,['ghazal'],0.522,0.746,5,-5.451,0,0.0463,0.633,0.00375,0.22,0.767,155.947,395250,4,0,Energetic Happy
+6eiztdXRkooWsBt2xToMWI,Make Believe,Juice WRLD,[],0.465,0.84,0,-4.35,1,0.0722,0.125,0.0,0.138,0.672,83.981,142026,4,0,Energetic Happy
+5ahiRBoMhl2oMk1dhP5DhM,Dhole De Gal Wich,Atta Ullah Khan Esakhelvi,['ghazal'],0.795,0.777,0,-9.108,1,0.0485,0.419,0.0,0.168,0.864,124.309,474050,4,2,Instrumental Calm
+1LtHjULyfektuVIew3U7o2,Prem Baan Jogi,Shubha Mudgal,['sufi'],0.386,0.721,1,-8.923,1,0.0671,0.133,2.41e-06,0.0778,0.399,120.308,628733,4,0,Energetic Happy
+0lYHxNBqTGb6WqPac0h0Vt,Dil e Naadan,Abida Parveen,['ghazal'],0.516,0.442,10,-11.812,0,0.0484,0.149,0.0114,0.077,0.672,171.91,484785,4,2,Instrumental Calm
+4jvr23iZUFVPKodAnhOhvD,"Ek Din Aap (From ""Yes Boss"")",Alka Yagnik,['bollywood'],0.462,0.375,4,-13.184,1,0.0309,0.642,0.0,0.189,0.612,145.35,266067,3,1,Dance Party
+4edS9dC0JPBlSS4p4gMOT0,This Feeling (feat. Kelsea Ballerini),The Chainsmokers,[],0.539,0.651,1,-5.304,1,0.0432,0.0651,0.0,0.0662,0.474,133.159,199227,4,2,Instrumental Calm
+5EGMqeOpiIesWc9D0p9KPz,Akhiyan Udeek Diyan,Gurdas Maan,['sufi'],0.548,0.948,1,-4.049,1,0.117,0.00332,0.0,0.0697,0.607,172.896,568800,4,2,Instrumental Calm
+1PrjE300mujwBupIy3HORv,Main Kuch Bhi Nahi,Nazir Ejaz Faridi Qawwal,['qawwali'],0.42,0.694,1,-8.182,1,0.116,0.652,0.0,0.0547,0.476,152.189,1726632,4,3,Acoustic Chill
+30pYFAiERk0tbbjGp1jj4x,"Jai Jai Satyanarayan Swami (From ""Shree Satyanarayan Vrat Katha"")",Anuradha Paudwal,['ghazal'],0.418,0.845,11,-4.083,1,0.0507,0.684,0.0,0.106,0.894,118.734,439798,4,0,Energetic Happy
+0iJipW8qIhb6Pbwy1i6qCU,Unpe Kuchh Is Tarah Pyar Ane Laga,Ghulam Ali,['bollywood'],0.522,0.454,8,-12.802,1,0.0374,0.873,0.000498,0.0835,0.45,159.765,589290,1,1,Dance Party
+4TkFuS1UvqUSKTA9VKFfPy,Bari Bari Imam Bari,Nusrat Fateh Ali Khan,['qawwali'],0.503,0.486,1,-14.93,1,0.0673,0.436,0.00186,0.215,0.89,157.484,779560,4,1,Dance Party
+5pLJWlkAIbzZSa9wQejivZ,Door Na Khilo Ve,Naseebo Lal,['sufi'],0.827,0.963,6,-2.136,1,0.0939,0.443,0.00148,0.308,0.838,148.015,274933,4,2,Instrumental Calm
+0TYNfQX7QnpDt5MMvPEZAq,Posheeda Posheeda - Live,Sabri Brothers,['ghazal'],0.447,0.4,0,-12.671,0,0.16,0.816,1.34e-05,0.724,0.513,105.88,1134800,4,3,Acoustic Chill
+4bE84m2q6Xecrl8Etn8hKC,Aucune promesse,Loud,['pop'],0.793,0.681,9,-7.615,0,0.231,0.0123,0.0,0.0763,0.373,145.006,215555,4,2,Instrumental Calm
+0S0c5TsXdOxtqknCsWdGbC,Kya Khub Lage Mahboob Mera,Shaan,['bollywood'],0.545,0.615,9,-6.161,1,0.0283,0.483,0.0,0.11,0.544,149.99,291600,4,2,Instrumental Calm
+53QaCpl6OD3pqD5mdv83EO,Heegethake,Armaan Malik,['bollywood'],0.707,0.596,5,-6.812,0,0.03,0.557,0.0,0.2,0.639,150.075,231108,4,2,Instrumental Calm
+1ZxJkG775oka5RsH3Yuwv3,Dónde Estarás,J Balvin,[],0.832,0.76,1,-7.588,1,0.113,0.0635,0.0124,0.0776,0.809,117.998,191547,4,2,Instrumental Calm
+43P4CvRCS6HmVERmYfM8ma,Promises (with Sam Smith) - Illyus & Barrientos Remix,Calvin Harris,[],0.716,0.775,1,-5.592,1,0.0659,0.00187,0.731,0.0517,0.631,123.026,282039,4,4,Rap / Spoken
+5ZVcGk81LJB6kJ5YX2LGk2,Pehni Si Judai Sajna,Naseebo Lal,['sufi'],0.727,0.803,8,-8.78,1,0.0447,0.459,0.0421,0.147,0.933,91.991,531781,4,2,Instrumental Calm
+4MkmZtKvZszEUWlwVQjYKe,Aaj Ki Raat Koi Aane Ko Hai - Remix,Sonu Kakkar,['bollywood'],0.658,0.956,5,-9.37,0,0.0601,0.0721,1.51e-05,0.0615,0.802,162.996,275120,4,2,Instrumental Calm
+3UEfOvhtrnpw57gDbSixri,Everybody Hates Me - Steerner Remix,The Chainsmokers,[],0.453,0.863,2,-6.239,1,0.0957,0.0672,0.0,0.107,0.499,182.872,176667,4,0,Energetic Happy
+6LzJESHfI1cix6kihuqvOG,Bujhi Hui Shama Ka Dhuan Hoon,Nusrat Fateh Ali Khan,['qawwali'],0.36,0.857,7,-5.916,1,0.162,0.263,1.27e-06,0.363,0.47,90.526,1188438,4,0,Energetic Happy
+2U5W2dMtxQdA97txkMBiuQ,Oho Chenne,Hariharan,['ghazal'],0.601,0.492,11,-10.838,1,0.0283,0.639,6.81e-05,0.0579,0.411,121.986,310000,4,1,Dance Party
+3nSX1aDCeVr90qhqJ7cjBE,Shayan : Morpichchani rajaai,Hariharan,['ghazal'],0.474,0.205,10,-14.243,1,0.0313,0.857,0.000289,0.126,0.376,110.382,407960,4,1,Dance Party
+7vOARrEWx4IZkPAIAPMpmn,Pyar Se Pyara Kuchh Bhi Nahin,Anup Jalota,['ghazal'],0.33,0.623,10,-5.52,1,0.0338,0.733,0.0,0.268,0.746,152.713,337973,3,0,Energetic Happy
+7m8PEWF1Qjo4BmcjEYsacr,If I Ain't Got You,Alicia Keys,[],0.578,0.404,7,-10.759,1,0.114,0.612,1.24e-05,0.106,0.197,146.378,229040,3,1,Dance Party
+3ibibKb5fllJyUR2cXjC6P,Qarar Pa Na Sake,Shahid Ali Khan,['qawwali'],0.592,0.816,6,-5.731,1,0.0447,0.238,0.00167,0.32,0.797,107.349,582959,4,0,Energetic Happy
+2tx9xdjsbmQ9VIL6r0g6QH,Sunder Hai Rang Shyam,Anup Jalota,['ghazal'],0.446,0.934,6,-2.099,1,0.0858,0.591,0.000365,0.29,0.919,80.23,238987,4,0,Energetic Happy
+2Moj5UvfrfiToDJaFK5Ziw,Elli Kan,Nancy Ajram,['pop'],0.713,0.852,6,-7.431,1,0.0509,0.329,0.000761,0.261,0.812,158.044,286348,4,2,Instrumental Calm
+1wGSK11huEffPN8rxMxQaJ,Tu Hi Rab Tu Hi Dua,Rahat Fateh Ali Khan,"['qawwali', 'sufi']",0.649,0.807,10,-5.984,0,0.0732,0.37,0.0,0.119,0.741,114.075,423573,4,2,Instrumental Calm
+6VjmSo8nck1qQIzFunlRT8,End Game,Taylor Swift,[],0.654,0.588,0,-6.208,1,0.0541,0.00852,0.0,0.108,0.155,158.977,245107,4,2,Instrumental Calm
+1KulPmYlsw6XJro1ZqthY8,Are Baba Ye Dil Kyon,Kumar Sanu,['bollywood'],0.607,0.709,7,-8.845,1,0.0418,0.729,0.00039,0.12,0.93,156.935,260627,4,2,Instrumental Calm
+5jvFlZqb8N3Kf9CthcXuJz,Dễ Yêu Dễ Quên,Nhat Tinh Anh,['pop'],0.383,0.537,1,-4.517,0,0.0332,0.477,0.0,0.0727,0.42,187.221,280781,4,0,Energetic Happy
+6NHPeaQ2EGsefLs9LH7H29,Gulon Main Rang,Mehdi Hassan,['bollywood'],0.341,0.432,8,-12.032,1,0.0446,0.76,0.88,0.163,0.516,73.149,307160,4,4,Rap / Spoken
+1tWpgH8rErSXPOkQKFCag9,Cuando Tú Quieras,J Balvin,[],0.696,0.668,6,-5.063,1,0.199,0.361,0.0038,0.31,0.761,184.329,205120,4,2,Instrumental Calm
+0cDbVbHEUM419vxXxigLtS,Shine Ya Light,Rita Ora,[],0.486,0.809,4,-3.207,1,0.0416,0.018,0.0,0.373,0.567,145.514,211080,4,0,Energetic Happy
+4gAj8T3qTeGIcwd8HvigrU,Dasht-E-Tanhai Mein,Iqbal Bano,['sufi'],0.284,0.46,5,-8.468,1,0.029,0.924,0.0,0.121,0.255,86.987,360840,4,1,Dance Party
+2NcFoIbREbGpHcSVgAigUX,No Place Like Home,John Legend,[],0.629,0.799,0,-6.014,1,0.173,0.221,5.35e-06,0.107,0.329,81.082,237013,4,2,Instrumental Calm
+4JsOMTAmz7rFa29WXspLzU,The Way I Am - Acoustic,Charlie Puth,[],0.571,0.263,1,-9.965,1,0.0554,0.802,0.0,0.119,0.775,113.574,188021,4,1,Dance Party
+42mTn8B1GV2hJVqpm2DEQC,Merry Xmas Everybody - For Nest Audio Sessions,Bastille,['pop'],0.575,0.421,2,-8.948,1,0.029,0.344,0.0,0.2,0.342,122.806,195500,4,1,Dance Party
+77p4Fz9JNmbyiwc5EbPBNh,Sanu Ek Pal Chain Na Aawe,Nusrat Fateh Ali Khan,['qawwali'],0.595,0.462,5,-10.008,1,0.038,0.678,0.419,0.127,0.645,155.715,765910,4,4,Rap / Spoken
+2kO9Kr5WVQfdiJdE72EH2b,Tune Maa Baap Ki,Abdul Habib Ajmeri,['qawwali'],0.459,0.781,6,-5.814,1,0.118,0.382,0.0,0.0861,0.596,125.633,938240,3,0,Energetic Happy
+5xbgINjKmPb2tzG4IQ7gnl,Has Ke Chain Qarar Ve Sanwal,Atta Ullah Khan Esakhelvi,['qawwali'],0.581,0.76,6,-5.641,1,0.0448,0.631,0.00011,0.164,0.95,115.999,435017,4,0,Energetic Happy
+3gPTuPmDqWmFtF9qhJk2e5,Rabba Mere Haal Da Mehram Tu,Barkat Sidhu,['sufi'],0.439,0.245,11,-18.329,1,0.0542,0.831,0.0114,0.0784,0.397,177.608,334720,4,1,Dance Party
+2Fs5Tk06RWbDIBOPtOxTUD,Girls Like You (feat. Cardi B) - CRAY Remix,Maroon 5,[],0.793,0.563,9,-9.203,0,0.0676,0.134,0.0001,0.0877,0.363,99.971,237594,4,2,Instrumental Calm
+4y1Y5PSuRssSMIDYY9uQJo,Long Nak Da - Ishtehari Gujjar,Naseebo Lal,['sufi'],0.809,0.838,7,-6.212,0,0.048,0.128,0.00392,0.331,0.956,150.849,329937,4,2,Instrumental Calm
+0YOTKtagMgwIu7EwWPuIy4,Sultaan,Jaspinder Narula,['bollywood'],0.608,0.915,0,-5.716,0,0.0956,0.042,0.142,0.384,0.479,150.795,379728,4,2,Instrumental Calm
+0syEPhBgw69TBnLJ7NRMJn,Barishan De Mausaman Vich,Atta Ullah Khan Esakhelvi,"['ghazal', 'qawwali', 'sufi']",0.664,0.603,7,-9.226,1,0.0718,0.408,0.000156,0.117,0.673,158.117,410120,4,2,Instrumental Calm
+4Bq4PmUT9AvfPUILhVWkdE,Charaghe Toor Jalao,Mehdi Hassan,['ghazal'],0.299,0.834,5,-9.891,1,0.0765,0.813,0.593,0.467,0.509,133.717,462293,3,4,Rap / Spoken
+7wf0Z5QgwfyHXHq6mfJRNk,Ali Ali,Mika Singh,['bollywood'],0.623,0.799,11,-7.36,0,0.0339,0.0271,0.0606,0.104,0.197,142.998,206728,4,2,Instrumental Calm
+1E4btN3qFHiQ4zlOEtWQte,Deed Hoi Menon,Noor Jehan,['ghazal'],0.477,0.571,6,-9.825,0,0.0562,0.767,0.000688,0.0869,0.621,122.765,295482,4,1,Dance Party
+6BQ138m56aLHGzTbDMOuX5,Farida Turia Turia Ja,Nusrat Fateh Ali Khan,['qawwali'],0.466,0.538,4,-16.145,1,0.0468,0.0621,0.00107,0.323,0.915,128.154,810307,4,0,Energetic Happy
+2jcYaEKejiLKuZ3RiX26Sv,Get Free,Major Lazer,[],0.612,0.657,11,-6.971,0,0.0454,0.103,0.124,0.131,0.767,115.94,289973,4,2,Instrumental Calm
+18fPevb5WJF0XC97ILCAFQ,Phir Us Se Milay - Live,Ghulam Ali,['ghazal'],0.558,0.602,1,-12.314,0,0.0432,0.437,0.307,0.0589,0.803,106.971,407587,4,2,Instrumental Calm
+3zUdQ1EJtqr1BaHCYSzLTa,New Rules - Live,Dua Lipa,[],0.539,0.859,9,-6.427,0,0.0549,0.0117,0.0,0.372,0.484,143.9,275101,4,0,Energetic Happy
+3RMcsGb9Lh5O9O0QPYNwR6,Sunoto Meri Jaan,Asha Bhosle,['bollywood'],0.366,0.569,1,-8.26,1,0.0548,0.733,1.5e-05,0.16,0.648,131.095,263259,4,0,Energetic Happy
+0HCAYFizTCH1DhJenQSKTh,Koi Humnafas Nahin,Munni Begum,"['ghazal', 'sufi']",0.543,0.617,2,-8.323,1,0.0427,0.355,3.26e-05,0.293,0.69,87.504,371623,4,2,Instrumental Calm
+5TJyTV87vgWSeadLZayG6M,Gayatri Mantra,Suresh Wadkar,['bollywood'],0.599,0.52,9,-6.244,1,0.0273,0.683,0.0,0.146,0.104,143.86,247805,3,1,Dance Party
+0aGAREkBehlokDdFDTYxja,Menu Chariya Nabi Da Rang,Naseebo Lal,"['ghazal', 'sufi']",0.802,0.764,1,-5.593,0,0.0868,0.358,9.51e-05,0.0641,0.903,108.016,302250,4,2,Instrumental Calm
+6FUtw3xbO0kU10j01tVsWV,O Meri Jaan,Pritam,['bollywood'],0.581,0.564,2,-6.143,0,0.0311,0.592,3.09e-06,0.117,0.31,161.953,297907,4,2,Instrumental Calm
+4YERJ0MjmDLx4SZvGNIqdT,Mein Nashe Mein Hoon,Pankaj Udhas,['ghazal'],0.749,0.466,5,-10.025,0,0.0334,0.608,0.0,0.0928,0.593,145.021,432973,4,1,Dance Party
+4fb4WgcREU6VXFjfIi4C4e,"Paatukku Palaivanam (From ""Ananda Poonkaatrae"")",Hariharan,['ghazal'],0.709,0.634,5,-10.832,1,0.0536,0.494,0.0,0.118,0.815,170.007,341880,4,2,Instrumental Calm
+6SWANrKvQwaf3Le7RuTsjr,"Pure Di Hawa Chale (From ""Qanoon Apna Apna"")",Noor Jehan,['ghazal'],0.609,0.769,4,-5.249,1,0.0477,0.687,0.000896,0.257,0.851,145.721,300017,4,0,Energetic Happy
+78Dqu57xEIlTfWEFquW7YB,Mundo bom,Agepê,['pop'],0.74,0.9,5,-7.213,0,0.0705,0.162,0.0,0.133,0.959,175.982,253453,4,2,Instrumental Calm
+6fOwKqB2JEXIomEGqztQyr,Akhian Udeek Diyan - Live Version,Nusrat Fateh Ali Khan,['qawwali'],0.543,0.724,3,-8.72,0,0.0615,0.659,0.183,0.121,0.913,145.196,994975,4,0,Energetic Happy
+2U2jLzCRHY293ZxXcQB5Ki,Ki Ballte Je Ki Baliam,Kavita Krishnamurthy,['bollywood'],0.658,0.521,8,-9.949,1,0.0548,0.311,2.2e-06,0.156,0.662,126.786,302693,4,2,Instrumental Calm
+2iWPJSACGSHNREsOnUAbVM,Baba Ji Sada Hajj Hogaya,Nusrat Fateh Ali Khan,['qawwali'],0.589,0.874,6,-4.833,1,0.0858,0.0306,0.0,0.738,0.87,137.77,649511,4,0,Energetic Happy
+5hdD82r5EMmjK9b7f9Dq8k,Shono Go Dakhin Hawa (Lofi),Madhubanti Bagchi,['bollywood'],0.334,0.285,1,-16.987,0,0.0557,0.793,0.154,0.134,0.336,110.056,172398,4,1,Dance Party
+2oaKoKA8bvgWfBi9M8wEVJ,Abhi Na Jao Chhod Kar,Asha Bhosle,['bollywood'],0.569,0.31,3,-13.287,1,0.0371,0.79,0.0,0.341,0.587,125.244,258387,3,1,Dance Party
+4qTqkDw55ZM6UThAwAZFbK,Aami Aaj Holam Gentalman,Abhijeet,['bollywood'],0.527,0.821,9,-8.486,0,0.108,0.596,0.000321,0.157,0.805,164.351,350483,4,0,Energetic Happy
+43RbE6d17Ov9nf8b82kIKZ,Aj O Keno Phool Phote - Original Motion Picture Soundtrack,Andrew Kishore,['pop'],0.476,0.755,2,-5.702,1,0.102,0.666,0.0,0.323,0.6,187.221,282305,4,0,Energetic Happy
+4jgF1sLf3TkQbZkLHsc6SI,Through It All,Charlie Puth,[],0.562,0.383,4,-8.54,1,0.0356,0.762,0.0,0.0775,0.225,147.113,206453,3,1,Dance Party
+6WkJVR6Pw8vzMq0nk8PFph,Woh Hata Rahe Hain Pardah,Nusrat Fateh Ali Khan,['qawwali'],0.416,0.894,1,-7.157,0,0.0689,0.327,5.54e-05,0.858,0.76,136.055,474907,4,0,Energetic Happy
+3k00iUQxvBgGS3Is1sNp63,Isse Pehle Ke Baat Tal Jaye,Ghulam Ali,"['ghazal', 'sufi']",0.571,0.345,10,-17.962,0,0.0341,0.85,0.00131,0.0536,0.595,128.097,458710,4,1,Dance Party
+0W5oXFrxZNBTIS1eMW9Ofz,Saturday Nights REMIX,Khalid,[],0.569,0.414,10,-8.901,1,0.0758,0.633,0.0,0.0916,0.35,187.221,211103,4,1,Dance Party
+6rLypg1a2kCCuCcvXFY315,"Poonkatrey (From ""Friends"")",Hariharan,['ghazal'],0.591,0.491,7,-11.464,1,0.0481,0.635,0.0,0.388,0.848,100.006,289724,4,1,Dance Party
+0gsF7mX9wTuL7F4HBSX4Oo,Mashoor Hazoor E Aala,Shahid Mallya,['bollywood'],0.785,0.801,4,-5.521,0,0.0451,0.201,0.0,0.34,0.626,125.987,214341,4,2,Instrumental Calm
+27VTdTiiX8CuRRWB8PApoR,"Wajah Tum Ho (From ""Wajah Tum Ho"")",Mithoon,['bollywood'],0.642,0.545,7,-8.37,0,0.0346,0.905,0.0105,0.119,0.335,166.027,294930,4,1,Dance Party
+3rGe9aqY7mTJQoNCif0rxT,"Mere Naseeb Mein - From ""Naseeb""",Lata Mangeshkar,['bollywood'],0.466,0.771,9,-6.988,0,0.0471,0.851,0.00161,0.33,0.784,126.505,377480,4,0,Energetic Happy
+5icOoE6VgqFKohjWWNp0Ac,Here With Me,Marshmello,[],0.791,0.565,5,-3.933,0,0.0439,0.0623,0.0,0.156,0.181,127.961,156347,4,2,Instrumental Calm
+5RAhu7KdNYLwcUoAQfR8Ht,Laai Khushi Ki Duniya,Suraiya,['ghazal'],0.612,0.189,2,-11.874,1,0.0648,0.992,0.0844,0.159,0.764,162.044,175556,4,1,Dance Party
+0UvdB4c5ONOnxfNyoDUy42,Dua Mangta Hoon,Amjad Sabri,['qawwali'],0.64,0.69,11,-5.75,0,0.0304,0.275,5.45e-06,0.154,0.657,138.04,288422,3,2,Instrumental Calm
+0SsnTcSUJMIlaaV7Qf6eOf,Maar Gai Udeek Din Raat Di,Nusrat Fateh Ali Khan,['qawwali'],0.649,0.784,5,-8.039,1,0.0432,0.436,0.0,0.153,0.93,187.221,263979,3,2,Instrumental Calm
+5ybM8mVtRtBWz5JOjdV841,"Ek Chanchal Shokh Haseena (From ""Baaghi"")",Abhijeet,['bollywood'],0.505,0.696,7,-7.993,1,0.0394,0.688,0.0,0.396,0.644,127.762,401773,4,0,Energetic Happy
+5kwd8EKu1DMGEAHDVQEu9S,Love Yourself,Justin Bieber,[],0.785,0.269,4,-14.911,1,0.409,0.866,0.0,0.21,0.57,128.132,235507,4,1,Dance Party
+2SJDAVi7AiEGtUyNACEqol,Teri Mehfil Mein,Lata Mangeshkar,['bollywood'],0.536,0.292,7,-13.663,1,0.0922,0.972,0.0,0.539,0.389,154.846,304599,4,1,Dance Party
+5J2eRZo2BLb31L7J4fbK6l,Kaun Kehte Hain Bhagwan Aate Nahi (Achyutam Keshavam),Payal Dev,['bollywood'],0.393,0.818,2,-3.34,1,0.0601,0.425,1.6e-05,0.272,0.773,110.992,294348,4,0,Energetic Happy
+4hqAa7VQxUAGddTbhWAsCU,Dil Hi Dil Mein,Mehnaz,['ghazal'],0.332,0.242,5,-15.147,1,0.0378,0.967,0.226,0.106,0.594,187.221,360973,4,1,Dance Party
+5aFW3CduDz6HwyLx7mKGB7,Koi Kuri Karle Pasand Mundeya,Masood Rana,['ghazal'],0.569,0.272,5,-14.538,1,0.0918,0.991,0.0123,0.145,0.607,148.987,340219,4,1,Dance Party
+6i4LWESmu4Y48rbByCu2iO,Shoot Me In The Back,Miguel Bosé,['pop'],0.801,0.82,9,-12.138,0,0.0535,0.143,6.31e-05,0.0558,0.854,130.229,295800,4,2,Instrumental Calm
+3eSnXst3SWVix0QoGVPWMZ,Dam Dam Karo Fareed,Nusrat Fateh Ali Khan,['qawwali'],0.428,0.836,0,-6.306,0,0.0382,0.507,0.00911,0.393,0.947,157.581,871503,4,0,Energetic Happy
+2DV1qwJibcwjj9IyhjZ0Bs,Green Light,Lorde,[],0.594,0.721,2,-7.812,1,0.0957,0.0209,8.55e-06,0.0887,0.253,156.942,234520,4,2,Instrumental Calm
+5rxyYdIZHtNnFYKPdesugb,Ýagşydyr,Turkmen Mukamlary,['pop'],0.297,0.586,6,-5.664,1,0.0536,0.979,0.00105,0.28,0.656,73.166,162952,4,0,Energetic Happy
+394QnsjxanQcjp5JI8Bn7C,Dirty Sexy Money (feat. Charli XCX & French Montana) - GLOWINTHEDARK Remix,David Guetta,[],0.722,0.885,6,-4.838,1,0.11,0.0291,1.56e-05,0.0508,0.944,187.221,183214,4,2,Instrumental Calm
+7DmsviMgfapfHpIUg5IzbV,Sochta Hoon Keh Woh Kitne Masoom Teh,Nusrat Fateh Ali Khan,['qawwali'],0.419,0.758,5,-7.974,1,0.0654,0.612,6.23e-05,0.583,0.674,150.156,1371476,4,3,Acoustic Chill
+5TO8VVqgvC88kD1FSiiunf,Goraly Söýgimizi,Azat Dönmezow,['pop'],0.718,0.686,4,-5.945,0,0.0624,0.0595,0.00038,0.0804,0.499,100.026,173163,4,2,Instrumental Calm
+2maxr0ym48p9GDJ4fMyU4e,Sab Se Oonchi Prem Sagai - Mahamantra - Hare Krishna (Live),Jagjit Singh,"['ghazal', 'sufi']",0.277,0.824,5,-5.019,1,0.0734,0.562,0.0,0.668,0.754,95.996,455010,4,0,Energetic Happy
+0Aj9mjOpjS2TbgSB6sdXNo,Running,Dua Lipa,[],0.62,0.694,10,-3.739,0,0.0311,0.0178,0.0,0.19,0.319,126.002,221947,4,2,Instrumental Calm
+3m7EwKEelSTnCK0irdNqDF,Mere Sabir Teri Chaukhat Ki,Nusrat Fateh Ali Khan,['qawwali'],0.593,0.82,8,-3.418,1,0.341,0.872,0.00022,0.466,0.778,149.906,847517,4,3,Acoustic Chill
+2qwWONRF2GYGbZCc97CxOF,Woh Hata Rahe Hain Pardah,Nusrat Fateh Ali Khan,['qawwali'],0.416,0.894,1,-7.157,0,0.0689,0.327,5.54e-05,0.858,0.76,136.055,474907,4,0,Energetic Happy
+1FmrTxzAES3SzasBvnnhRT,Shambho Hechi Daan Dhave,Anuradha Paudwal,['ghazal'],0.606,0.531,1,-6.928,0,0.0306,0.653,0.0,0.0916,0.496,127.973,292844,4,1,Dance Party
+4yuWA2s1LeNNroCMN3A2Qg,Aik Jhalak Dikhla De,Mehdi Hassan,['sufi'],0.274,0.458,6,-12.932,1,0.0365,0.937,0.0292,0.0814,0.393,169.135,363667,4,1,Dance Party
+0sVgOxAOOAj0K8PdFEGhrR,Never Be the Same - Radio Edit,Camila Cabello,[],0.627,0.693,0,-4.382,1,0.0856,0.158,0.000102,0.115,0.245,157.801,227240,4,2,Instrumental Calm
+42JdNogUgR596OmgsO2pmD,Mere Baney Ki Baat,Fareed Ayaz Abu Muhammad Qawwal,['qawwali'],0.454,0.385,1,-16.16,1,0.11,0.882,1.98e-06,0.211,0.509,109.973,1664396,4,3,Acoustic Chill
+0RlhZaRbmNBqr7yC5u5N6t,Jinny Ghous De Yaar,Sher Miandad Khan Fareedi Qawwal,['qawwali'],0.668,0.793,6,-7.359,1,0.0432,0.453,0.0,0.348,0.793,120.908,658947,4,0,Energetic Happy
+1gJEK5b69XIXEUydumLUWc,Rum'da Acem'de Aşık Olduğum,Fatih Koca,['sufi'],0.482,0.584,5,-7.293,1,0.0302,0.825,0.372,0.196,0.673,113.048,253205,4,1,Dance Party
+6HjHViEsMt0Z6RbebHgpKI,Alemler Nura Garkoldu,Hakan Bayraktar,['sufi'],0.392,0.412,0,-8.628,1,0.0416,0.908,0.00035,0.0479,0.308,130.993,317324,4,1,Dance Party
+2FnGeHfmXSPtimZPjnI34n,Dil Marjaane Nu Ki Hoya Sajna,Nusrat Fateh Ali Khan,['qawwali'],0.477,0.564,5,-10.999,1,0.0575,0.216,0.0,0.136,0.656,178.458,468755,4,0,Energetic Happy
+0zmxucBmo7zk1Xm8xcu6PE,Giant (with Rag'n'Bone Man) - Michael Calfan Remix,Calvin Harris,[],0.771,0.909,1,-6.341,0,0.0485,0.0243,0.0281,0.318,0.678,149.989,201889,4,2,Instrumental Calm
+61YW32C7DUv7aKdVhUacxt,Tied Up,Major Lazer,[],0.664,0.623,1,-5.357,0,0.158,0.0122,1.32e-05,0.0957,0.65,187.221,187333,4,2,Instrumental Calm
+1vBmaijoCBoqmwc3zs5n3s,Dus Bahane,Shaan,['bollywood'],0.833,0.917,7,-5.498,1,0.0597,0.175,1.92e-06,0.109,0.874,138.001,206947,4,2,Instrumental Calm
+3DoBTwfr8yi2LN08SBpFkN,Watch (feat. Lil Uzi Vert & Kanye West),Travis Scott,[],0.706,0.559,4,-5.216,0,0.0416,0.0372,0.0,0.379,0.252,78.534,217405,4,2,Instrumental Calm
+3B3iPFx9ToeLqbUrxcb4yl,Karz Chukana Hai,Nitin Mukesh,['bollywood'],0.426,0.705,0,-6.901,0,0.0495,0.138,0.000116,0.578,0.545,141.188,339560,4,0,Energetic Happy
+76AM6F3NZxZ2soNvINEJgz,Sohni Dharti,Habib Wali Muhammad,['ghazal'],0.458,0.488,3,-15.928,1,0.0468,0.807,1.35e-06,0.0536,0.936,155.116,282096,4,1,Dance Party
+7qTl6AO0bNOppN9CLM3VR9,Waving Through A Window - Bonus Track,Katy Perry,[],0.599,0.556,0,-7.732,1,0.0869,0.461,0.0,0.132,0.46,173.427,235987,4,2,Instrumental Calm
+0bh56tIOc9CKwn8C1sQjc3,Shanideva Ho Deva,Anuradha Paudwal,['ghazal'],0.621,0.726,1,-7.014,0,0.119,0.203,0.0,0.147,0.787,187.221,239824,3,2,Instrumental Calm
+1EezmZapxk6dDafoJuou6k,Pyar Kiya To Darna Kya,Lata Mangeshkar,['bollywood'],0.369,0.619,2,-6.886,1,0.0794,0.817,1.34e-06,0.482,0.675,129.023,381080,3,0,Energetic Happy
+3gTp4KG5WhiXUV3Q7OGBnD,Nip Tuck,Nicki Minaj,[],0.845,0.618,8,-7.086,1,0.2,0.0149,0.0,0.196,0.366,147.944,207267,4,2,Instrumental Calm
+3FS3ItpUATpALLi90uvkde,I Am In Love,Pritam,['bollywood'],0.702,0.694,2,-5.74,1,0.0286,0.685,5.96e-05,0.168,0.76,158.024,285109,4,2,Instrumental Calm
+4URNzWDwsPrZ4YnaTV2a8Y,Kab Se Zainab Tumhe,Rais Anis Sabri,['qawwali'],0.763,0.36,6,-12.448,1,0.0306,0.147,0.0,0.0869,0.72,110.018,903659,4,2,Instrumental Calm
+2AwzKMXGvV3cAqlAxHlaB8,Poora Nap Tay Poora Tol,Sain Zahoor Ahmed,['qawwali'],0.384,0.838,8,-7.814,1,0.0668,0.41,0.0975,0.203,0.663,108.911,459597,4,0,Energetic Happy
+7COfe3P7KgfwDwIRB8LIDw,Mi Gente,J Balvin,[],0.548,0.704,11,-4.838,0,0.0777,0.0168,2.25e-05,0.143,0.288,104.666,185040,4,2,Instrumental Calm
+125quHVZfy0Y90umTfDmzd,Sanu Ek Pal Chain Na Aawe,Nusrat Fateh Ali Khan,['qawwali'],0.596,0.459,5,-10.002,1,0.0384,0.669,0.448,0.128,0.675,155.706,765924,4,4,Rap / Spoken
+6fnjyrjy1mVVS1JLmivNyE,Woh Kisna Hai (Lofi Mix),Ismail Darbar,['bollywood'],0.347,0.606,10,-9.187,1,0.0941,0.638,0.442,0.144,0.366,117.983,206736,4,4,Rap / Spoken
+3VmfZBj95LvYRYzc7irKS3,Tera Naam Japdi Phiran (Ver-2),Javed Bashir,['sufi'],0.715,0.897,1,-3.729,0,0.105,0.0218,0.0,0.536,0.726,157.96,250133,4,2,Instrumental Calm
+72s1xrc7E27aATdCMbFMC6,"Shayad (Film Version) - From ""Love Aaj Kal""",Pritam,['bollywood'],0.345,0.508,8,-7.595,1,0.0358,0.912,0.00138,0.101,0.287,135.21,245733,4,1,Dance Party
+4Uw5rEWN8rMErNruwT50f2,Maye Ni Maye Mere Geetan De Nainan Vich,Jagjit Singh,"['ghazal', 'sufi']",0.51,0.419,3,-12.069,1,0.035,0.702,0.34,0.269,0.78,153.501,206827,4,1,Dance Party
+2B1fuWoWaYnCXbjYp1gXg5,Boomerang,Imagine Dragons,[],0.429,0.559,2,-7.493,1,0.152,0.139,0.00928,0.121,0.347,100.073,187800,4,2,Instrumental Calm
+5ngNneNm8wCakXptOPH1Xq,Uzr Aane Me Bhi,Mehdi Hassan,['ghazal'],0.416,0.652,6,-8.875,1,0.0482,0.959,0.394,0.312,0.541,161.901,694813,4,4,Rap / Spoken
+3N03WEnjmK0s95unOI4GNJ,Sanam Re (Lounge Mix),Mithoon,['bollywood'],0.668,0.362,3,-8.408,0,0.0268,0.912,0.000454,0.162,0.314,108.956,277134,4,1,Dance Party
+2sMHEhoPxrTpZdAm2zG62z,"Duniya badal gayi (From ""Babul'')",Shamshad Begum,['ghazal'],0.36,0.284,8,-8.708,1,0.0332,0.791,0.00644,0.0802,0.57,140.354,207539,3,1,Dance Party
+5bTHhVqrDAUfoJKAxwwj3G,Dil Jala Ke Mera Muskurate Hai,Ghulam Ali,"['bollywood', 'sufi']",0.563,0.395,1,-12.791,1,0.0325,0.515,0.00634,0.235,0.694,108.782,400000,4,1,Dance Party
+7ChgIOtdsEKDPLXVkfcZ05,"Haa Jab Tak Hai Jaan - From ""Sholay""",Lata Mangeshkar,['bollywood'],0.386,0.413,2,-10.894,0,0.0362,0.865,0.0122,0.137,0.468,118.513,326173,3,1,Dance Party
+35KV2Nuib6jPMVN00O8iba,No Mistakes,Kanye West,[],0.643,0.646,10,-2.442,0,0.0629,0.0393,0.0,0.109,0.35,80.174,123040,4,2,Instrumental Calm
+1oEILcJX46cqn5DacYfPwo,Gori Mhare Nuve Bangle Mein Begi,Suresh Wadkar,['bollywood'],0.619,0.827,0,-8.184,0,0.0849,0.781,0.000315,0.422,0.894,104.701,295107,4,0,Energetic Happy
+18FQ7DIN02bi5N8f4ObmGo,Ami Premer Parikhate,Runa Laila,['bollywood'],0.572,0.574,8,-14.658,1,0.0493,0.595,0.000179,0.104,0.866,157.794,243827,4,1,Dance Party
+0crAEn9sv3VfvAYo2Kfcua,Pranay Panthe Janara,Manhar Udhas,['bollywood'],0.584,0.456,4,-11.705,1,0.0392,0.681,4.13e-06,0.0908,0.59,123.843,489867,4,1,Dance Party
+1JcjOWpaQr2crUaJj2kRYQ,Before I Cry,Lady Gaga,[],0.48,0.56,2,-5.196,1,0.0373,0.157,0.0,0.168,0.167,174.41,258547,3,2,Instrumental Calm
+18V3PMTKiDPMj3GH0dOW15,Orkant/Balance Pon It - Mixed,Major Lazer,[],0.861,0.886,3,-7.437,0,0.139,0.11,2.52e-05,0.476,0.805,125.991,110000,4,2,Instrumental Calm
+1oVHTsA2FqC1xAT7afmMYn,Hazaaron Khwahishen,Abida Parveen,['sufi'],0.506,0.341,5,-11.882,1,0.0374,0.548,1.17e-06,0.0779,0.212,146.099,535313,3,1,Dance Party
+5OWx9w1rYS8Msv5gsHhJDy,Do Do Ghoont Hi pee Kar Dekho,Nusrat Fateh Ali Khan,['qawwali'],0.66,0.313,10,-19.395,1,0.0456,0.257,0.0,0.24,0.482,124.968,327853,4,1,Dance Party
+1p5jPjbjtRvMtugh8TgAzD,Belagaayithu Yelu,Anuradha Paudwal,['ghazal'],0.613,0.585,7,-10.372,1,0.0344,0.35,7.05e-06,0.133,0.805,117.985,265900,4,2,Instrumental Calm
+063fMQR4ovHXH5PwO2hJm5,Dil Hi Tu Hai,Farida Khanum,['sufi'],0.416,0.256,7,-15.649,0,0.0428,0.98,0.0569,0.13,0.401,115.831,318360,3,1,Dance Party
+3xL6najxM1pe2sVBtqjFqM,Dam Dam Karo Fareed,Nusrat Fateh Ali Khan,['qawwali'],0.423,0.606,0,-13.415,0,0.0394,0.404,0.00238,0.388,0.957,155.976,875133,4,0,Energetic Happy
+6mkGcPlvh3H7ZaUiiKNXBl,Ghoom,Junoon,['ghazal'],0.508,0.751,2,-8.762,1,0.0397,0.00184,0.018,0.288,0.498,171.902,466573,4,0,Energetic Happy
+4nIyuXb2MuJ13Ta3zD6EG4,Wolves - Rusko Remix,Selena Gomez,[],0.663,0.889,11,-4.72,0,0.0339,0.00423,0.0105,0.0637,0.366,155.964,226875,4,2,Instrumental Calm
+1Mw1uobqZZIudTxOhid4y6,Khwajaye Mohataram,Jani Babu,['qawwali'],0.567,0.454,1,-13.483,0,0.0767,0.693,0.0,0.524,0.843,111.81,692760,4,1,Dance Party
+23m6nQiaOT0X3khtJETMIy,Naiyo Jaana - Aman Sanjog Remix,Shirley Setia,['bollywood'],0.647,0.563,0,-6.637,1,0.0303,0.0481,0.0144,0.0869,0.456,95.001,264000,4,2,Instrumental Calm
+2CFJATFqjy1tosV1vX2SfM,"Dragoste, va rog!",Cleopatra Stratan,['pop'],0.683,0.548,6,-7.257,0,0.209,0.379,0.0,0.0985,0.492,114.994,193103,4,2,Instrumental Calm
+01s1HGlw9yqT0U242yffBb,Majesty (with Labrinth & feat. Eminem),Nicki Minaj,[],0.837,0.728,11,-5.212,0,0.184,0.311,0.0,0.105,0.566,106.518,295653,4,2,Instrumental Calm
+15qpOfyGtve2GrtplDo2jJ,"Suit Suit Remix(Remix By Dj Chetas,Dj Lijo)",Guru Randhawa,['bollywood'],0.676,0.886,2,-3.472,0,0.052,0.311,2.3e-05,0.312,0.29,127.938,203337,4,2,Instrumental Calm
+7uQrFLW4V1c4ktybVbRi9V,Meri Dastaan-e-Hasrat Wo Suna Suna Ke Roye,Munni Begum,['ghazal'],0.415,0.625,2,-8.708,1,0.0418,0.639,0.000172,0.264,0.686,82.077,375552,4,0,Energetic Happy
+4NkqyQNnSvGt0RUSDCnUNA,Photo rakh Ke Sarhane,Naseebo Lal,['ghazal'],0.75,0.495,7,-11.461,1,0.0373,0.545,0.109,0.069,0.751,167.973,358467,4,1,Dance Party
+2yyhsrFD2EtWDOGW6bLPJG,"Gori Tu Latth Maar (From ""Toilet - Ek Prem Katha"")",Sonu Nigam,['bollywood'],0.451,0.674,2,-11.011,1,0.0967,0.052,1.74e-05,0.0531,0.367,144.999,238790,4,2,Instrumental Calm
+4yHcVmaqkC9gjUD36SHGOh,Come & Get It,Selena Gomez,[],0.533,0.749,5,-6.273,0,0.052,0.00878,0.000371,0.0682,0.605,108.018,232733,4,2,Instrumental Calm
+4cPwMZLHSYihhAaDoDqROq,Teri Aan Main Teri Ranjana,Noor Jehan,['ghazal'],0.493,0.66,9,-7.62,1,0.0519,0.864,0.000187,0.564,0.865,173.087,209723,4,0,Energetic Happy
+2XBHk7k8KJjO9q8wDZrSsL,Tiny Bombs - Live,Superchunk,['pop'],0.299,0.643,9,-10.558,1,0.0581,0.101,0.0088,0.789,0.404,136.796,326240,4,0,Energetic Happy
+0xZsNPkYX9gs5KU4CKk81b,Baadal Jo Barse Toh,Asha Bhosle,['bollywood'],0.466,0.518,7,-8.214,1,0.059,0.77,6.88e-05,0.315,0.82,187.221,217840,4,1,Dance Party
+5eynaLBdxu92v1AJAUi5GB,Jania Ve Jania,Naseebo Lal,['sufi'],0.626,0.885,1,-5.968,1,0.0631,0.601,0.0636,0.735,0.938,102.042,297076,4,0,Energetic Happy
+71HPaDlu1SXsYXdMicyonb,"Benaam Sa Ye Dard - From ""Dhoop""",Jagjit Singh,['ghazal'],0.288,0.384,8,-11.786,0,0.0295,0.722,0.00245,0.121,0.21,79.849,543133,4,1,Dance Party
+4E8LAkAoZDLDQDfKhJ4M1r,Mil Gaya Mujhko Pyar Mera,Shahid Ali Khan,['qawwali'],0.633,0.759,9,-8.757,0,0.102,0.578,0.248,0.143,0.707,138.215,408308,4,2,Instrumental Calm
+52KGkoTVgZbsaB2uU8Jtnw,Dil Lagane Ki,Atta Ullah Khan Esakhelvi,"['qawwali', 'sufi']",0.694,0.637,10,-7.138,0,0.103,0.681,0.0,0.301,0.866,151.822,365009,3,2,Instrumental Calm
+5My4LtZW8JQJoKFDWodqIt,Use Somebody - Recorded at Spotify Studios NYC,Shawn Mendes,[],0.366,0.519,5,-6.066,1,0.0331,0.35,0.0,0.145,0.308,152.632,176587,4,0,Energetic Happy
+5Y8Ex46qHVlaNVxWTIEJvT,Abhi Mood Nahi Hai,Sajjad Ali,['sufi'],0.666,0.847,6,-7.983,1,0.0792,0.048,0.0,0.0547,0.947,183.345,237416,4,2,Instrumental Calm
+62OqszvOYSuonp6Buj4P74,Midnight - Live In Buenos Aires,Coldplay,[],0.359,0.768,1,-9.32,1,0.0431,0.0428,0.46,0.319,0.119,154.99,105680,4,0,Energetic Happy
+0POxqXWRutOZLxW3uwRJ7k,Sarke Sarke Jandiye Mutyare Ni,Shahid Ali Khan,['qawwali'],0.61,0.757,6,-4.61,1,0.0438,0.166,0.00349,0.7,0.852,187.221,933771,4,0,Energetic Happy
+3k69VqKDzUTntFBYhtVYz5,Sone Piya,Tochi Raina,['bollywood'],0.742,0.832,4,-4.175,1,0.0993,0.569,0.0,0.0817,0.765,148.011,293664,4,2,Instrumental Calm
+760ggeq1ssNeezyb1c9dnI,Chan Kithan Guzari Aai,Atta Ullah Khan Esakhelvi,['ghazal'],0.523,0.675,4,-9.327,0,0.0347,0.702,0.00164,0.129,0.758,109.24,421721,4,0,Energetic Happy
+7oRt4hIOVPfOuNaF4FBlud,Heeray,Junoon,['ghazal'],0.666,0.896,2,-4.769,1,0.0499,0.0304,0.000204,0.0958,0.591,149.969,232827,4,2,Instrumental Calm
+77enykXBJ7uFoOHTgrWKfl,What Lovers Do (feat. SZA) - Slushii Remix,Maroon 5,[],0.63,0.773,10,-2.572,1,0.0456,0.256,9.74e-06,0.117,0.442,124.083,255040,4,2,Instrumental Calm
+5ZgHopEBJcNNpi2SomV0Mb,Par Gayi Par Gayi,Shazia Manzoor,['sufi'],0.702,0.887,8,-3.232,1,0.0895,0.437,8.21e-06,0.242,0.867,160.014,279396,4,2,Instrumental Calm
+6XNd6RNcrGQ9ZWZlti9lpt,Kho Na Jaye Kahin,Talat Aziz,"['ghazal', 'bollywood']",0.529,0.308,8,-13.825,1,0.0313,0.558,8.36e-05,0.317,0.426,136.91,355787,3,1,Dance Party
+4ZOxpuWBUq4nzTHPE7jhg3,"Bezubaan - From ""Life Is Beautiful!""",Nikhil D'Souza,['bollywood'],0.693,0.87,5,-4.794,0,0.0425,0.0898,4.62e-05,0.102,0.534,103.011,290137,4,2,Instrumental Calm
+3BhjbaGeI7E0CiIjctfdD3,Kar Gayi Chull,Badshah,['bollywood'],0.827,0.737,11,-5.473,0,0.0764,0.0316,0.000322,0.211,0.873,121.99,187711,4,2,Instrumental Calm
+3Du0FPUJX6XopyVJW8bwSk,Saadgi To Hamari,Nusrat Fateh Ali Khan,['qawwali'],0.48,0.901,8,-3.387,1,0.11,0.18,0.0,0.394,0.882,140.344,900016,4,0,Energetic Happy
+3ER5MBT0xHN35HfqZ72ICd,Yaara Seeli Seeli - Jhankar Beats,Akriti Kakar,['bollywood'],0.586,0.405,4,-14.494,1,0.0358,0.57,0.00613,0.228,0.495,105.973,253851,4,1,Dance Party
+3CEzBw6WS79fjB0BrujvHL,Roshan Jamaal - E - Yaar,Abida Parveen,['ghazal'],0.466,0.25,7,-8.726,1,0.0281,0.834,3.68e-06,0.336,0.141,105.932,506827,3,1,Dance Party
+0lks2Kt9veMOFEAPN0fsqN,Lily,Alan Walker,[],0.423,0.634,6,-5.877,0,0.0578,0.196,0.0,0.189,0.467,178.978,195840,4,0,Energetic Happy
+3v0pLQvHG7QK40Pig7jmQ6,Ji Karda Inhaan Nachan - Kurfue Order,Naseebo Lal,['sufi'],0.68,0.876,1,-5.312,1,0.0897,0.217,0.00191,0.0715,0.883,186.009,440498,4,2,Instrumental Calm
+5CAAXa8zMNBi9iYbixiyep,Aisi Bhi Kya Jaldi Hai,Nusrat Fateh Ali Khan,['qawwali'],0.59,0.453,10,-14.07,0,0.0294,0.474,5.64e-06,0.0914,0.838,174.983,457000,3,1,Dance Party
+3F0cuyrbxJ82PMwUYH2jQU,Piya Re Piya Re - Remix,Nusrat Fateh Ali Khan,['qawwali'],0.721,0.842,9,-7.047,0,0.0736,0.363,3.11e-05,0.406,0.673,120.01,269794,4,2,Instrumental Calm
+0T7uevTYh4wLLWHjVHlZW7,"Aap Jaisa Koi - From ""Qurbani""",Nazia Hassan,['sufi'],0.708,0.529,2,-8.461,1,0.0421,0.725,0.053,0.371,0.962,136.386,249107,4,1,Dance Party
+1R1NwL3p27XZC9n5xpP8LE,Cuz I Love You,Lizzo,[],0.566,0.66,1,-4.039,1,0.0479,0.0156,0.0,0.234,0.52,187.221,179979,3,2,Instrumental Calm
+0VXKFkMbIBQoWN9yJZcKkr,Selecta,Picco,['pop'],0.808,0.947,9,-3.131,0,0.12,0.0609,0.00619,0.282,0.846,137.993,154911,4,2,Instrumental Calm
+1bmrIYnKHtJSgjlPqZ08zP,"Downtown (From ""Downtown"")",Guru Randhawa,['bollywood'],0.601,0.816,6,-5.647,0,0.0715,0.0483,3.57e-06,0.236,0.303,187.221,216120,4,2,Instrumental Calm
+3ar3pdHa1qKMuM99VyjM8R,Jab Bhi Pee Kar,Mehdi Hassan,"['bollywood', 'sufi']",0.573,0.789,3,-7.168,1,0.0347,0.779,0.0559,0.181,0.642,107.629,449813,4,0,Energetic Happy
+1D5VerCKrUXBA86lBVWbNX,Changa Lagda Ae Lal,Sher Miandad Khan,['qawwali'],0.692,0.914,6,-8.044,0,0.0617,0.0755,3.71e-06,0.3,0.809,142.987,342973,4,2,Instrumental Calm
+0ob74Q5dIrQ8Lf8A0amkFJ,Tasnife Karevan,Shahram Nazeri,['sufi'],0.523,0.248,8,-12.577,1,0.0434,0.854,1.73e-05,0.224,0.31,134.796,573518,3,1,Dance Party
+2iMadDAmksxlztGxLE9CH9,Naina Ne Rehna Mere,Rahat Fateh Ali Khan,['qawwali'],0.695,0.897,0,-3.201,0,0.0398,0.664,4.17e-05,0.183,0.74,154.027,196806,4,2,Instrumental Calm
+4tTcS8Bkc1w8JAeT04LLBZ,Ni Main Jaana Jogi De Naal,Nusrat Fateh Ali Khan,['qawwali'],0.502,0.672,5,-7.132,1,0.0805,0.655,9.49e-06,0.597,0.58,115.486,799717,4,0,Energetic Happy
+0PD9aZgXDHvQIe80xW0fno,Blame It On Love (feat. Madison Beer),David Guetta,[],0.671,0.729,6,-7.47,1,0.202,0.112,0.0,0.1,0.35,122.955,207147,4,2,Instrumental Calm
+0lG6QM1jjbbX5UUn3DPmrZ,Lost Control,Alan Walker,[],0.736,0.555,4,-4.689,1,0.0757,0.0345,0.000157,0.0798,0.323,91.997,222320,4,2,Instrumental Calm
+000cWn6wvyXgeeTlT6wYGW,Dohre Mahiye,Atta Ullah Khan Esakhelvi,"['ghazal', 'qawwali']",0.309,0.546,7,-8.073,1,0.0316,0.862,1.18e-06,0.0967,0.453,112.557,1129670,4,3,Acoustic Chill
+4cnv4NZoRnyEo6E46XxRhP,On Top Of The World,Imagine Dragons,[],0.619,0.865,0,-8.686,1,0.123,0.0836,5.74e-06,0.0874,0.759,127.929,190474,4,2,Instrumental Calm
+7MvSmQSG0iiZCQieeO9tNR,Better - noclue? Remix,Khalid,[],0.602,0.668,0,-7.482,0,0.099,0.0139,4.75e-05,0.219,0.244,120.002,212500,4,2,Instrumental Calm
+4Of27nwjXcl2Pgo5VhnLQ5,Don't Get Any Closer,Bebe Rexha,[],0.555,0.499,9,-7.147,0,0.0324,0.0109,0.0,0.0797,0.199,124.963,168787,4,2,Instrumental Calm
+0kwT98UXKA8SjkVpntdXoe,Hamal Mani Paidakay,Sabir Ali Baloch,['pop'],0.362,0.938,8,-8.196,1,0.0579,0.149,0.000163,0.451,0.897,186.579,379088,3,0,Energetic Happy
+2vpnnprt3cUl9U8XeOiWh0,Allah Muhammad Char Yaar,Nusrat Fateh Ali Khan,['sufi'],0.445,0.616,2,-12.135,1,0.0685,0.475,0.0,0.863,0.733,109.109,907993,4,3,Acoustic Chill
+508lUjbGcPrL0CfvHC7UvI,Happier - Matt Medved Remix,Marshmello,[],0.816,0.833,5,-5.972,1,0.0511,0.126,9.09e-06,0.0625,0.793,150.032,170164,4,2,Instrumental Calm
+0BtztMzDoyk0rCDrgJbFA9,A Lwan Kon Yat,Tharr Gyi,['pop'],0.56,0.772,0,-4.703,1,0.0336,0.14,0.0,0.109,0.417,159.951,248893,4,2,Instrumental Calm
+0WooNyWAV7FkYHHSh8z3wQ,Menu Barbad Karan Waliye,Arif Lohar,['sufi'],0.672,0.728,11,-5.435,0,0.0356,0.616,2.09e-05,0.567,0.755,121.934,451336,4,0,Energetic Happy
+77cQxp3XaeC9EhuBGgy2wY,Haydan Gelen Hu'ya Gider,Mustafa Demirci,['sufi'],0.547,0.586,9,-10.1,0,0.0377,0.794,0.000237,0.0655,0.436,125.929,398480,4,1,Dance Party
+1bMLCwGmwh0WAi1jhTr2KN,Ka Ranga Kahalo,Anuradha Paudwal,['ghazal'],0.528,0.576,9,-7.687,1,0.048,0.691,6.16e-06,0.221,0.686,140.767,327367,4,1,Dance Party
+50kUIiEK2VVVhUvAjuayHg,Ami Je Tomar Tandav,Pritam,['bollywood'],0.301,0.479,8,-10.505,1,0.0559,0.501,0.0,0.0818,0.363,105.356,143081,5,1,Dance Party
+32lItqlMi4LBhb4k0BaSaC,Candy Paint,Post Malone,[],0.67,0.654,4,-5.944,1,0.153,0.627,1.02e-06,0.071,0.438,180.024,227533,4,2,Instrumental Calm
+17RMnDmv5CEo3s0tmipRyb,Change (feat. James Taylor),Charlie Puth,[],0.502,0.413,4,-7.373,1,0.039,0.872,0.0,0.213,0.474,187.221,217560,4,1,Dance Party
+7GPT4holRZjyR758pXnDCL,A Good Hearted Woman,Charley Pride,['pop'],0.585,0.444,4,-13.726,1,0.032,0.464,0.000323,0.0859,0.449,127.385,177787,4,1,Dance Party
+1xnIu7cK5iHPPPfp4IP3eU,Woh Ishq Jo Hamse Ho,Farida Khanum,['bollywood'],0.479,0.499,0,-12.279,1,0.0443,0.872,0.852,0.808,0.709,151.233,479260,4,4,Rap / Spoken
+2mnOKD9rKsSW6hMn1WYUP1,Ikko Dil Si Data De,Sher Miandad Khan,['qawwali'],0.637,0.589,5,-9.599,0,0.0438,0.344,3.12e-06,0.218,0.957,145.368,540118,4,2,Instrumental Calm
+4uGY9CqDtGtaTTLg1cgsWD,Machine,Imagine Dragons,[],0.638,0.679,4,-5.278,1,0.0425,0.0016,0.00655,0.121,0.596,109.045,181880,4,2,Instrumental Calm
+2vt4uC35tqrRzNMsuWBVwv,"Malavalli Maavana Magane - From ""Odeya""",Kailash Kher,['sufi'],0.718,0.914,11,-4.243,1,0.346,0.0885,0.0,0.22,0.704,169.986,237355,4,2,Instrumental Calm
+3rKx8LsKQADxHDkkpqLQJ2,Duniyan Seep Muhammad Moti,Atta Ullah Khan Esakhelvi,['qawwali'],0.66,0.421,1,-5.494,0,0.0465,0.75,0.0,0.295,0.542,152.206,380960,3,1,Dance Party
+0vNZTmZevMdAJ5G9yxibtH,"Kaun Kehte Hain Bhagwan Aate Nahi (Achyutam Keshavam) [From ""Kaun Kehte Hain Bhagwan Aate Nahi (Achyutam Keshavam)""]",Tulsi Kumar,['bollywood'],0.393,0.818,2,-3.34,1,0.0601,0.425,1.6e-05,0.272,0.773,110.992,294348,4,0,Energetic Happy
+0rZKMTBgbY8pro15mgY7Es,Kehte Ho Ishq Ka Afsana Chahiye,Nusrat Fateh Ali Khan,['qawwali'],0.413,0.548,10,-8.436,0,0.101,0.759,0.0041,0.677,0.596,102.758,1503902,4,3,Acoustic Chill
+6wAGboK9kHuaGlpyRm6OHr,Ghunghat Chuk Lai Sajna Ve,Nusrat Fateh Ali Khan,['qawwali'],0.55,0.573,6,-9.961,1,0.0564,0.671,0.000173,0.508,0.842,133.724,609017,4,0,Energetic Happy
+3zAXHUL5YcYOA41rruvjy4,Manchala,Vishal-Shekhar,['bollywood'],0.365,0.649,11,-5.295,0,0.0408,0.151,0.0,0.121,0.453,78.398,227507,4,0,Energetic Happy
+3ngTEUq4SrzwLp0EcQyzuQ,Apni Nazro Ko,Sadhana Sargam,['bollywood'],0.572,0.48,2,-9.129,1,0.0536,0.399,1.05e-06,0.216,0.779,187.221,285545,3,2,Instrumental Calm
+3unVcySYXdU8jMn9bwoMTP,Yeh Jo Halka Halka Suroor Hai,Nusrat Fateh Ali Khan,['qawwali'],0.392,0.467,8,-18.336,1,0.0569,0.322,3.64e-06,0.653,0.872,87.765,1754697,4,3,Acoustic Chill
+3wsakqwRkMcSQeMz8Hm7ja,Rabba Goriyan Noon Qaid Karade,Shaukat Ali,['sufi'],0.449,0.428,5,-13.435,1,0.261,0.81,3.04e-06,0.385,0.642,144.014,161280,4,1,Dance Party
+2TGFDtCfrrsIwJ0iB41t2g,Neeyat-e-Shauq Bhar Na Jaye,Abida Parveen,['sufi'],0.336,0.557,7,-6.864,1,0.133,0.797,0.000144,0.546,0.552,105.319,349841,4,0,Energetic Happy
+0dzPpe6x8I3lGZFifUISew,Tum Ek Gorakh Dhanda Ho,Nusrat Fateh Ali Khan,"['qawwali', 'sufi']",0.535,0.764,6,-6.867,1,0.0726,0.381,0.0,0.318,0.823,135.729,1817448,4,3,Acoustic Chill
+7uI1zUEAb667eOsJlZ3yfF,Desi Kalakaar,Yo Yo Honey Singh,['bollywood'],0.751,0.67,0,-4.587,1,0.267,0.0796,0.00018,0.0908,0.766,156.062,253353,4,2,Instrumental Calm
+0lEmEL4Kt98QZWJH3IelwN,Aman,Eylem,['pop'],0.679,0.837,8,-6.812,1,0.0408,0.116,0.00502,0.133,0.797,125.011,196067,4,2,Instrumental Calm
+68148GHxVa4ZohKThAtqAO,Koi Dekhda Naeen Khatawan Nu,Nusrat Fateh Ali Khan,['qawwali'],0.461,0.809,5,-8.292,0,0.158,0.0274,2.36e-06,0.255,0.8,138.531,778120,4,0,Energetic Happy
+2jkieB6dmuAwmO0BKMBOG6,Don't Leave Me Alone (feat. Anne-Marie) - David Guetta Remix,David Guetta,[],0.785,0.673,0,-7.865,1,0.0541,0.00253,0.843,0.0593,0.651,123.998,298493,4,4,Rap / Spoken
+62mEWGGKMGjkqQmdkQARA6,Kithe Gaiyon Dil Lake,Naseebo Lal,['sufi'],0.66,0.73,7,-7.514,0,0.0797,0.223,0.48,0.067,0.933,155.664,299233,4,2,Instrumental Calm
+25FW9y7b9DRQPlWJMCSCgO,Ve Allah Jaane,Naseebo Lal,['sufi'],0.688,0.85,5,-1.969,0,0.0312,0.11,0.0291,0.383,0.87,144.065,361947,4,2,Instrumental Calm
+3uC34eAsXCM6WwlDw1ef8o,Main Jana Jogi De Naal - Live Version,Nusrat Fateh Ali Khan,['qawwali'],0.493,0.848,5,-3.603,1,0.101,0.681,0.000359,0.733,0.709,116.9,1755017,4,3,Acoustic Chill
+6lZ5gcVz0D9H0vedv0Qw6g,Mere Dil Ko Jiski Talash Thi,Asha Bhosle,['bollywood'],0.715,0.554,8,-6.607,0,0.0605,0.6,2.99e-06,0.331,0.887,145.923,171990,4,2,Instrumental Calm
+5fKGE9tECbwxAqVtaromCT,Yeh Aarzoo Thi Madine Ka,Nusrat Fateh Ali Khan,['qawwali'],0.485,0.722,1,-8.154,0,0.0706,0.488,0.0,0.404,0.704,148.204,659460,3,0,Energetic Happy
+1CaMftmXeZlNCvn2PZ3l43,Too Agar Benaqab Ho Jaye - Solo,Nusrat Fateh Ali Khan,['qawwali'],0.446,0.377,5,-16.822,1,0.0413,0.753,0.297,0.0902,0.618,85.695,501507,4,1,Dance Party
+4Eoo7KVSVmEpwqgAmpU7av,Khwaja Se Mango - Garib Nawaz Qawwali,Rais Anis Sabri,['qawwali'],0.695,0.868,8,-4.933,1,0.0466,0.0869,0.0,0.0958,0.795,141.987,634143,4,2,Instrumental Calm
+0AnTjDQQd2RIzdUni6e0Vg,Saweray Saweray,Sabri Brothers,['qawwali'],0.357,0.395,1,-13.211,1,0.0561,0.959,1.25e-06,0.113,0.454,118.65,485707,4,1,Dance Party
+1Z9AwVuTLlXe130SNdDLhC,Yadan Terian Yadan,Naseebo Lal,['sufi'],0.635,0.814,8,-9.161,1,0.0686,0.306,0.00125,0.53,0.951,170.011,410946,4,0,Energetic Happy
+4KuQeFDR4VCNGCbhnFiMHF,Nazan Hai Jis Pe Husn - Live,Sabri Brothers,"['ghazal', 'qawwali']",0.48,0.225,2,-17.311,1,0.111,0.802,0.000261,0.749,0.474,139.092,1268949,4,3,Acoustic Chill
+7pTXDqvf6UEf1rHQCXELwu,"Pao Bhangrre Te Dhol (From ""Hero"")",Arif Lohar,['ghazal'],0.612,0.579,3,-11.392,1,0.062,0.636,1.99e-06,0.274,0.842,161.206,421399,4,1,Dance Party
+16UO4S9ALzdBCgY0IYz3wv,"Sab Badhiya Hai (From ""Sui Dhaaga - Made in India"")",Sukhwinder Singh,['bollywood'],0.7,0.865,0,-4.779,1,0.0972,0.0923,0.0,0.386,0.648,162.953,236855,4,2,Instrumental Calm
+5eXSxaHTxju7Q5AESG9xfH,Dhare Baanki Paag,Shubha Mudgal,['sufi'],0.376,0.476,8,-9.881,1,0.0317,0.351,0.0329,0.0818,0.171,97.914,548080,1,1,Dance Party
+4SHiAsRIsmpOZa7raV3lGm,Meri Ankhon Ko Bakhshe Hain Ansoo,Nusrat Fateh Ali Khan,['sufi'],0.346,0.736,5,-7.824,0,0.0725,0.188,0.0,0.48,0.791,101.384,654886,4,0,Energetic Happy
+0CVfovmUv7BnemOyTtOcbL,Sanam Re,Mithoon,['bollywood'],0.581,0.71,7,-4.961,0,0.0374,0.395,0.0,0.137,0.755,139.969,308714,4,2,Instrumental Calm
+6CNT3B1Zy7DAVZbJ6KvoTT,Jeena Hai Humko,Amit Kumar,['bollywood'],0.503,0.874,4,-11.222,1,0.137,0.785,0.000609,0.715,0.537,161.381,502053,4,0,Energetic Happy
+7AahPNmNgkMTFHpuA0n5Y5,Tujh Ko Aata Hai Har Ek Dukh Ka Madawa Karna,Nusrat Fateh Ali Khan,['qawwali'],0.501,0.704,1,-8.671,1,0.114,0.804,9.71e-05,0.852,0.632,144.439,868819,4,3,Acoustic Chill
+2M3Iwc1L3X4KYid3cb4YoU,To Rabba Ki Kariye,Sukhwinder Singh,['bollywood'],0.682,0.8,10,-5.598,0,0.161,0.13,0.0,0.0969,0.695,124.26,233219,4,2,Instrumental Calm
+5GdZhzf49q7m7swchVhTuK,Tohre Jaisan Thanedar Mile,Anuradha Paudwal,['ghazal'],0.736,0.397,9,-16.134,1,0.273,0.974,0.568,0.137,0.871,129.696,241338,4,4,Rap / Spoken
+72n3z24Nh21DgU11G7TMQG,Hanuman Chalisa Superfast Speed Up,Brijesh Shandilya,['sufi'],0.695,0.815,4,-10.104,1,0.0545,0.347,3.69e-06,0.14,0.565,177.971,201600,4,2,Instrumental Calm
+0fQlF0zDIalaVmhsg66iqM,Kamli Wala Muhammad,Nusrat Fateh Ali Khan,"['qawwali', 'sufi']",0.433,0.708,1,-7.591,1,0.0479,0.684,1.77e-06,0.262,0.757,131.893,759667,4,0,Energetic Happy
+5i94Qx9BEKpcR8iZIZ8CRM,Carousel,Lontalius,['pop'],0.621,0.336,10,-14.275,1,0.0334,0.655,0.012,0.362,0.143,104.081,275030,4,1,Dance Party
+6uKyiIcP2wMbJOGWiQLlSN,Sweet Pain - R + D Division Remix,Nusrat Fateh Ali Khan,['qawwali'],0.679,0.563,8,-11.501,1,0.105,0.0647,0.583,0.175,0.2,177.989,371507,4,4,Rap / Spoken
+22ek7sIyKHCurZNWNeYvQn,Dekho Arooj Walo,Shahid Ali Khan,['qawwali'],0.487,0.713,5,-8.447,0,0.0484,0.397,3.04e-06,0.0774,0.774,155.456,452717,4,0,Energetic Happy
+4Fsd3A4LRLQytbpBqKoaNI,What's Your Raashee? - Pal Pal Dil Jisko Dhoonde,Sohail Sen,['bollywood'],0.465,0.529,11,-7.585,0,0.0323,0.272,2.36e-06,0.241,0.406,119.57,238667,3,2,Instrumental Calm
+2xiieEDYaAjE43d5W9rbe8,Mere Intezaar Karna,Nusrat Fateh Ali Khan,['qawwali'],0.463,0.647,10,-10.171,1,0.04,0.181,4.82e-06,0.303,0.835,110.35,594927,4,0,Energetic Happy
+1EyjtnMGWyQgqiREKEVD74,Kaminey - Remix(Remix By D.J. Khushi),Vishal Bhardwaj,['bollywood'],0.618,0.909,7,-5.838,1,0.0344,0.0184,0.304,0.164,0.447,121.977,200504,4,2,Instrumental Calm
+2qxXVVZ08KcaUWwxcfx2Ym,Tujh Ko Dekha To Ye Mehsoos Hua,Mehdi Hassan,['ghazal'],0.595,0.416,5,-10.554,1,0.0286,0.958,2.31e-05,0.338,0.621,116.853,227500,3,1,Dance Party
+6JPUEloc0qDkustwyWHEpN,Havana - Live,Camila Cabello,[],0.641,0.776,0,-5.176,0,0.0359,0.114,0.000134,0.362,0.419,104.956,248572,4,2,Instrumental Calm
+1iGgkb8l8bxoX9jAPHhASJ,Chandamama,Ashok Khosla,['ghazal'],0.77,0.728,2,-7.876,1,0.0433,0.5,0.0,0.154,0.784,115.915,261936,4,2,Instrumental Calm
+4MyWGzrivhWRFIN3saP4ug,Love,Lana Del Rey,[],0.528,0.355,10,-10.896,1,0.0273,0.467,0.00237,0.108,0.277,98.889,277373,4,1,Dance Party
+4RquIxE9fa04hiBs7oxXFs,Jhanjhar Khul Khul Jaaye,Ila Arun,['bollywood'],0.493,0.47,4,-13.064,1,0.0584,0.645,0.0,0.07,0.9,175.758,283493,4,1,Dance Party
+6MdPGT6rQPg11v4J01oHz4,Jai Sadguru Jai Jai Sainath,Anup Jalota,['ghazal'],0.629,0.411,8,-12.134,0,0.0382,0.806,0.0,0.15,0.862,131.274,923611,4,1,Dance Party
+46mskVJg7mlHfivYgIILLO,Mestü Hayranım,Süleyman Yardım,['sufi'],0.333,0.28,4,-11.16,1,0.0327,0.877,0.0102,0.0993,0.275,181.265,234440,4,1,Dance Party
+2bzlyaQtwIgajzG4iGeupG,Paani Mein Meen Pyasi,Jagjit Singh,['sufi'],0.604,0.516,6,-6.906,1,0.0313,0.697,0.0,0.0638,0.574,127.918,341813,4,1,Dance Party
+5DJSSRy2FoSzfSnwQLUhYt,Haidri Deewana,Rahat Fateh Ali Khan,['sufi'],0.556,0.873,2,-9.172,1,0.0559,0.185,7.39e-05,0.298,0.909,141.953,900729,4,0,Energetic Happy
+1iNXJ2mTKFD2StbAuomHIG,"Swarg Se Sunder Bhawan Hai Maa Ka (From ""Aa Gayi Chitthi Mata Ki"")",Sonu Nigam,['bollywood'],0.581,0.849,1,-3.667,1,0.0572,0.797,0.0,0.323,0.918,91.547,307664,4,0,Energetic Happy
+4zxpssj8DyrfZcEUSUiNxG,Ring Ring (feat. Clever),Juice WRLD,[],0.587,0.68,0,-4.382,0,0.0502,0.068,0.0,0.35,0.594,160.098,171817,4,2,Instrumental Calm
+6clKcUAaMHTlSR8MgT3QvS,Happier - Cazzette Remix,Ed Sheeran,[],0.712,0.633,9,-7.748,0,0.0344,0.0643,0.000893,0.127,0.299,102.985,207491,4,2,Instrumental Calm
+6SLMyJPRTh2zCX9SJJHTZQ,Written In The Stars,John Legend,[],0.612,0.519,9,-5.568,1,0.0391,0.478,0.0,0.189,0.537,108.882,231341,4,2,Instrumental Calm
+6CVQzs9lpjyOkEfN5kVYgA,Naa Oye Rabba Naa,Arif Lohar,['sufi'],0.752,0.741,1,-7.989,1,0.0721,0.18,6.26e-05,0.598,0.951,147.487,931495,4,2,Instrumental Calm
+6xtTKJRGy3xW28tWorIwGN,Dil Hay Bekhud Sambhaale Na Sambhle,Nusrat Fateh Ali Khan,['qawwali'],0.488,0.43,1,-15.894,1,0.346,0.123,0.00425,0.18,0.543,117.678,1330898,4,3,Acoustic Chill
+1SmAfvD0gIgHnGhC4MUV11,Wolves - Sneek Remix,Selena Gomez,[],0.623,0.771,11,-4.979,0,0.0443,0.49,6.24e-05,0.11,0.204,138.024,274909,4,2,Instrumental Calm
+6alUOXeJ3T6vi8dkN8QSbi,"Rishte Naate - From ""De Dana Dan""",Rahat Fateh Ali Khan,['sufi'],0.637,0.825,11,-6.612,1,0.0815,0.352,0.0,0.389,0.835,120.029,286587,4,2,Instrumental Calm
+1rZ2hxF0WGbjKpv1Bot0fL,Akhiyan Vichon Hanju Dul Dul Jandey Ne,Naseebo Lal,['sufi'],0.695,0.826,3,-5.872,0,0.0687,0.437,4.78e-06,0.0567,0.844,88.0,361685,4,2,Instrumental Calm
+7kVDkZkZc8qBUBsF6klUoY,I Don't Wanna Go,Alan Walker,[],0.423,0.751,11,-5.632,1,0.272,0.136,0.0,0.243,0.522,176.773,161667,4,0,Energetic Happy
+3F6mwAod7MSsiBpOgAkffu,Aami Banaphool Go,Kanan Devi,['bollywood'],0.439,0.398,3,-7.676,1,0.0314,0.986,0.081,0.117,0.639,103.645,202988,5,1,Dance Party
+7JjknOWccr4gg25MVI2Jcp,Yeh Dil Yeh Pagal,Ghulam Ali,['ghazal'],0.669,0.215,1,-20.193,1,0.041,0.83,0.00343,0.622,0.593,134.574,763373,4,1,Dance Party
+6ZPg2irmu84pBiLUPBSR87,Love On Top,Beyoncé,[],0.652,0.748,0,-5.242,1,0.0887,0.0849,0.0,0.604,0.652,122.1,267413,4,2,Instrumental Calm
+1lBqTGQ0nX1JeA2m7T51ux,Machika - Remix,J Balvin,[],0.757,0.885,9,-2.234,1,0.257,0.0564,0.0,0.128,0.657,105.967,291413,4,2,Instrumental Calm
+1UbiVxEK4ybPPXLHRnDj2H,Asan Haan Yaar Pardesi,Atta Ullah Khan Esakhelvi,['ghazal'],0.401,0.814,5,-3.768,1,0.0518,0.346,1.09e-06,0.889,0.294,122.236,493547,4,0,Energetic Happy
+4FbHAn4VLOAjIYJLSqI8ys,Jhoom Sharabi Jhoom,Aziz Nazan,['qawwali'],0.383,0.453,2,-14.435,0,0.0466,0.708,1.29e-06,0.0656,0.59,185.809,314932,3,1,Dance Party
+41qP4HevH6YUI3OgYb9JpZ,Akhiyan Udeek Diyan,Nusrat Fateh Ali Khan,['qawwali'],0.445,0.72,1,-10.784,1,0.0775,0.106,0.0414,0.275,0.753,146.682,903511,4,0,Energetic Happy
+77lAsduCkyIjykvU93LV8l,Pyaar Ho Jayega - Blind Love Mix,Vishal Mishra,['bollywood'],0.707,0.548,4,-9.074,0,0.0436,0.366,0.0,0.178,0.436,123.012,158447,4,2,Instrumental Calm
+7hbbDUqMOQY6NT5tIJKx5w,Tum Ek Gorakh Dhanda Ho - Complete Original Recording,Nusrat Fateh Ali Khan,['qawwali'],0.535,0.764,6,-6.867,1,0.0726,0.381,0.0,0.318,0.823,107.729,1817448,4,3,Acoustic Chill
+0CxkyNBiLoSPJNZqFV57Ao,Zakhmi hai dil mera,Shahid Ali Khan,['qawwali'],0.486,0.681,8,-6.607,1,0.0594,0.631,0.0,0.231,0.775,111.614,507011,4,0,Energetic Happy
+0CiL8vBIQMI1dJFLVmyweG,"Varugiraai (From ""Ah…Aah"")",Hariharan,['ghazal'],0.729,0.745,6,-4.342,0,0.157,0.264,4.62e-05,0.104,0.516,126.959,401497,4,2,Instrumental Calm
+6T2aLfDchx4eBXDHNky8my,Gel Meclisi Uşşak'a,Fatih Koca,['sufi'],0.52,0.533,5,-14.086,1,0.0557,0.654,0.00426,0.112,0.527,187.221,277630,4,1,Dance Party
+2BO1hdQXTiewJC9lqiZ4nt,Om Jaygangadhar Jay Har,Anup Jalota,['ghazal'],0.782,0.651,5,-7.469,1,0.045,0.422,0.0,0.0962,0.818,151.983,747195,4,2,Instrumental Calm
+3qpndP33fvJY7pyjuVUPRw,Shree Hanuman Chalisha,Suresh Wadkar,['bollywood'],0.55,0.303,0,-16.764,1,0.0806,0.205,0.0,0.12,0.335,84.983,808983,4,1,Dance Party
+21YakstZQ9Wm1GZBKOEfzP,Shahswar-e Karbala Kee Shahswari Ko Salam,Nusrat Fateh Ali Khan,['qawwali'],0.68,0.492,5,-9.539,1,0.364,0.826,9.46e-06,0.775,0.88,146.148,884878,4,3,Acoustic Chill
+1SJEXlkRlzGmK7zQ74eG5g,Sanu Ek Pal Chain,Rahat Fateh Ali Khan,['qawwali'],0.71,0.813,7,-6.099,1,0.0381,0.545,1.68e-05,0.105,0.847,139.998,210346,4,2,Instrumental Calm
+5fTXQ5aWNYjIWHvAJImBj2,Este Payo,Tam Tam Go!,['pop'],0.783,0.589,4,-11.28,0,0.0337,0.122,8.4e-05,0.213,0.905,135.999,224000,4,2,Instrumental Calm
+4vkA9YQYu49tUIsqp8vGG9,Yaadan Vichre Sajan Diyan Aaiyan,Rahat Fateh Ali Khan,['qawwali'],0.457,0.847,1,-3.939,0,0.0548,0.235,0.0,0.335,0.745,115.606,486518,4,0,Energetic Happy
+2l25FKj5cTlz0OWU2Su4As,Je Prem Kanthe Dei Mala,Aarti Mukherji,['bollywood'],0.422,0.278,1,-12.968,1,0.0363,0.964,2.36e-06,0.445,0.38,110.183,209770,4,1,Dance Party
+3fL4Zva7lJ3691KvpiW710,Zaalima,Sonu Nigam,['bollywood'],0.627,0.799,8,-11.187,1,0.0454,0.0819,0.272,0.0861,0.715,168.02,348082,4,2,Instrumental Calm
+6c2RbeQF9yApk9btPnvgYg,Ni Khadi Ho Ke Gal Sun,Masood Rana,['ghazal'],0.555,0.726,5,-10.335,0,0.0415,0.892,0.509,0.326,0.945,134.441,175560,4,4,Rap / Spoken
+5uC2bee3Ft2HMrcWcwnxwY,Kamaal,Badshah,['bollywood'],0.854,0.548,2,-12.436,1,0.245,0.239,1.54e-06,0.119,0.754,128.01,178260,4,2,Instrumental Calm
+2oAg2JvSnWLHUORorkLdEQ,İrkem,Oruç Güvenç ve Tümata,['sufi'],0.521,0.325,2,-9.276,1,0.0447,0.818,0.0,0.18,0.96,162.35,133027,4,1,Dance Party
+2w0poWshjtaNE3iylXApHz,Kurti Vich Dang - Allah Rakha,Naseebo Lal,['ghazal'],0.45,0.945,10,-4.716,0,0.18,0.17,0.00772,0.207,0.826,97.333,289845,3,0,Energetic Happy
+0baYVkFX4vIXXmIuHRWXDN,Out My Way,Juice WRLD,[],0.664,0.832,10,-3.166,0,0.34,0.107,0.0,0.776,0.498,187.221,156621,4,2,Instrumental Calm
+1h0yImRPIVAjhhHeNVlTuC,Youth (feat. Khalid),Shawn Mendes,[],0.534,0.596,6,-6.653,0,0.117,0.56,0.0,0.133,0.324,128.121,190867,4,2,Instrumental Calm
+7C5BETqxg6I8QFTiLIPYhQ,Ae Jaan-E-Jan,Nusrat Fateh Ali Khan,['qawwali'],0.478,0.654,11,-7.365,1,0.0357,0.4,0.00131,0.125,0.614,160.266,304552,3,0,Energetic Happy
+1lJ6Qne8g0kaogryA89VGr,Yeh Tera Chehra Yeh Teri Zulfein,Atta Ullah Khan Esakhelvi,['qawwali'],0.647,0.815,1,-8.976,1,0.133,0.6,0.0964,0.164,0.499,119.772,602723,4,2,Instrumental Calm
+3pgiqUIVAZemx3033lyoup,You Don't Know My Name,Alicia Keys,[],0.263,0.663,9,-8.264,1,0.19,0.589,0.00451,0.342,0.25,167.271,366733,4,0,Energetic Happy
+1TWvzIM2HzBAcOZphjK6wv,"Khushi Jab Bhi Teri (From ""Khushi Jab Bhi Teri"")",Jubin Nautiyal,['bollywood'],0.683,0.655,8,-5.782,0,0.0515,0.198,0.0,0.0772,0.806,102.043,240303,4,2,Instrumental Calm
+2hbdN27EoU46TxTYK1zYj1,Bol Mitti Deya Baweya,Noor Jehan,['bollywood'],0.31,0.426,5,-12.124,0,0.0405,0.955,0.509,0.821,0.641,187.221,219716,4,4,Rap / Spoken
+1YokpYRTClGDnqAwlTBAPc,Hey Ri Main Toh Dard,Sadhana Sargam,['bollywood'],0.637,0.38,4,-11.38,0,0.0275,0.642,0.0,0.11,0.601,98.041,346186,1,1,Dance Party
+3vgiIJW3iSQRRvgYiW86i9,Brillo,J Balvin,[],0.535,0.384,9,-10.049,0,0.362,0.89,0.0,0.0964,0.767,145.947,159573,4,1,Dance Party
+55lKsWc6PiGZvCpsWgsVY7,Chalo Deyar-e-Nabi Ki Janib,Sabri Brothers,['ghazal'],0.499,0.468,4,-15.596,1,0.0558,0.936,0.0245,0.0592,0.862,75.938,1665893,4,3,Acoustic Chill
+4ym6mFCFP1mLXWXRYiGcGN,Lutt Mauj Mele,Asha Bhosle,['bollywood'],0.491,0.559,1,-10.481,0,0.0773,0.79,0.00022,0.249,0.61,100.408,297667,4,1,Dance Party
+6rUZy2QSdxQE7k6UJrYda4,Dus Tu Ki E Yaar,Rahat Fateh Ali Khan,"['qawwali', 'bollywood']",0.508,0.747,10,-9.964,0,0.0455,0.0523,0.000446,0.298,0.935,141.428,865176,4,0,Energetic Happy
+00uNGkRrqfbjNLHUhTL4OT,Kahani Pyar Ki,Pankaj Udhas,['ghazal'],0.493,0.391,0,-13.795,1,0.114,0.0752,0.0,0.0749,0.46,110.506,450445,4,1,Dance Party
+3ubLqBAy5urF33OomSqiMH,Yeh Dil Na Behle,Kumar Sanu,['bollywood'],0.579,0.561,11,-15.618,0,0.0397,0.473,2.14e-06,0.117,0.691,151.71,206495,4,1,Dance Party
+5LgFeUn0Jx8UVkPlrMbTOc,Finesse (Pink Panda Remix) [feat. Cardi B],Bruno Mars,[],0.752,0.888,5,-4.952,0,0.0828,0.0302,0.0,0.253,0.603,151.964,148064,4,2,Instrumental Calm
+2kxrZR76dfLTborJjLJoHT,FREEDOM,Maxi Trusso,['pop'],0.551,0.427,7,-10.588,1,0.0617,0.824,0.00186,0.135,0.419,118.939,432527,4,1,Dance Party
+6Xy72HZ9nf2jx48dQuF1mA,Anywhere,Rita Ora,[],0.649,0.743,11,-6.042,0,0.0679,0.0342,0.0,0.0855,0.344,106.915,215827,4,2,Instrumental Calm
+5GtQkJTQ01zxZ9xRuIBRyY,Summer,Calvin Harris,[],0.596,0.856,4,-3.556,0,0.0346,0.0211,0.0178,0.141,0.743,155.949,222533,4,2,Instrumental Calm
+0dYPiZfDeGMjg0wPVeqlhv,Chardi Jawani Meri,Naseebo Lal,['sufi'],0.781,0.918,1,-4.63,1,0.0386,0.482,0.208,0.696,0.953,137.979,344999,4,0,Energetic Happy
+6pHHVAPKuKlhbL628T85lr,Dil Wala Dukhra Naeen,Alam Lohar,['sufi'],0.603,0.729,10,-7.369,1,0.0733,0.444,3.12e-05,0.21,0.74,115.79,234801,4,2,Instrumental Calm
+5PY1fUEy3rxVkYUam2LrdN,Tera Saath Ho,Falak Shabbir,['sufi'],0.532,0.663,0,-4.806,0,0.0464,0.355,0.0,0.0954,0.463,107.997,220497,4,2,Instrumental Calm
+0u31E3b9QRRo0FfDzrPLtF,Mutu Bhari,Raju Singh,['bollywood'],0.715,0.522,5,-10.162,1,0.0301,0.77,0.0,0.338,0.757,152.525,314253,3,1,Dance Party
+3A17VzrjUrbbvNywoJB75D,"Dohchay (From ""Dohchay"")",Shalmali Kholgade,['bollywood'],0.798,0.499,10,-7.919,0,0.0546,0.0382,0.000228,0.176,0.337,158.018,203094,3,2,Instrumental Calm
+6OaVWaGfhXn70ZJfdVcabn,NO BYSTANDERS,Travis Scott,[],0.731,0.811,1,-3.225,1,0.0712,0.0204,0.0,0.411,0.426,175.045,218284,4,2,Instrumental Calm
+5pAJ6vADtVFSBci8lMsvTI,Dam Mast Qalandar,Nusrat Fateh Ali Khan,['sufi'],0.713,0.826,4,-7.688,0,0.093,0.0284,0.0434,0.0778,0.495,83.426,873592,4,2,Instrumental Calm
+688QpQAwqsLdBR6lr13wK1,Same Bitches (feat. G-Eazy & YG),Post Malone,[],0.727,0.774,10,-5.246,0,0.0588,0.379,2.47e-06,0.114,0.211,99.932,212467,4,2,Instrumental Calm
+1UKncQQlvUDULsUbKsYZ0u,Jai Param Krupadi Deen Dayali,Falguni Pathak,['bollywood'],0.373,0.922,0,-4.034,1,0.163,0.302,0.0,0.198,0.403,104.863,100760,4,0,Energetic Happy
+3tv3f29zjhzL3kcvQE8tGl,La Vie En Rose,Lady Gaga,[],0.276,0.405,8,-7.296,1,0.0329,0.758,0.0,0.706,0.335,104.18,179760,4,1,Dance Party
+1KbsbfBqFu0ulzobLYi5mv,Ishq Nahin Darda Maut Kolon,Saieen Zahoor,['sufi'],0.452,0.798,1,-5.918,1,0.0383,0.677,0.0,0.144,0.674,108.245,618693,4,0,Energetic Happy
+3XebEhhkzVoKFnCroe1fw2,Just A Girl,No Doubt,['pop'],0.635,0.937,2,-2.86,1,0.0452,0.0735,6.95e-05,0.134,0.78,136.003,205947,4,2,Instrumental Calm
+7kcGBVea0Dm3s7QNRHoF68,Dil Diwane Ka Dola Dildar Ke Liye,Anuradha Paudwal,"['ghazal', 'bollywood']",0.408,0.251,10,-13.03,0,0.0314,0.966,1.99e-05,0.0968,0.154,82.639,103867,3,1,Dance Party
+5DGqm7JeBgsTCjwQQKJGLR,"Yeah, I Said It",Rihanna,[],0.509,0.38,7,-7.479,1,0.158,0.547,1.21e-06,0.359,0.249,127.88,133157,4,1,Dance Party
+2dPdvGrvWNRIm6SPe5rupZ,Rang,Subhan Ahmed Nizami Qawwal,['qawwali'],0.364,0.387,10,-13.7,0,0.0557,0.967,0.0,0.181,0.452,134.895,314980,4,1,Dance Party
+0eH0O9HJ4V5mfUjJ9nxtP1,Kal Raat Tumhare Honton,Rahat Fateh Ali Khan,['qawwali'],0.415,0.346,7,-19.827,0,0.0411,0.0124,0.0,0.0665,0.308,83.568,458400,4,1,Dance Party
+6YDR4GPrTglXtR4y9n5Fyd,Noor-E-Khuda Hai,Nusrat Fateh Ali Khan,['qawwali'],0.512,0.568,9,-15.697,0,0.0454,0.0567,0.0,0.299,0.906,163.015,963533,3,0,Energetic Happy
+5tjpOTsbVVbqWRQuymGnuy,Beach House - Ashworth Remix,The Chainsmokers,[],0.772,0.707,0,-7.031,1,0.0507,0.0521,3.96e-06,0.0719,0.403,112.032,204453,4,2,Instrumental Calm
+3CeTplZwy80SaQwH2yhXhV,男子漢的愛,葉啟田,['pop'],0.666,0.372,11,-12.241,1,0.0359,0.644,0.0,0.147,0.708,150.704,223440,4,1,Dance Party
+3miW3D9t2WjpzGgfN4noeK,Roye Dharti Roye Amber,Jagjit Singh,['sufi'],0.471,0.719,1,-6.11,1,0.0385,0.314,3.43e-05,0.0815,0.553,187.221,373921,4,0,Energetic Happy
+3FNhIlb1fONI20QrBa1QQK,MARRY ME,Meghan Trainor,[],0.661,0.272,0,-8.829,1,0.0308,0.882,0.0,0.167,0.591,135.791,215982,4,1,Dance Party
+63gLJ4kWmMpjbfzxyL9YoP,Jiyun Kar Khawaja,Alam Lohar,['sufi'],0.608,0.678,8,-10.957,0,0.051,0.683,0.651,0.401,0.819,98.51,547866,4,4,Rap / Spoken
+71QXOwBoZfNMpKIdRs8jYf,Gaddi Teshan Utey,Nahid Akhtar,['ghazal'],0.51,0.753,11,-6.274,0,0.045,0.821,0.00365,0.347,0.691,154.466,262891,4,0,Energetic Happy
+5vAEnWrHxLv78uwZrAJcX6,Thought I Knew You (feat. The Weeknd),Nicki Minaj,[],0.77,0.715,1,-5.92,1,0.0449,0.0373,0.00172,0.0959,0.468,150.024,198280,4,2,Instrumental Calm
+1BI46HfII6N13NkrC23XxT,Raag Darbari,Mehdi Hassan,['sufi'],0.495,0.213,1,-19.947,0,0.23,0.941,0.00587,0.0998,0.511,125.008,640444,4,1,Dance Party
+1HQQz4XQpqMDG0SnMQ2oje,Dilo Tse Massive,Shebeshxt,['pop'],0.847,0.676,1,-6.959,1,0.153,0.142,0.0,0.0648,0.799,154.025,285048,4,2,Instrumental Calm
+0yhxBvedRdGxsPZHJNI4VA,I Thought About Killing You,Kanye West,[],0.752,0.396,2,-7.932,1,0.411,0.867,0.0,0.0486,0.417,144.016,274187,4,1,Dance Party
+0Cdb4HLLS1NghGKSeUrPR5,Jhoole Jhoole Lal - Junglist Version,Nusrat Fateh Ali Khan,['sufi'],0.683,0.596,10,-15.108,0,0.193,0.00247,0.193,0.338,0.574,165.922,374507,4,2,Instrumental Calm
+7EzdQnopwog0YWUoRBEowX,Mi Declaración,Maluma,[],0.66,0.915,1,-4.071,0,0.285,0.144,0.0,0.229,0.709,173.969,225507,4,2,Instrumental Calm
+4oZ1Yb3hFnU3x4kDbC3b1e,Bhardo Jholi Meri,Aziz Mian,['qawwali'],0.487,0.948,6,-7.966,1,0.272,0.475,0.0,0.737,0.562,145.926,1753292,4,3,Acoustic Chill
+3nM9opBtMg7eYOzsXjGdDe,Ek Baar Milo Ham Se,Faiz Ali Faiz,['qawwali'],0.582,0.785,10,-6.931,0,0.0373,0.275,1.96e-05,0.362,0.905,108.791,572676,3,0,Energetic Happy
+6bJmYR0sjTZNJxwdw52ern,Mera Dil Ye Pukare - Tu Aaja - Heartlock Mix,Lata Mangeshkar,['bollywood'],0.756,0.413,0,-15.549,0,0.107,0.589,0.0146,0.109,0.353,119.951,122609,4,1,Dance Party
+5N5k9nd479b1xpDZ4usjrg,Promises (with Sam Smith),Calvin Harris,[],0.781,0.768,11,-5.991,1,0.0394,0.0119,4.91e-06,0.325,0.486,123.07,213309,4,2,Instrumental Calm
+15wr3LN9fh6jXEsz4KonRF,Lakshmi Aarti,Sonu Nigam,['bollywood'],0.635,0.561,2,-9.003,1,0.0321,0.769,0.0,0.0827,0.549,135.987,329241,4,1,Dance Party
+4z9zu0K2BtbSF7hnBmF6Zk,Pagalpan,Shafqat Amanat Ali,['sufi'],0.743,0.537,8,-13.927,1,0.0719,0.356,2.26e-05,0.0648,0.348,127.994,283011,4,2,Instrumental Calm
+6kxU5qGmAQvifcDMjAwiSt,"Vismithanadhe - From ""Maadha Matthu Maanasi""",Sonu Nigam,['bollywood'],0.619,0.584,7,-6.729,1,0.0298,0.51,3.31e-06,0.375,0.594,91.921,304395,4,2,Instrumental Calm
+4r6kdj5CFXL6521Ek1x0TW,Main Rowan Tainon Yaad Kar Ke,Nusrat Fateh Ali Khan,['qawwali'],0.587,0.683,6,-5.753,1,0.0471,0.608,0.00287,0.369,0.889,103.004,768059,4,0,Energetic Happy
+7Cp3wusvgGvNpt7RRFaJ3g,Jai Jai Ganesh Moraya,Lata Mangeshkar,['bollywood'],0.653,0.518,9,-6.721,1,0.0291,0.733,1.68e-06,0.311,0.672,135.904,307387,4,1,Dance Party
+5O8P1Kstc4Hz5YFCSAYYol,Para Para Hua Pairahane E Jaan - Live In India/1982,Ghulam Ali,['sufi'],0.335,0.356,1,-14.784,1,0.0361,0.943,0.00923,0.501,0.44,168.6,398120,3,1,Dance Party
+2ojyVbzOLV1mltkoZF4q9C,Patang Baaz Sajna,Fariha Pervez,['sufi'],0.758,0.635,0,-12.994,1,0.0915,0.103,0.00676,0.0925,0.958,153.581,312135,4,2,Instrumental Calm
+1AEBHsada30zIIiWnAvHb3,Back To You - Anki Remix,Selena Gomez,[],0.511,0.882,7,-2.62,1,0.0717,0.171,0.0,0.158,0.362,135.928,254852,4,2,Instrumental Calm
+4UAW2gObi5o6sJla0qZpPn,Mariners Apartment Complex,Lana Del Rey,[],0.528,0.284,9,-11.487,1,0.0287,0.795,0.000303,0.109,0.172,104.012,246421,4,1,Dance Party
+4U4EfEG3lOhJ2w73Jgf0VL,Sab Kuch Kaisa Acha,Ghulam Ali,"['ghazal', 'bollywood', 'sufi']",0.447,0.438,8,-17.002,1,0.0353,0.88,0.668,0.307,0.865,185.211,321000,4,4,Rap / Spoken
+100dEOf8y1QLvdKm7ehBtS,Aaraj Sun Lijo Mori,Nusrat Fateh Ali Khan,['qawwali'],0.429,0.418,8,-16.278,1,0.04,0.598,0.263,0.186,0.723,144.905,879394,4,1,Dance Party
+09lmraDvzBT3pUQ2rUtJzK,14-Mar,Drake,[],0.558,0.415,10,-7.355,0,0.358,0.406,0.0,0.36,0.317,127.096,309560,4,2,Instrumental Calm
+07BCtoJYFOi8Nfco4ZrtZb,Just Dance,Lady Gaga,[],0.825,0.717,1,-5.26,0,0.0318,0.0252,7.77e-06,0.189,0.716,146.98,242333,4,2,Instrumental Calm
+6XuFF2h37c0ELeVYPTQbC6,Aaj Jane Ke Zed Nakaro - Live,Javed Bashir,"['qawwali', 'sufi']",0.441,0.433,10,-11.046,1,0.0333,0.903,0.00101,0.632,0.431,141.65,771187,1,1,Dance Party
+5wY5vXuojS9V4e9Nh9yrwS,Sick Boy - Trobi Remix,The Chainsmokers,[],0.726,0.748,4,-4.819,0,0.111,0.0136,0.0,0.217,0.349,107.986,169187,4,2,Instrumental Calm
+5KHzV8Gf3aweIMImliFAOs,Happy Xmas (War Is Over),Miley Cyrus,[],0.284,0.637,9,-4.893,1,0.0486,0.0626,0.0,0.371,0.197,120.045,220589,4,0,Energetic Happy
+0lHY4eFHZjwdcLE2u7VUSr,Ali Ali Maula Ali Ali,Nusrat Fateh Ali Khan,"['qawwali', 'sufi']",0.466,0.705,5,-12.082,0,0.0617,0.626,0.0203,0.277,0.667,130.055,576733,4,0,Energetic Happy
+4KE2nIIrEY5YbwmuBcDEjW,Guru Rajendra Ko,Anuradha Paudwal,['ghazal'],0.503,0.73,9,-5.541,1,0.0428,0.836,0.000706,0.495,0.808,153.197,356682,4,0,Energetic Happy
+67aukea21L3LxakYBj64zn,Kabhi Kitaboon Mein Phool,Noor Jehan,['bollywood'],0.479,0.521,10,-10.94,1,0.029,0.706,0.00208,0.14,0.524,95.302,398120,4,1,Dance Party
+1397xY0RVupbWpMaFhyLf8,Dhak Dhak Karne Laga,Anuradha Paudwal,['bollywood'],0.813,0.571,7,-9.816,1,0.133,0.752,3.93e-06,0.0692,0.918,131.318,320387,4,2,Instrumental Calm
+7wp5Iiyxpy23WMp3l4aXm5,Mộng du,Duy Quang,['pop'],0.651,0.752,3,-6.666,0,0.0284,0.679,0.435,0.2,0.745,111.934,288001,4,2,Instrumental Calm
+1SURGzYUY3f6rngSx1Vg8T,Surnaaja Heeyve Urh,Nusrat Fateh Ali Khan,['qawwali'],0.419,0.471,0,-15.571,1,0.139,0.242,0.000199,0.355,0.64,175.799,424907,4,0,Energetic Happy
+6kVikuPOOg8q6yOnwVBYnI,Jind Nimani Payi Eh Bol,Atta Ullah Khan Esakhelvi,['qawwali'],0.482,0.71,6,-5.201,1,0.0328,0.824,0.0,0.214,0.652,118.642,561917,4,0,Energetic Happy
+1dJYB5iydHDHw8BXnkVqTb,Jaaniya Bewafa Ae Tu,Naseebo Lal,['ghazal'],0.608,0.738,4,-14.221,0,0.0757,0.0539,0.0214,0.155,0.827,82.026,404480,4,2,Instrumental Calm
+74r7MJzrz1lWfVIqfuvYKN,Baran Barî,Duygu Korkmaz,['pop'],0.437,0.729,0,-5.19,1,0.071,0.127,0.0,0.216,0.771,100.007,360347,4,0,Energetic Happy
+1xYpVRspgaLxdJLOTQkTjg,STOP TRYING TO BE GOD,Travis Scott,[],0.588,0.567,4,-3.738,0,0.0628,0.221,0.0,0.135,0.113,178.009,338438,4,2,Instrumental Calm
+1dpIk3p9q4yrL35bv9a2oQ,Aj Kala Jora Pa,Atta Ullah Khan Esakhelvi,['qawwali'],0.54,0.798,6,-5.278,0,0.11,0.278,2.09e-06,0.193,0.687,173.74,409025,4,0,Energetic Happy
+2IGpGP5UfyBtOiXUsAKwi6,Piya Re Piya Re,Nusrat Fateh Ali Khan,['qawwali'],0.708,0.474,7,-14.007,1,0.0819,0.0719,0.0,0.112,0.424,91.946,464427,4,2,Instrumental Calm
+45Egmo7icyopuzJN0oMEdk,Love Lies (with Normani),Khalid,[],0.708,0.648,6,-5.626,1,0.0449,0.0956,0.0,0.134,0.338,171.955,201707,4,2,Instrumental Calm
+7wQQlIlmNVrR7089YrrBdB,Yaadien Wohi,Arijit Singh,['bollywood'],0.649,0.568,4,-11.813,0,0.0363,0.508,0.052,0.0647,0.525,156.021,233437,4,2,Instrumental Calm
+6FDFN6ObFxiRc6vJUv7sMU,Akela Hu Main,Mohammed Irfan,['bollywood'],0.611,0.7,8,-6.266,0,0.0318,0.311,1.28e-05,0.19,0.545,127.966,269349,4,2,Instrumental Calm
+4lxaGzIHShCQGg5TR9fRrz,Ab Meri Nigahon Mein,Qari M. Saeed Chishti,['qawwali'],0.425,0.535,6,-13.959,1,0.117,0.097,0.0,0.265,0.638,187.221,1121229,4,3,Acoustic Chill
+2ZynwT2SY9TLcq8QilP3j3,Rupasi Mananku Namaste,Kumar Sanu,['bollywood'],0.699,0.85,11,-1.852,1,0.0519,0.711,0.0,0.161,0.762,152.353,297803,4,2,Instrumental Calm
+21k2j5WRkfVWiAcaZ8w0Ey,Koplein Fir Phoot Aayi,Mehdi Hassan,['sufi'],0.434,0.443,6,-14.787,1,0.0389,0.886,0.00258,0.123,0.614,159.739,438831,3,1,Dance Party
+4SvMdcjPxJr3cgQLhoyeNs,O Mar Jani Sutti Reh Gai,Atta Ullah Khan Esakhelvi,['qawwali'],0.475,0.897,1,-5.734,0,0.188,0.407,0.0,0.193,0.843,77.633,505213,4,0,Energetic Happy
+7L1St2JB4wP6yr3nOrvhjs,Sapna Mera Toota,Rahat Fateh Ali Khan,['qawwali'],0.475,0.707,5,-5.707,1,0.0378,0.706,8.06e-06,0.382,0.742,178.057,350850,4,0,Energetic Happy
+6or8qfbH9qUtLeYfWFY3SH,"Can' t Stop (Live-2016 Spring Live -We're like puzzle-@Nippon Budokan, Tokyo)",CNBLUE,['pop'],0.53,0.75,1,-8.537,1,0.0515,0.128,0.0,0.419,0.351,158.03,316483,4,0,Energetic Happy
+6wDn0CpmWHm9GbnpRd4YXE,Lamha Lamha Beet,Tina Sani,['sufi'],0.581,0.511,0,-8.96,1,0.0506,0.87,0.025,0.187,0.258,92.481,284360,4,1,Dance Party
+0SvxydoxEEkXt9aMAqTfpB,Wait (feat. A Boogie Wit da Hoodie),Maroon 5,[],0.689,0.588,8,-4.632,1,0.0676,0.0582,0.0,0.141,0.389,126.056,190476,4,2,Instrumental Calm
+75ooqR4B6egYYy7uEr62oF,Ooonch Opar Beant Swami,Alam Lohar,['sufi'],0.672,0.497,7,-11.238,0,0.0471,0.727,4.09e-06,0.199,0.876,153.745,161360,4,1,Dance Party
+2qT1uLXPVPzGgFOx4jtEuo,no tears left to cry,Ariana Grande,[],0.699,0.713,9,-5.507,0,0.0594,0.04,3.11e-06,0.294,0.354,121.993,205920,4,2,Instrumental Calm
+3kZfzE1Mk601CS4sYVd93A,Ke Bujhbe Sholo Te,Anuradha Paudwal,['ghazal'],0.56,0.566,10,-9.274,0,0.0343,0.931,7.8e-05,0.17,0.56,125.865,278560,4,1,Dance Party
+5QkVPG2Hf3MmAarireF6lh,Who Do You Love - R3HAB Remix,The Chainsmokers,[],0.529,0.698,8,-6.87,1,0.0456,0.2,0.0,0.185,0.357,170.012,152120,4,2,Instrumental Calm
+4kaJD9K3xnSK8KUS1MXUeP,Endülüs'te Raks (Kürdilihicazkar),Timur Selçuk,['pop'],0.321,0.517,7,-8.08,0,0.0304,0.763,0.00235,0.289,0.434,107.348,263493,3,1,Dance Party
+6eUGtJNCsj4iI7ey7IqHWx,Bewafa Se Bi Pyar Hota Hai,Nusrat Fateh Ali Khan,['sufi'],0.543,0.575,5,-9.818,1,0.241,0.812,0.00192,0.166,0.83,146.063,887587,4,3,Acoustic Chill
+4FDPmcRlig8VKV5WGy4Ny9,Meri Bigri Bana De,Sain Zahoor Ahmed,['sufi'],0.717,0.81,1,-8.004,1,0.0612,0.571,0.000319,0.0874,0.853,82.901,425162,4,2,Instrumental Calm
+3QNcGTHxCCLoHWKIake7x4,New Love,Dua Lipa,[],0.579,0.621,1,-8.625,1,0.0445,0.152,4.01e-06,0.0869,0.343,118.354,271935,4,2,Instrumental Calm
+6l58EciogvvWtGHahitJGs,Ye Jo Halka Halka Saroor,Nusrat Fateh Ali Khan,['qawwali'],0.52,0.495,3,-9.589,1,0.14,0.628,0.0,0.119,0.714,97.067,1136560,4,3,Acoustic Chill
+45QM8CjkdP6RVF9R9cIyKC,Ke Jaane Kothay,Subhamita Banerjee,['ghazal'],0.432,0.498,7,-8.29,1,0.091,0.596,0.000117,0.0954,0.542,109.616,261833,4,1,Dance Party
+0zuqGb9od6mUQwrX5us0TR,Tujh Lab Ki Sifat,Abida Parveen,['sufi'],0.408,0.399,1,-16.257,1,0.0533,0.95,0.333,0.0863,0.634,163.207,573760,3,1,Dance Party
+4MmSkhBnhEiX9KmayMvOOv,Keu Dekhe Dekhuk Na,Runa Laila,['ghazal'],0.741,0.627,10,-8.944,1,0.0737,0.24,0.0,0.323,0.538,89.971,290613,4,2,Instrumental Calm
+18YRKiIZO4qDEc5Ik0Cry6,FRIENDS - R3hab Remix,Marshmello,[],0.545,0.814,9,-4.398,0,0.0409,0.028,0.0,0.0969,0.696,132.93,157143,4,2,Instrumental Calm
+4IPu421z9Gt5zWqHYlYxDf,Aasaar Keh Rahe Hain Qayamat Kareeb Hai,Chhote Majid Shola,['qawwali'],0.482,0.622,10,-10.471,1,0.0682,0.268,0.0,0.358,0.838,129.478,1004293,3,0,Energetic Happy
+4Bc7ZCIMwFVvhb7yOfkC5o,Rabba Kise Kolon Kise Da Na Yaar,Rizwan-Muazzam Qawwali,['qawwali'],0.465,0.798,3,-9.335,0,0.0545,0.044,0.0,0.599,0.758,115.811,895250,4,0,Energetic Happy
+091jhaQGN3Npzisp2YtG1B,Bedard Dhola,Atta Ullah Khan Esakhelvi,['qawwali'],0.493,0.608,2,-9.439,1,0.0387,0.736,0.176,0.0465,0.797,147.275,474973,3,1,Dance Party
+3aY36iFscbw84fX9CDBSsU,Hak'dir Allah'im Muhammed Mahim,Nezih Uzel,['sufi'],0.316,0.133,9,-19.525,0,0.0388,0.98,0.00314,0.0965,0.204,133.405,390400,3,1,Dance Party
+6Lh9vY35jyCQKC6flaiIBl,Tugan İlim,Oruç Güvenç ve Tümata,['sufi'],0.653,0.382,5,-8.142,1,0.0463,0.921,0.00677,0.0965,0.738,77.289,165581,4,1,Dance Party
+1NEgCh2vl9jf0qkL6beL6b,"Rendu Kannultho (From ""Dil Se"")",Shreya Ghoshal,['bollywood'],0.617,0.649,4,-4.904,1,0.0366,0.12,0.000243,0.171,0.481,187.221,208084,3,2,Instrumental Calm
+4xrp7IHh0xuNuGVu3oSv67,Audio,Sia,[],0.365,0.692,3,-4.586,0,0.0671,0.192,1.51e-06,0.0862,0.372,117.998,203400,4,0,Energetic Happy
+7LAmOc7qcnONXPuXhNxkDl,Rahe Khuda Mein Paai Shahadat,Chhote Majid Shola,['qawwali'],0.426,0.883,3,-5.59,1,0.0628,0.355,0.0,0.162,0.76,133.584,983775,4,0,Energetic Happy
+6LXMUR2rpxFBDo6nilS3yX,Cool Out,Imagine Dragons,[],0.636,0.718,1,-4.833,0,0.0313,0.00483,6.51e-06,0.292,0.437,171.929,217867,4,2,Instrumental Calm
+6Xsd6CtCy9UTANOYdQ7cJH,Rooon Main Sagar Ke Kinare,C. H. Atma,['ghazal'],0.49,0.24,3,-14.99,1,0.0422,0.992,0.869,0.127,0.511,121.006,200387,4,4,Rap / Spoken
+17npvozv9pFygfxnnZ6wiP,Punjabi Prayer,Shreya Ghoshal,['bollywood'],0.411,0.121,5,-9.361,1,0.0463,0.949,0.0,0.0999,0.538,187.221,141827,3,1,Dance Party
+1I2EiwgpTx9s3sQMb4F8Qa,Umaran Langiyan,Daler Mehndi,['bollywood'],0.731,0.93,2,-6.349,1,0.0457,0.0387,0.000236,0.0916,0.641,167.836,300000,4,2,Instrumental Calm
+13aFqgyI0m0LWld82Ployf,Vinothamaanavalae,Hariharan,['ghazal'],0.796,0.558,2,-12.221,1,0.0454,0.0851,1.42e-06,0.258,0.637,136.934,320315,4,2,Instrumental Calm
+3rESShKCG2y6GJyL28N0Z0,Sick Boy - neutral. Remix,The Chainsmokers,[],0.528,0.851,11,-5.07,0,0.165,0.0221,0.0,0.375,0.55,187.221,175080,4,0,Energetic Happy
+7qjmLdB9rXBxkNGKTz4Ckc,GOOD MORNIN' (feat. GARY TRAINOR),Meghan Trainor,[],0.54,0.748,10,-4.705,1,0.0565,0.0794,0.0,0.26,0.757,122.911,206344,4,2,Instrumental Calm
+5vj7xvilPeCv3DQgpy9auU,"Swan Song (From the Motion Picture ""Alita: Battle Angel"") - Acoustic",Dua Lipa,[],0.685,0.391,0,-6.723,0,0.0339,0.585,0.0,0.102,0.141,90.073,189614,4,1,Dance Party
+0u695M7KyzXaPIjpEbxOkB,SICKO MODE - Skrillex Remix,Travis Scott,[],0.636,0.824,1,-3.426,1,0.139,0.0184,0.0,0.136,0.452,183.056,304498,4,2,Instrumental Calm
+4XfM3aygQ6dgndyMShkkDY,We Thora Jeha Koi Tak Le,Naseem Begum,['ghazal'],0.605,0.702,6,-6.46,1,0.107,0.776,0.000254,0.404,0.962,169.574,210200,4,0,Energetic Happy
+0T5gcAnUKudNAiWytaPudG,Shahbaaz Qalandar,Nusrat Fateh Ali Khan,['qawwali'],0.517,0.78,7,-7.812,0,0.193,0.671,0.249,0.727,0.34,118.943,516120,4,0,Energetic Happy
+6tjLRrjC3SKTf2uV3jcIQ3,Sohna Data Ali Hajveri,Qari M. Saeed Chishti,['qawwali'],0.63,0.769,5,-8.061,0,0.0342,0.493,0.00861,0.354,0.924,131.411,639011,4,0,Energetic Happy
+5bL01nu6SMRjm6DdQAcibQ,Dirty Sexy Money (feat. Charli XCX & French Montana) - BLVK JVCK ReVibe,David Guetta,[],0.724,0.862,1,-3.949,1,0.0778,0.103,0.0,0.0817,0.767,160.091,222267,4,2,Instrumental Calm
+78KmZAXpXZXnNZ9FtqEWsp,Jinke Man Mein Base Shri Ramji,Anup Jalota,['ghazal'],0.452,0.529,1,-11.208,1,0.0384,0.489,0.0,0.384,0.618,78.253,426200,4,1,Dance Party
+4MDD9A6cp5Ua02a6DWUwLz,Alif Allah Chambe Di Booti,Nusrat Fateh Ali Khan,['qawwali'],0.443,0.532,8,-8.738,0,0.047,0.862,0.000363,0.297,0.237,160.452,1818848,4,3,Acoustic Chill
+4XFFADL2TLbnbzZH4v8lQw,Jai Lakshmi Mata,Mahendra Kapoor,['bollywood'],0.522,0.408,0,-14.817,1,0.0793,0.606,0.0,0.229,0.881,126.976,346133,4,1,Dance Party
+72J8O7kyKTicwoUxuu0eYy,FRIENDS - Justin Caruso Remix,Marshmello,[],0.686,0.728,9,-4.581,0,0.0743,0.0173,0.0,0.085,0.733,95.0,194526,4,2,Instrumental Calm
+6PoMqrXFClkm0fgZqqjMwU,Main Peer Manawan,Badar Ali Khan,['qawwali'],0.545,0.86,4,-6.493,0,0.0539,0.229,1.82e-06,0.219,0.784,126.52,899112,4,0,Energetic Happy
+6qpGiqSejKRMW0LHWQB2WO,Ishq Na Darda Maut Kanu,Abida Parveen,['ghazal'],0.545,0.712,8,-8.577,0,0.141,0.709,7.3e-05,0.252,0.803,128.671,539353,4,0,Energetic Happy
+0msDDRoLR4bpPsrFAi3keu,Bütün İnsanlardan,Gule,['pop'],0.437,0.398,5,-13.017,0,0.0599,0.858,0.0,0.342,0.579,147.572,263000,4,1,Dance Party
+7tzPaTQaFqhVEb1PA7ZuBf,Delincuente,Maluma,[],0.702,0.687,9,-4.114,0,0.316,0.181,0.0,0.15,0.849,187.221,206787,4,2,Instrumental Calm
+0Qo0j4MSHNDCLqq0DblGZp,Yeh Parbaton Ke Daire,Lata Mangeshkar,['bollywood'],0.264,0.341,1,-11.571,0,0.0342,0.822,0.000308,0.174,0.685,187.221,332640,3,1,Dance Party
+7pGBnzGc4XswDGPq2a5zfh,Hara We Asan Yar,Noor Jehan,['ghazal'],0.416,0.662,10,-6.283,1,0.0471,0.793,0.0127,0.266,0.672,125.151,282273,4,0,Energetic Happy
+1RGcxEKlVL5TSMHqV13etr,I'm a Mess - Acoustic,Bebe Rexha,[],0.748,0.406,1,-8.142,1,0.035,0.685,3.61e-06,0.118,0.811,100.034,153094,4,1,Dance Party
+2AWhMNiapSSnxP3TB1dt4a,I'm That Bitch (feat. Saweetie),David Guetta,[],0.826,0.834,1,-5.856,0,0.104,0.012,0.0133,0.12,0.902,150.992,194627,4,2,Instrumental Calm
+0J7IzDCGKi9vSEybA7tYTq,Haq Ali Ali Maula Ali Ali,Nusrat Fateh Ali Khan,['qawwali'],0.477,0.39,6,-13.803,1,0.315,0.795,0.00414,0.112,0.785,118.711,1721467,4,3,Acoustic Chill
+6JTs1SyBTa6pEoGeFA9roy,Je Toon Rab Nahin Te Rab Das,Nusrat Fateh Ali Khan,['qawwali'],0.502,0.746,1,-5.727,1,0.0623,0.752,0.000144,0.661,0.682,119.288,837953,4,0,Energetic Happy
+0j0kiCrDy76iaC1udZLV7h,Tere Milne Ki Ummeed,Suresh Wadkar,['bollywood'],0.711,0.581,6,-6.136,0,0.0305,0.707,0.0,0.0995,0.803,147.91,305662,3,2,Instrumental Calm
+49XXeGbxSEGUdmWO76iY6v,Dost Ban Ban Ke Mile Mujhko Mitane Wale,Jagjit Singh,['ghazal'],0.551,0.376,8,-13.122,1,0.03,0.841,0.00145,0.0962,0.555,151.379,260827,4,1,Dance Party
+3i8O0VjTIFuJiNxTZWETIV,"Maa Da Laadla (From ""Dostana"")",Vishal-Shekhar,['bollywood'],0.787,0.933,0,-5.712,1,0.0559,0.00771,0.214,0.116,0.806,113.974,245187,4,2,Instrumental Calm
+4aIfyQZ9UHpGhq0BPoPxc6,Koodi Itta,Sonu Nigam,['bollywood'],0.581,0.762,4,-4.985,0,0.136,0.667,0.000541,0.113,0.596,113.519,270045,4,2,Instrumental Calm
+6v54G4hhoyTPreZ3nvSYmR,"Pehla Pyaar (From ""Kabir Singh"")",Armaan Malik,['bollywood'],0.607,0.713,4,-5.105,1,0.03,0.56,4.98e-05,0.101,0.611,124.868,272533,4,2,Instrumental Calm
+6DeK8afWlXuKpvIQgfBu5y,Saiya Jiti Gaial Pardhani,Kavita Krishnamurthy,['bollywood'],0.615,0.666,5,-10.392,0,0.27,0.344,0.0,0.0512,0.96,132.261,491425,4,2,Instrumental Calm
+0Tp6ihoHS2R70W3Mu6ucAB,Rulati Hain Mohabbatein - Kitne Door Kitne Paas / Soundtrack Version,KK,['bollywood'],0.65,0.761,8,-8.637,1,0.0367,0.0337,1.89e-06,0.105,0.589,125.003,335160,4,2,Instrumental Calm
+3cE3GHVkmCX6dHjwWhEYiM,Song of Wonder,Ahmed Rushdi,['ghazal'],0.594,0.559,7,-12.272,0,0.056,0.854,9.06e-06,0.0979,0.796,132.066,307061,4,1,Dance Party
+2ZrHbO88rM6Ijeg0aJmSzl,Patient,Charlie Puth,[],0.675,0.604,1,-6.266,1,0.193,0.752,0.0,0.111,0.456,187.221,190533,4,2,Instrumental Calm
+4zjYxt8c1rjMjunz67wYof,Na Sawal Ban Ke Mila Karo,Nusrat Fateh Ali Khan,['qawwali'],0.687,0.492,3,-12.565,1,0.0536,0.559,0.000211,0.12,0.463,169.11,475484,1,1,Dance Party
+48DsYEzL8FTA1IZ8nWDAum,Ashiq Ke Liye Yaksan,Farida Khanum,['sufi'],0.354,0.294,10,-12.133,1,0.0327,0.952,0.000125,0.0542,0.391,186.26,325867,4,1,Dance Party
+4wN6HiUsCfAyTeiti5Sydk,Bhaala Hua Meri Maala Phooti,Fareed Ayaz Abu Muhammad Qawwal,['qawwali'],0.513,0.539,5,-9.132,0,0.359,0.711,0.0,0.115,0.425,109.869,819973,4,3,Acoustic Chill
+4C0CBdoabkKrJILkgtwInI,Chupi Chupi Chole Na Giye,Begum Akhtar,"['ghazal', 'bollywood']",0.37,0.434,5,-11.281,0,0.0594,0.919,0.0,0.378,0.376,162.795,541573,4,1,Dance Party
+70gUpEnhuX4OxklDsYewHY,365 - Jonas Aden Remix,Zedd,[],0.74,0.802,2,-3.967,1,0.0531,0.0112,0.000385,0.187,0.502,123.987,165998,4,2,Instrumental Calm
+5ffntNJnJOeFv7b7DCd0Bw,Takin' Shots,Post Malone,[],0.767,0.625,5,-6.193,1,0.0836,0.597,0.0,0.409,0.577,148.092,216747,4,2,Instrumental Calm
+2AaF78iCWISMWYog5RnSi5,Preach,John Legend,[],0.508,0.729,11,-5.712,0,0.0443,0.0681,0.0,0.1,0.412,91.906,236880,4,2,Instrumental Calm
