@@ -15,12 +15,29 @@ def decide_remediation(
         if item
     ]
 
+    if _requires_source_data_correction(failure_types):
+        return {
+            "recommended_action": (
+                "Fix or validate the upstream/incoming data first, then run the DAG again. "
+                "Only consider retraining after the follow-up run proves the data contract is clean."
+            ),
+            "action_type": "manual_data_correction",
+            "action_mode": "manual_only",
+            "requires_approval": False,
+            "allowed_to_execute": False,
+            "manual_only": True,
+            "reason": (
+                "This incident contains source-data quality or schema failures. "
+                "Retraining on malformed data is blocked by production safety policy."
+            ),
+        }
+
     if severity == "critical":
         return {
             "recommended_action": "Manual investigation required before any model or baseline change.",
             "action_type": "manual_investigation",
             "action_mode": "manual_only",
-            "requires_approval": True,
+            "requires_approval": False,
             "allowed_to_execute": False,
             "manual_only": True,
             "reason": "Critical incidents are alert-only in the current production safety policy.",
@@ -74,7 +91,19 @@ def _is_retraining_candidate(failure_types: list[str]) -> bool:
     retraining_signals = {
         "DATA_DRIFT",
         "CONCEPT_DRIFT",
-        "RANGE_VIOLATION",
         "MODEL_DEGRADATION",
     }
     return any(signal in retraining_signals for signal in failure_types)
+
+
+def _requires_source_data_correction(failure_types: list[str]) -> bool:
+    source_data_failures = {
+        "SCHEMA_MISMATCH",
+        "MISSING_COLUMNS",
+        "EXTRA_COLUMNS",
+        "DATA_QUALITY",
+        "NULL_SPIKE",
+        "RANGE_VIOLATION",
+        "CATEGORICAL_SHIFT",
+    }
+    return any(signal in source_data_failures for signal in failure_types)

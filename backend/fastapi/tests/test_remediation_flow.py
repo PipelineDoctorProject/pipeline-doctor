@@ -32,6 +32,7 @@ from app.api.routes.remediation import (  # noqa: E402
     promote_remediation_candidate,
     reject_remediation_run,
 )
+from app.services.remediation import decide_remediation  # noqa: E402
 from app.services.remediation.retraining_service import run_retraining  # noqa: E402
 from app.tasks.remediation_tasks import run_remediation_task  # noqa: E402
 
@@ -123,6 +124,33 @@ class RemediationFlowTests(unittest.TestCase):
                 current_user=self.admin_user,
             )
 
+    def test_source_data_failure_policy_requires_manual_correction_before_retraining(self):
+        policy = decide_remediation(
+            {
+                "severity": "high",
+                "failure_types": ["DATA_DRIFT", "SCHEMA_MISMATCH", "RANGE_VIOLATION"],
+            }
+        )
+
+        self.assertEqual(policy["action_type"], "manual_data_correction")
+        self.assertFalse(policy["requires_approval"])
+        self.assertFalse(policy["allowed_to_execute"])
+        self.assertTrue(policy["manual_only"])
+
+    def test_approve_blocks_source_data_failure_incident(self):
+        incident, _, _ = self._seed_incident(
+            expected_features=["feature_a", "feature_b"],
+            failure_types=["DATA_DRIFT", "SCHEMA_MISMATCH", "DATA_QUALITY"],
+        )
+
+        with self.assertRaisesRegex(Exception, "malformed data is blocked"):
+            approve_retraining_for_incident(
+                incident_id=incident.id,
+                target_column="label",
+                db=self.db,
+                current_user=self.admin_user,
+            )
+
     def test_reject_queued_run_marks_run_rejected(self):
         incident, _, _ = self._seed_incident(expected_features=["feature_a", "feature_b"])
         remediation_run = self._create_remediation_run(incident.id, incident.run_id, status="queued")
@@ -184,7 +212,7 @@ class RemediationFlowTests(unittest.TestCase):
         with patch("app.tasks.remediation_tasks.SessionLocal", side_effect=lambda: self.Session()), patch(
             "app.tasks.remediation_tasks.set_schema", return_value=None
         ), patch(
-            "app.tasks.remediation_tasks.run_retraining",
+            "app.services.remediation.retraining_service.run_retraining",
             return_value=candidate_result,
         ):
             run_remediation_task.run(remediation_run.id, self.tenant.id, "label")
@@ -215,7 +243,7 @@ class RemediationFlowTests(unittest.TestCase):
         with patch("app.tasks.remediation_tasks.SessionLocal", side_effect=lambda: self.Session()), patch(
             "app.tasks.remediation_tasks.set_schema", return_value=None
         ), patch(
-            "app.tasks.remediation_tasks.run_retraining",
+            "app.services.remediation.retraining_service.run_retraining",
             side_effect=ValueError("synthetic retraining failure"),
         ):
             with self.assertRaisesRegex(ValueError, "synthetic retraining failure"):
@@ -269,7 +297,7 @@ class RemediationFlowTests(unittest.TestCase):
         self.assertEqual(refreshed_run.status, "promotion_rejected")
         self.assertEqual(payload["final_report"]["report_status"], "candidate_rejected")
 
-    def test_promote_candidate_updates_live_model_metadata_and_report(self):
+    def test_stage_candidate_keeps_live_model_metadata_and_report(self):
         incident, model, _ = self._seed_incident(expected_features=["feature_a", "feature_b"])
         model.mlflow_alias = "champion"
         self.db.commit()
@@ -329,12 +357,12 @@ class RemediationFlowTests(unittest.TestCase):
         refreshed_model = self.db.query(MLModel).filter(MLModel.id == model.id).one()
         payload = json.loads(self.db.query(Incident).filter(Incident.id == incident.id).one().description)
 
-        self.assertEqual(response["status"], "promoted")
-        self.assertEqual(refreshed_run.status, "promoted")
-        self.assertEqual(refreshed_model.mlflow_run_id, "candidate-run-333")
-        self.assertEqual(refreshed_model.version, "7")
-        self.assertEqual(payload["final_report"]["report_status"], "remediation_promoted")
-        self.assertEqual(payload["remediation"]["promoted_model_version"], "7")
+        self.assertEqual(response["status"], "staged")
+        self.assertEqual(refreshed_run.status, "staged")
+        self.assertNotEqual(refreshed_model.mlflow_run_id, "candidate-run-333")
+        self.assertEqual(refreshed_model.version, model.version)
+        self.assertEqual(payload["final_report"]["report_status"], "candidate_staged_for_deployment")
+        self.assertEqual(payload["remediation"]["staged_model_version"], "7")
 
     def test_run_retraining_reuses_original_sklearn_estimator_family(self):
         _, model, run = self._seed_incident(expected_features=["feature_a", "feature_b"])
@@ -399,7 +427,7 @@ class RemediationFlowTests(unittest.TestCase):
                     target_column="label",
                 )
 
-    def _seed_incident(self, expected_features, dataframe=None):
+    def _seed_incident(self, expected_features, dataframe=None, failure_types=None):
         model = MLModel(
             tenant_id=self.tenant.id,
             name="Test Model",
@@ -447,7 +475,7 @@ class RemediationFlowTests(unittest.TestCase):
             title="AI Root Cause Analysis",
             description=json.dumps(
                 {
-                    "failure_types": ["DATA_DRIFT"],
+                    "failure_types": failure_types or ["DATA_DRIFT"],
                     "severity": "high",
                     "remediation": {
                         "recommended_action": "Prepare a controlled retraining run and require admin approval before execution.",

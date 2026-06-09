@@ -55,13 +55,38 @@ def require_slack_configuration() -> None:
         )
 
 
-def build_oauth_state(*, tenant_id: str, user_id: str) -> str:
+def _clean_workspace_hint(value: str | None) -> str | None:
+    if not value:
+        return None
+    cleaned = " ".join(value.strip().split())
+    return cleaned or None
+
+
+def _normalize_workspace_name(value: str | None) -> str:
+    if not value:
+        return ""
+    return "".join(character.lower() for character in value if character.isalnum())
+
+
+def build_oauth_state(
+    *,
+    tenant_id: str,
+    user_id: str,
+    expected_team_name: str | None = None,
+    expected_team_id: str | None = None,
+) -> str:
     payload = {
         "tenant_id": tenant_id,
         "user_id": user_id,
         "purpose": "slack_oauth",
         "exp": datetime.utcnow() + timedelta(minutes=15),
     }
+    expected_team_name = _clean_workspace_hint(expected_team_name)
+    expected_team_id = _clean_workspace_hint(expected_team_id)
+    if expected_team_name:
+        payload["expected_team_name"] = expected_team_name
+    if expected_team_id:
+        payload["expected_team_id"] = expected_team_id
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 
@@ -79,7 +104,69 @@ def decode_oauth_state(state: str) -> dict[str, Any]:
     return payload
 
 
-def build_connect_url(*, tenant_id: str, user_id: str) -> str:
+def build_connect_url(
+    *,
+    tenant_id: str,
+    user_id: str,
+    expected_team_name: str | None = None,
+    expected_team_id: str | None = None,
+) -> str:
+    require_slack_configuration()
+    expected_team_name = _clean_workspace_hint(expected_team_name)
+    expected_team_id = _clean_workspace_hint(expected_team_id)
+
+    params = {
+        "client_id": SLACK_CLIENT_ID,
+        "scope": SLACK_BOT_SCOPES,
+        "redirect_uri": SLACK_REDIRECT_URI,
+        "state": build_oauth_state(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            expected_team_name=expected_team_name,
+            expected_team_id=expected_team_id,
+        ),
+    }
+    if expected_team_id:
+        params["team"] = expected_team_id
+
+    return f"{SLACK_AUTHORIZE_URL}?{urlencode(params)}"
+
+
+def validate_expected_workspace(
+    installation: dict[str, Any],
+    *,
+    expected_team_name: str | None,
+    expected_team_id: str | None,
+) -> None:
+    team = installation.get("team") or {}
+    actual_team_id = team.get("id")
+    actual_team_name = team.get("name") or actual_team_id
+
+    if expected_team_id and actual_team_id != expected_team_id:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Slack returned workspace {actual_team_id or 'unknown'}, but you requested "
+                f"{expected_team_id}. Switch workspace in Slack and try again."
+            ),
+        )
+
+    if (
+        expected_team_name
+        and _normalize_workspace_name(actual_team_name)
+        != _normalize_workspace_name(expected_team_name)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Slack returned workspace '{actual_team_name}', but you entered "
+                f"'{expected_team_name}'. Choose the correct Slack workspace and try again."
+            ),
+        )
+
+
+def build_connect_url_legacy(*, tenant_id: str, user_id: str) -> str:
+    """Kept only for older callers while the UI migrates to explicit workspace selection."""
     require_slack_configuration()
     params = urlencode(
         {

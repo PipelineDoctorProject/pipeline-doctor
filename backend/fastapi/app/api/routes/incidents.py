@@ -16,6 +16,7 @@ from app.services.incidents.grouping import attach_incident_to_group
 from app.services.incidents.live_events import publish_incident_event
 from app.services.slack_service import send_incident_notification
 from app.services.access_control import require_accessible_model
+from app.services.remediation import decide_remediation
 
 from app.schemas.incident import (
     IncidentCreate,
@@ -226,8 +227,12 @@ def _serialize_incident(
 ):
 
     rca_report = _parse_rca_report(incident.description)
-    remediation = _parse_remediation(rca_report)
     final_report = _parse_final_report(rca_report)
+    remediation = _derive_remediation_policy(
+        incident,
+        rca_report,
+        final_report,
+    )
 
     return {
         "id": incident.id,
@@ -432,6 +437,63 @@ def _parse_remediation(
 
     remediation = rca_report.get("remediation")
     return remediation if isinstance(remediation, dict) else None
+
+
+def _derive_remediation_policy(
+    incident: Incident,
+    rca_report: dict | None,
+    final_report: dict | None,
+):
+    stored_remediation = _parse_remediation(rca_report)
+    failure_types = _extract_failure_types(rca_report, final_report)
+
+    if not failure_types:
+        return stored_remediation
+
+    policy = decide_remediation(
+        {
+            "severity": incident.severity,
+            "failure_types": failure_types,
+        }
+    )
+
+    if stored_remediation:
+        merged_policy = {
+            **stored_remediation,
+            **policy,
+        }
+        return merged_policy
+
+    return policy
+
+
+def _extract_failure_types(
+    rca_report: dict | None,
+    final_report: dict | None,
+) -> list[str]:
+    candidate_sources = [
+        rca_report,
+        final_report,
+    ]
+
+    if isinstance(rca_report, dict):
+        report = rca_report.get("report")
+        if isinstance(report, dict):
+            candidate_sources.append(report)
+
+    for source in candidate_sources:
+        if not isinstance(source, dict):
+            continue
+
+        failure_types = source.get("failure_types")
+        if isinstance(failure_types, list):
+            return [
+                str(failure_type)
+                for failure_type in failure_types
+                if failure_type
+            ]
+
+    return []
 
 
 def _parse_final_report(

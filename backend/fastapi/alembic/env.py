@@ -102,7 +102,7 @@ def run_migrations_online() -> None:
     connectable = create_engine(
         url,
         poolclass=pool.NullPool,
-        connect_args={"sslmode": "require"},  # Required for Supabase
+        connect_args={"sslmode": os.getenv("DB_SSLMODE", "require")},
     )
 
     with connectable.connect() as connection:
