@@ -31,7 +31,7 @@ def build_final_incident_report(
         "evidence_summary": _build_evidence_summary(evidence),
         "recommended_action": remediation_policy.get("recommended_action") or report.get("recommendation"),
         "action_taken": action_taken,
-        "manual_action_required": manual_only or requires_approval,
+        "manual_action_required": manual_only,
         "report_status": report_status,
         "severity": report.get("severity", "medium"),
         "timeline_summary": "Detection completed, AI reasoning finished, output was parsed, and the final report was saved.",

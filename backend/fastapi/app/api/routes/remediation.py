@@ -550,7 +550,21 @@ def _extract_failure_types(description: str) -> list[str]:
     if not isinstance(payload, dict):
         return []
 
-    return payload.get("failure_types") or []
+    candidates = [
+        payload,
+        payload.get("report"),
+        payload.get("final_report"),
+    ]
+
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+
+        failure_types = candidate.get("failure_types")
+        if isinstance(failure_types, list):
+            return [str(item) for item in failure_types if item]
+
+    return []
 
 
 def _validate_retraining_preconditions(
