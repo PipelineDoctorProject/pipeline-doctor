@@ -175,6 +175,21 @@ mlruns/
 mlartifacts/
 mlflow.db
 
+# OpsSight runtime artifacts
+frontend/dist/
+frontend/.vite/
+backend/fastapi/mlartifacts/
+backend/fastapi/celerybeat-schedule*
+backend/fastapi/cleaned/*
+!backend/fastapi/cleaned/.gitkeep
+backend/fastapi/uploads/incoming/*
+!backend/fastapi/uploads/incoming/.gitkeep
+backend/fastapi/300707/
+backend/fastapi/v/
+cleaned/
+uploads/
+airflow-setup/logs/
+
 
 # mypy
 .mypy_cache/
@@ -226,8 +241,3 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-#ml
-mlartifacts
-mlfow.db
-mlflow_backup.db/backend/fastapi/mlflow.db
-mlflow_backup.db/backend/fastapi/mlflow.db

@@ -282,6 +282,7 @@ function buildApprovalBlocker({
   activeRun,
   reviewRun,
   stagedRun,
+  terminalRun,
   isAdmin,
 }) {
   const failureTypes = extractFailureTypes(incident);
@@ -322,6 +323,19 @@ function buildApprovalBlocker({
       title: `Candidate run #${stagedRun.id} is already staged`,
       detail: "The model is waiting for deployment confirmation. OpsSight should not create another candidate until CI/CD finishes deploying this staged version.",
       items: ["Deploy the staged MLflow alias in your serving pipeline, run smoke tests, then confirm deployment here."],
+    };
+  }
+
+  if (terminalRun) {
+    return {
+      tone: "blue",
+      title: `Remediation run #${terminalRun.id} is already ${humanize(terminalRun.status)}`,
+      detail:
+        "The candidate lifecycle for this incident is complete, so OpsSight should not start another retraining run for the same incident.",
+      items: [
+        "Monitor the promoted model version in the next production DAG runs.",
+        "Resolve or close this incident after confirming production health checks, Slack alerts, and report records are correct.",
+      ],
     };
   }
 
@@ -553,6 +567,14 @@ export default function IncidentRemediationPanel({
     [runs],
   );
 
+  const terminalRun = useMemo(
+    () =>
+      runs.find((run) =>
+        ["deployed", "promoted"].includes(String(run.status || "").toLowerCase()),
+      ) || null,
+    [runs],
+  );
+
   const latestRun = runs[0] || null;
   const canApprove = Boolean(
     isAdmin &&
@@ -560,7 +582,8 @@ export default function IncidentRemediationPanel({
       remediation?.requires_approval &&
       !activeRun &&
       !reviewRun &&
-      !stagedRun,
+      !stagedRun &&
+      !terminalRun,
   );
   const canReject = Boolean(
     isAdmin &&
@@ -576,6 +599,7 @@ export default function IncidentRemediationPanel({
     activeRun,
     reviewRun,
     stagedRun,
+    terminalRun,
     isAdmin,
   });
   const candidateLogPayload = useMemo(() => {

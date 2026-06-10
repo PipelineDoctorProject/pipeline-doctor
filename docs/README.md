@@ -34,7 +34,7 @@ Post-clean quality gate decides whether downstream work is safe
             +-- prediction runs when a model is loadable
             +-- drift checks run against the active baseline
             +-- incident group is created when signals are severe enough
-            +-- Slack and WebSocket updates publish one run-level alert
+            +-- Slack, WebSocket, and navbar notification updates publish one run-level alert
 ```
 
 ---
@@ -74,6 +74,7 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 | File | Purpose |
 |---|---|
 | [setup.md](./setup.md) | Local Docker setup, environment variables, and startup flow |
+| [repository_structure.md](./repository_structure.md) | Source layout, generated artifacts, and production repo hygiene |
 | [overview.md](./overview.md) | High-level product and architecture overview |
 | [authentication.md](./authentication.md) | Signup, OTP, onboarding, invite flow, roles, and tenant isolation |
 | [auth_and_tenant.md](./auth_and_tenant.md) | Tenant hardening workstream notes and acceptance criteria |
@@ -82,6 +83,7 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 | [schema_evolution.md](./schema_evolution.md) | Pending schema changes, approval/rejection, and feature impact |
 | [drift_detection.md](./drift_detection.md) | PSI, KS, severity, and drift execution rules |
 | [incidents_and_realtime.md](./incidents_and_realtime.md) | Run-level incident grouping, WebSocket updates, and alert model |
+| [notifications.md](./notifications.md) | Navbar notification bell, unread counts, Slack/email context, and WebSocket delivery |
 | [remediation.md](./remediation.md) | Approval, retraining, candidate staging, rejection, and deployment confirmation |
 | [model_lifecycle.md](./model_lifecycle.md) | MLflow aliases, candidate/staging/champion lifecycle, and production deployment contract |
 | [ml_integration.md](./ml_integration.md) | MLflow loading, feature filtering, supervised vs unsupervised behavior |
@@ -109,6 +111,8 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 - Run-level incident grouping prevents Slack spam from many low-level findings.
 - WebSocket incident updates refresh pages without manual reloads.
 - Slack delivers one top-level run alert per incident group.
+- Navbar notification bell updates unread incident count from incident WebSocket events, with polling fallback.
+- Notification dropdown shows recent run-level incident alerts and Slack/email delivery context.
 - Full production reports summarize RCA evidence, remediation state, candidate status, and next actions.
 - Remediation creates MLflow candidates without mutating the live champion.
 - Candidate staging and champion deployment confirmation are split into separate human-reviewed steps.
@@ -148,6 +152,7 @@ In production, OpsSight should not be the system that blindly deploys models int
 - Customer CI/CD deploys the staging alias to serving.
 - Smoke tests and health checks validate serving behavior.
 - OpsSight confirms deployment and starts monitoring the champion alias.
+- Realtime transports are tenant-authenticated and tenant-scoped before public multi-tenant rollout.
 
 This keeps observability, approval, model registry, and serving deployment responsibilities cleanly separated.
 
