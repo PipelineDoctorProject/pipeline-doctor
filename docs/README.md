@@ -73,7 +73,11 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 
 | File | Purpose |
 |---|---|
-| [setup.md](./setup.md) | Local Docker setup, environment variables, and startup flow |
+| [setup.md](./setup.md) | Local Docker setup, root/backend/frontend env layers, and startup flow |
+| [environment_modes.md](./environment_modes.md) | Development vs production runtime modes, env files, migrations, and worker queues |
+| [ci_cd.md](./ci_cd.md) | GitHub Actions CI/CD, Terraform, Ansible, secrets, and deployment workflow setup |
+| [production_deployment.md](./production_deployment.md) | Production deployment checklist for Airflow, MLflow, secrets, storage, and promotion |
+| [../deploy/azure/README.md](../deploy/azure/README.md) | Azure hosting topology, image build flow, Container Apps commands, and readiness gates |
 | [repository_structure.md](./repository_structure.md) | Source layout, generated artifacts, and production repo hygiene |
 | [overview.md](./overview.md) | High-level product and architecture overview |
 | [authentication.md](./authentication.md) | Signup, OTP, onboarding, invite flow, roles, and tenant isolation |
@@ -104,8 +108,9 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 - Invited members complete password setup and join the admin's tenant.
 - Member users can view allowed monitoring pages, while admin-only actions stay protected.
 - Model-scoped endpoints verify the model belongs to the current tenant.
-- Airflow no longer relies on one hardcoded model id/name in `.env`.
+- Airflow no longer relies on one hardcoded model id/name or guessed latest CSV in `.env`.
 - DAG runs can be model-specific through DAG trigger config or Airflow Variables.
+- DAG runs require an explicit batch input path or pre-signed input URI.
 - Data cleaning produces accepted and quarantined artifacts.
 - Post-clean validation gates prediction, drift, and remediation safety.
 - Run-level incident grouping prevents Slack spam from many low-level findings.
@@ -135,6 +140,7 @@ Local development uses Docker Compose for:
 Local MLflow and Airflow are intentionally simple, but the application flow mirrors production:
 
 - model identity comes from model registration and DAG config
+- batch identity comes from explicit DAG input config
 - user identity comes from OpsSight auth
 - workspace isolation comes from tenant schema selection
 - remediation changes are staged before champion confirmation
@@ -146,6 +152,7 @@ Local MLflow and Airflow are intentionally simple, but the application flow mirr
 In production, OpsSight should not be the system that blindly deploys models into customer serving infrastructure. The safer contract is:
 
 - OpsSight detects issues and creates evidence.
+- Airflow/customer orchestration sends explicit batch artifacts to OpsSight.
 - OpsSight can retrain or trigger a customer retraining workflow.
 - OpsSight logs a candidate model with metrics and artifacts.
 - OpsSight stages the candidate in MLflow.

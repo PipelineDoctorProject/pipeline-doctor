@@ -29,3 +29,8 @@ npm run preview
 - Build output in `dist/` and Vite cache in `.vite/` are generated artifacts and should not be committed.
 - Keep API URLs and OAuth callback origins environment-driven for each deployment.
 - The notification bell and incident pages depend on authenticated API calls plus WebSocket/SSE-style live updates from the backend.
+- Build the production container from the repository root so it can copy `deploy/nginx/frontend.conf`:
+
+```powershell
+docker build -f frontend/Dockerfile -t opssight/frontend:local .
+```

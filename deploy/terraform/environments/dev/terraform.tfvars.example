@@ -1,0 +1,9 @@
+location                        = "eastus"
+resource_group_name             = "opssight-dev-rg"
+container_registry_name         = "opssightdevacr"
+container_apps_environment_name = "opssight-dev-env"
+log_analytics_workspace_name    = "opssight-dev-logs"
+
+tags = {
+  owner = "mlops"
+}

@@ -149,6 +149,9 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
+!*.env.example
 .envrc
 .venv
 env/
@@ -189,6 +192,23 @@ backend/fastapi/v/
 cleaned/
 uploads/
 airflow-setup/logs/
+
+# Terraform local state and plans
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ansible local secrets and retry files
+*.retry
+*.vault
+vault.yml
 
 
 # mypy

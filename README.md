@@ -24,20 +24,54 @@ docker-compose.yml      Local development stack for API, frontend, workers, Airf
 
 ## Local Development
 
-1. Copy `.env.example` to `.env` and fill local secrets.
-2. Start the stack with Docker Compose.
-3. Register or bootstrap a model and upload an approved baseline.
-4. Trigger `opssight_daily_pipeline` in Airflow with a model id or model name and an input CSV.
-5. Review incidents, RCA reports, remediation approvals, Slack alerts, and notification events in the UI.
+Development mode keeps local startup fast and convenient. The API container can
+run migrations automatically, local MLflow/Airflow are started by Compose, and
+the frontend runs through Vite.
+
+```powershell
+Copy-Item .env.example .env
+Copy-Item backend/fastapi/.env.example backend/fastapi/.env
+Copy-Item frontend/.env.example frontend/.env.local
+
+docker compose up -d --build
+
+cd frontend
+npm install
+npm run dev
+```
+
+After startup, register or bootstrap a model, upload an approved baseline, then
+trigger `opssight_daily_pipeline` in Airflow with a model id/name and an input
+CSV path.
 
 ## Production Notes
 
-- Do not commit `.env`, runtime CSVs, MLflow artifacts, local build output, or cache files.
-- Use a managed PostgreSQL/Supabase database, managed Redis/queue infrastructure, durable object storage, and a production MLflow registry.
+Production mode separates one-time setup from serving traffic. Migrations and
+tenant schema repair run as a release job, then API and worker replicas start
+only after that job succeeds.
+
+```powershell
+Copy-Item .env.production.example .env.production
+Copy-Item backend/fastapi/.env.production.example backend/fastapi/.env.production
+
+docker compose --env-file .env.production -f docker-compose.prod.example.yml run --rm migrate
+docker compose --env-file .env.production -f docker-compose.prod.example.yml up -d api worker beat frontend
+```
+
+For real hosting, keep `.env.production` values in Azure Key Vault or your
+platform secret manager instead of copying files onto servers.
+
+- Use managed PostgreSQL/Supabase, managed Redis/queue infrastructure, durable object storage, and a production MLflow registry.
 - Keep Slack OAuth, JWT keys, SMTP credentials, database URLs, and Airflow service credentials in a secret manager.
 - Run migrations through CI/CD before deploying application containers.
-- Prefer separate development, staging, and production Compose/Kubernetes manifests instead of one all-purpose runtime file.
+- Keep API, worker, beat, Airflow, MLflow, and frontend as separately scalable services.
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md), then use [docs/repository_structure.md](docs/repository_structure.md), [docs/remediation.md](docs/remediation.md), [docs/reports.md](docs/reports.md), [docs/slack.md](docs/slack.md), and [docs/schema_evolution.md](docs/schema_evolution.md) for the main production flows.
+Start with [docs/README.md](docs/README.md), then use
+[docs/environment_modes.md](docs/environment_modes.md),
+[docs/repository_structure.md](docs/repository_structure.md),
+[docs/remediation.md](docs/remediation.md), [docs/reports.md](docs/reports.md),
+[docs/slack.md](docs/slack.md), and
+[docs/schema_evolution.md](docs/schema_evolution.md) for the main production
+flows.
