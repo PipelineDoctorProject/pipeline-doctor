@@ -42,14 +42,16 @@ jobs:
         run: python -m pip install ansible
 
       - name: Syntax check
+        working-directory: deploy/ansible
         run: |
           ansible-playbook \
             --syntax-check \
-            deploy/ansible/playbooks/${{ inputs.playbook }}.yml \
-            -i deploy/ansible/inventories/${{ inputs.environment }}/hosts.ini
+            playbooks/${{ inputs.playbook }}.yml \
+            -i inventories/${{ inputs.environment }}/hosts.ini
 
       - name: Run playbook
+        working-directory: deploy/ansible
         run: |
           ansible-playbook \
-            deploy/ansible/playbooks/${{ inputs.playbook }}.yml \
-            -i deploy/ansible/inventories/${{ inputs.environment }}/hosts.ini
+            playbooks/${{ inputs.playbook }}.yml \
+            -i inventories/${{ inputs.environment }}/hosts.ini
