@@ -423,6 +423,7 @@ export default function IncidentRemediationPanel({
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === "admin";
   const remediation = deriveRemediationSummary(incident);
+  const incidentId = incident?.id;
 
   const [context, setContext] = useState(null);
   const [runs, setRuns] = useState([]);
@@ -440,18 +441,18 @@ export default function IncidentRemediationPanel({
   const loadVersionRef = useRef(0);
 
   const loadContext = useCallback(async (version = loadVersionRef.current) => {
-    if (!incident?.id) return;
+    if (!incidentId) return;
 
     try {
       setLoadingContext(true);
-      const data = await retryOnce(() => getRemediationContext(incident.id));
+      const data = await retryOnce(() => getRemediationContext(incidentId));
       if (version !== loadVersionRef.current) return;
       setContext(data);
     } catch (error) {
       console.log(error);
       if (version === loadVersionRef.current) {
         toast.error("Failed to load remediation context", {
-          id: `remediation-context-${incident.id}`,
+          id: `remediation-context-${incidentId}`,
         });
       }
     } finally {
@@ -459,14 +460,14 @@ export default function IncidentRemediationPanel({
         setLoadingContext(false);
       }
     }
-  }, [incident?.id]);
+  }, [incidentId]);
 
   const loadRuns = useCallback(async (version = loadVersionRef.current) => {
-    if (!incident?.id) return;
+    if (!incidentId) return;
 
     try {
       setLoadingRuns(true);
-      const data = await retryOnce(() => getRemediationRunsForIncident(incident.id));
+      const data = await retryOnce(() => getRemediationRunsForIncident(incidentId));
       if (version !== loadVersionRef.current) return;
       setRuns(data || []);
       const preferredRun = (data || []).find((run) =>
@@ -479,7 +480,7 @@ export default function IncidentRemediationPanel({
       console.log(error);
       if (version === loadVersionRef.current) {
         toast.error("Failed to load remediation history", {
-          id: `remediation-runs-${incident.id}`,
+          id: `remediation-runs-${incidentId}`,
         });
       }
     } finally {
@@ -487,7 +488,7 @@ export default function IncidentRemediationPanel({
         setLoadingRuns(false);
       }
     }
-  }, [incident?.id]);
+  }, [incidentId]);
 
   const loadLogs = useCallback(async (remediationRunId, version = loadVersionRef.current) => {
     if (!remediationRunId) {
@@ -525,7 +526,7 @@ export default function IncidentRemediationPanel({
     setReviewNotes("");
     loadContext(version);
     loadRuns(version);
-  }, [incident?.id, loadContext, loadRuns]);
+  }, [incidentId, loadContext, loadRuns]);
 
   useEffect(() => {
     if (!targetColumn && context) {
@@ -631,7 +632,7 @@ export default function IncidentRemediationPanel({
     try {
       setSubmitting(true);
       const response = await approveRemediationForIncident(
-        incident.id,
+        incidentId,
         targetRequired ? normalizedTarget : null,
       );
       toast.success(response.message || "Remediation approved.");
@@ -864,11 +865,11 @@ export default function IncidentRemediationPanel({
                       <input
                         value={targetColumn}
                         onChange={(event) => setTargetColumn(event.target.value)}
-                        list={`target-columns-${incident.id}`}
+                        list={`target-columns-${incidentId}`}
                         placeholder="Enter target column"
                         className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-[14px] text-slate-900 outline-none transition focus:border-blue-300 focus:bg-white"
                       />
-                      <datalist id={`target-columns-${incident.id}`}>
+                      <datalist id={`target-columns-${incidentId}`}>
                         {(context?.target_candidates || []).map((column) => (
                           <option key={column} value={column} />
                         ))}

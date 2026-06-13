@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { Eye, EyeOff, Apple } from "lucide-react";
-import { FaGoogle } from "react-icons/fa";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import Logo from "../../assets/logo2.png";

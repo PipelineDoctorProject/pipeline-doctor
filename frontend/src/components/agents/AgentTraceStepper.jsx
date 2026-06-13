@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { CheckCircle2, Loader2, Circle, AlertCircle } from "lucide-react";
 
-export const AGENT_STEP_DEFS = [
+const AGENT_STEP_DEFS = [
   {
     key: "detection",
     label: "Detection",

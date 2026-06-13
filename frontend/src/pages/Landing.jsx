@@ -2,7 +2,6 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/700.css";
 import { useNavigate } from "react-router-dom";
-import Logo from "../assets/logo_og.png";
 import Logo2 from '../assets/logo2.png';
 
 export default function OpsSightLandingPage() {
