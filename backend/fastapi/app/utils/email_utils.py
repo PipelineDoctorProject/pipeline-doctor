@@ -3,14 +3,29 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from app.config.settings import (
-    MAIL_USERNAME,
-    MAIL_PASSWORD,
     MAIL_FROM,
+    MAIL_PASSWORD,
+    MAIL_PORT,
+    MAIL_SERVER,
+    MAIL_USERNAME,
 )
 
 
 def _build_server():
-    server = smtplib.SMTP("smtp.gmail.com", 587)
+    missing = [
+        name
+        for name, value in {
+            "MAIL_USERNAME": MAIL_USERNAME,
+            "MAIL_PASSWORD": MAIL_PASSWORD,
+            "MAIL_FROM": MAIL_FROM,
+            "MAIL_SERVER": MAIL_SERVER,
+        }.items()
+        if not value
+    ]
+    if missing:
+        raise RuntimeError(f"Email service is not configured. Missing: {', '.join(missing)}")
+
+    server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
     server.starttls()
     server.login(MAIL_USERNAME, MAIL_PASSWORD)
     return server
