@@ -72,7 +72,9 @@ jobs:
           terraform_version: "1.9.8"
 
       - name: Prepare Terraform variables
-        run: cp terraform.tfvars.example terraform.tfvars
+        run: |
+          cp terraform.tfvars.example terraform.tfvars
+          jq -n --arg image_tag "${{ inputs.image_tag }}" '{image_tag: $image_tag}' > zz-workflow.auto.tfvars.json
 
       - name: Prepare API runtime variables
         env:
