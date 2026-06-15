@@ -48,7 +48,7 @@ resource "azurerm_container_app" "api" {
 
   registry {
     server               = azurerm_container_registry.this.login_server
-    username             = azurerm_container_registry.this.admin_username
+    username             = azurerm_container_registry.this.name
     password_secret_name = "acr-password"
   }
 
@@ -120,7 +120,7 @@ resource "azurerm_container_app" "frontend" {
 
   registry {
     server               = azurerm_container_registry.this.login_server
-    username             = azurerm_container_registry.this.admin_username
+    username             = azurerm_container_registry.this.name
     password_secret_name = "acr-password"
   }
 
