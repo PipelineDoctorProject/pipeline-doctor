@@ -3,7 +3,6 @@ resource_group_name             = "opssight-staging-rg"
 container_registry_name         = "opssightstagingacr"
 container_apps_environment_name = "opssight-staging-env"
 log_analytics_workspace_name    = "opssight-staging-logs"
-image_tag                       = "staging-latest"
 
 tags = {
   owner = "mlops"
