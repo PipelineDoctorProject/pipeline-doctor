@@ -30,6 +30,39 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "image_tag" {
+  description = "Container image tag to deploy."
+  type        = string
+  default     = "dev-latest"
+}
+
+variable "api_container_app_name" {
+  description = "Development FastAPI Container App name."
+  type        = string
+  default     = "opssight-api-dev"
+}
+
+variable "frontend_container_app_name" {
+  description = "Development frontend Container App name."
+  type        = string
+  default     = "opssight-frontend-dev"
+}
+
+variable "api_environment_variables" {
+  description = "Non-secret FastAPI runtime environment variables."
+  type        = map(string)
+  default = {
+    APP_ENV = "development"
+  }
+}
+
+variable "api_secret_environment_variables" {
+  description = "Secret FastAPI runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
 variable "tags" {
   description = "Additional Azure tags."
   type        = map(string)
