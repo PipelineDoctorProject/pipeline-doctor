@@ -17,3 +17,13 @@ output "container_apps_environment_id" {
   description = "Azure Container Apps environment id."
   value       = module.platform.container_apps_environment_id
 }
+
+output "api_container_app_url" {
+  description = "Public FastAPI Container App URL."
+  value       = module.platform.api_container_app_url
+}
+
+output "frontend_container_app_url" {
+  description = "Public frontend Container App URL."
+  value       = module.platform.frontend_container_app_url
+}
