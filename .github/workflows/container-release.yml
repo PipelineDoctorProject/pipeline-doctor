@@ -138,6 +138,22 @@ jobs:
             -t ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }} \
             .
 
+      - name: Verify frontend build config
+        run: |
+          docker create --name frontend-build-check ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
+          docker cp frontend-build-check:/usr/share/nginx/html ./frontend-dist-check
+          docker rm frontend-build-check
+
+          if grep -R "localhost:8000" ./frontend-dist-check; then
+            echo "Frontend bundle still contains localhost:8000. Check VITE_API_URL and rebuild with a new image_tag."
+            exit 1
+          fi
+
+          if ! grep -R "${VITE_API_URL}" ./frontend-dist-check; then
+            echo "Frontend bundle does not contain VITE_API_URL=${VITE_API_URL}."
+            exit 1
+          fi
+
       - name: Tag images for ACR
         if: inputs.push_images
         run: |
@@ -161,3 +177,5 @@ jobs:
           echo "Built images with tag: ${{ inputs.image_tag }}"
           echo "Environment: ${{ inputs.environment }}"
           echo "Push enabled: ${{ inputs.push_images }}"
+          echo "Frontend VITE_API_URL: ${VITE_API_URL}"
+          echo "Frontend VITE_WS_URL: ${VITE_WS_URL}"
