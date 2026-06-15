@@ -31,6 +31,8 @@ env:
   FRONTEND_IMAGE: opssight-frontend
   AZURE_CONTAINER_REGISTRY_NAME: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME || secrets.AZURE_CONTAINER_REGISTRY_NAME }}
   AZURE_CONTAINER_REGISTRY_LOGIN_SERVER: ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER || secrets.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}
+  VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
+  VITE_WS_URL: ${{ vars.VITE_WS_URL || secrets.VITE_WS_URL }}
 
 jobs:
   build:
@@ -113,10 +115,26 @@ jobs:
             -t ${{ env.API_IMAGE }}:${{ inputs.image_tag }} \
             ./backend/fastapi
 
+      - name: Resolve frontend build config
+        run: |
+          if [ -z "${VITE_API_URL}" ]; then
+            echo "Missing GitHub Environment variable VITE_API_URL for '${{ inputs.environment }}'."
+            echo "Set it to the public API URL, for example: https://opssight-api-dev.<suffix>.azurecontainerapps.io"
+            exit 1
+          fi
+
+          if [ -z "${VITE_WS_URL}" ]; then
+            VITE_WS_URL="${VITE_API_URL/https:/wss:}"
+            VITE_WS_URL="${VITE_WS_URL/http:/ws:}"
+            echo "VITE_WS_URL=${VITE_WS_URL}" >> "$GITHUB_ENV"
+          fi
+
       - name: Build frontend image
         run: |
           docker build \
             -f frontend/Dockerfile \
+            --build-arg VITE_API_URL="${VITE_API_URL}" \
+            --build-arg VITE_WS_URL="${VITE_WS_URL}" \
             -t ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }} \
             .
 

@@ -19,6 +19,10 @@ on:
           - plan
           - apply
         default: plan
+      image_tag:
+        description: Container image tag to deploy.
+        required: true
+        default: dev-latest
 
 permissions:
   contents: read
@@ -29,6 +33,8 @@ jobs:
     name: Terraform ${{ inputs.action }} (${{ inputs.environment }})
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    env:
+      TF_VAR_image_tag: ${{ inputs.image_tag }}
     defaults:
       run:
         working-directory: deploy/terraform/environments/${{ inputs.environment }}

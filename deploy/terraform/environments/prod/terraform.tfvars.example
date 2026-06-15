@@ -4,6 +4,7 @@ container_registry_name         = "opssightprodacr"
 container_apps_environment_name = "opssight-prod-env"
 log_analytics_workspace_name    = "opssight-prod-logs"
 log_retention_days              = 90
+image_tag                       = "prod-latest"
 
 tags = {
   owner      = "mlops"

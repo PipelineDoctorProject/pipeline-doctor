@@ -92,6 +92,12 @@ variable "frontend_environment_variables" {
   default     = {}
 }
 
+variable "frontend_public_url" {
+  description = "Public frontend URL allowed by the FastAPI CORS configuration. Defaults to the managed Container App URL."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common resource tags."
   type        = map(string)

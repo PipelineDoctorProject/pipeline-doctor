@@ -30,6 +30,12 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "image_tag" {
+  description = "Container image tag to deploy."
+  type        = string
+  default     = "staging-latest"
+}
+
 variable "tags" {
   description = "Additional Azure tags."
   type        = map(string)
