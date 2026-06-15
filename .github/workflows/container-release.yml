@@ -53,6 +53,8 @@ jobs:
       - name: Resolve ACR settings
         if: inputs.push_images
         run: |
+          tfvars_file="deploy/terraform/environments/${{ inputs.environment }}/terraform.tfvars.example"
+
           if [ -n "${AZURE_CONTAINER_REGISTRY_NAME}" ]; then
             acr_name="${AZURE_CONTAINER_REGISTRY_NAME#https://}"
             acr_name="${acr_name#http://}"
@@ -72,8 +74,28 @@ jobs:
             AZURE_CONTAINER_REGISTRY_LOGIN_SERVER="${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
           fi
 
+          if [ -f "${tfvars_file}" ]; then
+            tfvars_acr_name="$(sed -n 's/^container_registry_name[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "${tfvars_file}")"
+
+            if [ -n "${tfvars_acr_name}" ]; then
+              if ! az acr show --name "${AZURE_CONTAINER_REGISTRY_NAME}" > /dev/null 2>&1; then
+                echo "Using ACR name from ${tfvars_file}."
+                echo "AZURE_CONTAINER_REGISTRY_NAME=${tfvars_acr_name}" >> "$GITHUB_ENV"
+                echo "AZURE_CONTAINER_REGISTRY_LOGIN_SERVER=${tfvars_acr_name}.azurecr.io" >> "$GITHUB_ENV"
+                AZURE_CONTAINER_REGISTRY_NAME="${tfvars_acr_name}"
+                AZURE_CONTAINER_REGISTRY_LOGIN_SERVER="${tfvars_acr_name}.azurecr.io"
+              fi
+            fi
+          fi
+
           if [ -z "${AZURE_CONTAINER_REGISTRY_NAME}" ] && [ -z "${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}" ]; then
             echo "Missing dev environment variables: AZURE_CONTAINER_REGISTRY_NAME and AZURE_CONTAINER_REGISTRY_LOGIN_SERVER"
+            exit 1
+          fi
+
+          if ! az acr show --name "${AZURE_CONTAINER_REGISTRY_NAME}" > /dev/null; then
+            echo "Azure Container Registry '${AZURE_CONTAINER_REGISTRY_NAME}' was not found in the logged-in subscription."
+            echo "Run the IaC workflow with environment='${{ inputs.environment }}' and action='apply', then rerun this workflow."
             exit 1
           fi
 
