@@ -53,12 +53,23 @@ jobs:
       - name: Resolve ACR settings
         if: inputs.push_images
         run: |
+          if [ -n "${AZURE_CONTAINER_REGISTRY_NAME}" ]; then
+            acr_name="${AZURE_CONTAINER_REGISTRY_NAME#https://}"
+            acr_name="${acr_name#http://}"
+            acr_name="${acr_name%%/*}"
+            acr_name="${acr_name%%.azurecr.io}"
+            echo "AZURE_CONTAINER_REGISTRY_NAME=${acr_name}" >> "$GITHUB_ENV"
+            AZURE_CONTAINER_REGISTRY_NAME="${acr_name}"
+          fi
+
           if [ -z "${AZURE_CONTAINER_REGISTRY_NAME}" ] && [ -n "${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}" ]; then
             echo "AZURE_CONTAINER_REGISTRY_NAME=${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER%%.azurecr.io}" >> "$GITHUB_ENV"
+            AZURE_CONTAINER_REGISTRY_NAME="${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER%%.azurecr.io}"
           fi
 
           if [ -z "${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}" ] && [ -n "${AZURE_CONTAINER_REGISTRY_NAME}" ]; then
             echo "AZURE_CONTAINER_REGISTRY_LOGIN_SERVER=${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io" >> "$GITHUB_ENV"
+            AZURE_CONTAINER_REGISTRY_LOGIN_SERVER="${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
           fi
 
           if [ -z "${AZURE_CONTAINER_REGISTRY_NAME}" ] && [ -z "${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}" ]; then
