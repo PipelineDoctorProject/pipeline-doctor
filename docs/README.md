@@ -34,7 +34,7 @@ Post-clean quality gate decides whether downstream work is safe
             +-- prediction runs when a model is loadable
             +-- drift checks run against the active baseline
             +-- incident group is created when signals are severe enough
-            +-- Slack and WebSocket updates publish one run-level alert
+            +-- Slack, WebSocket, and navbar notification updates publish one run-level alert
 ```
 
 ---
@@ -73,7 +73,12 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 
 | File | Purpose |
 |---|---|
-| [setup.md](./setup.md) | Local Docker setup, environment variables, and startup flow |
+| [setup.md](./setup.md) | Local Docker setup, root/backend/frontend env layers, and startup flow |
+| [environment_modes.md](./environment_modes.md) | Development vs production runtime modes, env files, migrations, and worker queues |
+| [ci_cd.md](./ci_cd.md) | GitHub Actions CI/CD, Terraform, Ansible, secrets, and deployment workflow setup |
+| [production_deployment.md](./production_deployment.md) | Production deployment checklist for Airflow, MLflow, secrets, storage, and promotion |
+| [../deploy/azure/README.md](../deploy/azure/README.md) | Azure hosting topology, image build flow, Container Apps commands, and readiness gates |
+| [repository_structure.md](./repository_structure.md) | Source layout, generated artifacts, and production repo hygiene |
 | [overview.md](./overview.md) | High-level product and architecture overview |
 | [authentication.md](./authentication.md) | Signup, OTP, onboarding, invite flow, roles, and tenant isolation |
 | [auth_and_tenant.md](./auth_and_tenant.md) | Tenant hardening workstream notes and acceptance criteria |
@@ -82,6 +87,7 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 | [schema_evolution.md](./schema_evolution.md) | Pending schema changes, approval/rejection, and feature impact |
 | [drift_detection.md](./drift_detection.md) | PSI, KS, severity, and drift execution rules |
 | [incidents_and_realtime.md](./incidents_and_realtime.md) | Run-level incident grouping, WebSocket updates, and alert model |
+| [notifications.md](./notifications.md) | Navbar notification bell, unread counts, Slack/email context, and WebSocket delivery |
 | [remediation.md](./remediation.md) | Approval, retraining, candidate staging, rejection, and deployment confirmation |
 | [model_lifecycle.md](./model_lifecycle.md) | MLflow aliases, candidate/staging/champion lifecycle, and production deployment contract |
 | [ml_integration.md](./ml_integration.md) | MLflow loading, feature filtering, supervised vs unsupervised behavior |
@@ -102,13 +108,16 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 - Invited members complete password setup and join the admin's tenant.
 - Member users can view allowed monitoring pages, while admin-only actions stay protected.
 - Model-scoped endpoints verify the model belongs to the current tenant.
-- Airflow no longer relies on one hardcoded model id/name in `.env`.
+- Airflow no longer relies on one hardcoded model id/name or guessed latest CSV in `.env`.
 - DAG runs can be model-specific through DAG trigger config or Airflow Variables.
+- DAG runs require an explicit batch input path or pre-signed input URI.
 - Data cleaning produces accepted and quarantined artifacts.
 - Post-clean validation gates prediction, drift, and remediation safety.
 - Run-level incident grouping prevents Slack spam from many low-level findings.
 - WebSocket incident updates refresh pages without manual reloads.
 - Slack delivers one top-level run alert per incident group.
+- Navbar notification bell updates unread incident count from incident WebSocket events, with polling fallback.
+- Notification dropdown shows recent run-level incident alerts and Slack/email delivery context.
 - Full production reports summarize RCA evidence, remediation state, candidate status, and next actions.
 - Remediation creates MLflow candidates without mutating the live champion.
 - Candidate staging and champion deployment confirmation are split into separate human-reviewed steps.
@@ -131,6 +140,7 @@ Local development uses Docker Compose for:
 Local MLflow and Airflow are intentionally simple, but the application flow mirrors production:
 
 - model identity comes from model registration and DAG config
+- batch identity comes from explicit DAG input config
 - user identity comes from OpsSight auth
 - workspace isolation comes from tenant schema selection
 - remediation changes are staged before champion confirmation
@@ -142,12 +152,14 @@ Local MLflow and Airflow are intentionally simple, but the application flow mirr
 In production, OpsSight should not be the system that blindly deploys models into customer serving infrastructure. The safer contract is:
 
 - OpsSight detects issues and creates evidence.
+- Airflow/customer orchestration sends explicit batch artifacts to OpsSight.
 - OpsSight can retrain or trigger a customer retraining workflow.
 - OpsSight logs a candidate model with metrics and artifacts.
 - OpsSight stages the candidate in MLflow.
 - Customer CI/CD deploys the staging alias to serving.
 - Smoke tests and health checks validate serving behavior.
 - OpsSight confirms deployment and starts monitoring the champion alias.
+- Realtime transports are tenant-authenticated and tenant-scoped before public multi-tenant rollout.
 
 This keeps observability, approval, model registry, and serving deployment responsibilities cleanly separated.
 

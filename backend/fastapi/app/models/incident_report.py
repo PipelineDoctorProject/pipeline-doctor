@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -22,7 +22,7 @@ class IncidentReport(Base):
     evidence_hash = Column(String, nullable=False)
     generator = Column(String, nullable=False, default="deterministic")
     generator_model = Column(String, nullable=True)
-    content = Column(JSONB, nullable=False)
+    content = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     incident = relationship("Incident", back_populates="reports")

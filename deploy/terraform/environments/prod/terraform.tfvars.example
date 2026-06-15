@@ -1,0 +1,11 @@
+location                        = "eastus"
+resource_group_name             = "opssight-prod-rg"
+container_registry_name         = "opssightprodacr"
+container_apps_environment_name = "opssight-prod-env"
+log_analytics_workspace_name    = "opssight-prod-logs"
+log_retention_days              = 90
+
+tags = {
+  owner      = "mlops"
+  costcenter = "production"
+}

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { WS_BASE_URL } from "../config/runtime";
 
-const WS_BASE = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+const WS_BASE = WS_BASE_URL;
 
 /**
  * useAgentWebSocket
  *
- * Connects to ws://localhost:8000/ws/agent-trace/{runId}
+ * Connects to the configured API websocket endpoint for a run trace.
  * and streams LangGraph step events in real time.
  *
  * Returns:

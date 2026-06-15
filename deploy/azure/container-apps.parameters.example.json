@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "staging"
+    },
+    "backendImage": {
+      "value": "YOUR_ACR.azurecr.io/opssight-api:TAG"
+    },
+    "frontendImage": {
+      "value": "YOUR_ACR.azurecr.io/opssight-frontend:TAG"
+    },
+    "secretKey": {
+      "value": "REPLACE_WITH_KEY_VAULT_OR_CI_SECRET"
+    },
+    "databaseUrl": {
+      "value": "postgresql+psycopg2://USER:PASSWORD@HOST:5432/DB?sslmode=require"
+    },
+    "redisUrl": {
+      "value": "rediss://:PASSWORD@HOST:6380/0"
+    },
+    "frontendUrl": {
+      "value": "https://YOUR_FRONTEND_DOMAIN"
+    },
+    "mlflowTrackingUri": {
+      "value": "https://YOUR_MLFLOW_DOMAIN"
+    }
+  }
+}

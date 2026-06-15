@@ -168,7 +168,7 @@ This lets tenant-scoped SQLAlchemy models resolve into the correct tenant schema
 The current production-style safeguards are:
 
 - tenant schema bootstrap creates required tenant tables explicitly
-- startup repair can backfill missing tenant tables for older partially created workspaces
+- tenant schema repair can backfill missing tenant tables for older partially created workspaces, but it is run as a controlled migration/maintenance command
 - model-filtered endpoints verify that the requested `model_id` belongs to the current tenant
 - frontend model-selection state is scoped per tenant and per user
 - backend remains the final enforcement layer for data ownership
@@ -180,6 +180,7 @@ The current production-style safeguards are:
 - invited members should only see their tenant's data
 - admins can invite members during onboarding and later from the dashboard
 - onboarding returns refreshed tenant-aware tokens; the frontend must store the new access token before calling protected routes
+- production deploys should run `alembic upgrade head` and then `python scripts/repair_tenant_schemas.py` before API replicas are started or scaled
 
 ---
 

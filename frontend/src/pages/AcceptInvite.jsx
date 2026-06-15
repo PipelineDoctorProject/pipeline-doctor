@@ -6,8 +6,8 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import Logo from "../assets/logo_og.png";
 import Logo2 from '../assets/logo2.png'
+import { apiUrl } from "../config/runtime";
 
 export default function AcceptInvitePage() {
 
@@ -46,7 +46,7 @@ export default function AcceptInvitePage() {
   try {
 
     const response = await fetch(
-      "http://localhost:8000/invite/accept",
+      apiUrl("/invite/accept"),
       {
         method: "POST",
 

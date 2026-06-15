@@ -1,0 +1,8 @@
+opssight_required_runtime_keys:
+  - APP_ENV
+  - DATABASE_URL
+  - JWT_SECRET_KEY
+  - REDIS_URL
+  - CELERY_BROKER_URL
+  - CELERY_RESULT_BACKEND
+  - MLFLOW_TRACKING_URI

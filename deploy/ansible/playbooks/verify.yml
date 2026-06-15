@@ -1,0 +1,18 @@
+---
+- name: OpsSight deployment verification
+  hosts: local
+  gather_facts: false
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Show verification target
+      ansible.builtin.debug:
+        msg: "Running OpsSight verification for {{ opssight_environment | default('dev') }}."
+
+    - name: Verify required variables list exists
+      ansible.builtin.assert:
+        that:
+          - opssight_required_runtime_keys is defined
+          - opssight_required_runtime_keys | length > 0
+        fail_msg: "Required runtime key list is missing."

@@ -11,11 +11,13 @@ from app.models.incident_group import IncidentGroup
 from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
 from app.models.drift_finding import DriftFinding
+from app.models.ml_model import MLModel
 from app.models.pipeline_run import PipelineRun
 from app.services.incidents.grouping import attach_incident_to_group
 from app.services.incidents.live_events import publish_incident_event
 from app.services.slack_service import send_incident_notification
 from app.services.access_control import require_accessible_model
+from app.services.remediation import decide_remediation
 
 from app.schemas.incident import (
     IncidentCreate,
@@ -69,6 +71,7 @@ def list_incidents(
     return _serialized_incidents(
         db,
         model_id=model_id,
+        tenant_id=current_user.tenant_id,
     )
 
 
@@ -84,6 +87,7 @@ def filter_incidents(
     return _serialized_incidents(
         db,
         model_id=model_id,
+        tenant_id=current_user.tenant_id,
     )
 
 
@@ -106,6 +110,8 @@ def get_incident(
             status_code=404,
             detail="Incident not found"
         )
+
+    require_accessible_model(db, incident.run.model_id, current_user.tenant_id)
 
     drift_finding = None
     if incident.finding_type == "drift" and incident.finding_id:
@@ -138,6 +144,8 @@ def get_incident_agent_runs(
             detail="Incident not found"
         )
 
+    require_accessible_model(db, incident.run.model_id, current_user.tenant_id)
+
     runs = (
         db.query(AgentRun)
         .filter(
@@ -168,6 +176,8 @@ def get_incident_children(
             status_code=404,
             detail="Incident not found"
         )
+
+    require_accessible_model(db, incident.run.model_id, current_user.tenant_id)
 
     if not incident.group_id:
         return [_serialize_incident(incident)]
@@ -226,8 +236,12 @@ def _serialize_incident(
 ):
 
     rca_report = _parse_rca_report(incident.description)
-    remediation = _parse_remediation(rca_report)
     final_report = _parse_final_report(rca_report)
+    remediation = _derive_remediation_policy(
+        incident,
+        rca_report,
+        final_report,
+    )
 
     return {
         "id": incident.id,
@@ -264,15 +278,19 @@ def _serialize_incident(
 def _serialized_incidents(
     db: Session,
     model_id: int | None = None,
+    tenant_id: str | None = None,
 ):
-    query = db.query(IncidentGroup)
+    query = (
+        db.query(IncidentGroup)
+        .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
+        .join(MLModel, PipelineRun.model_id == MLModel.id)
+    )
+
+    if tenant_id:
+        query = query.filter(MLModel.tenant_id == tenant_id)
 
     if model_id is not None:
-        query = (
-            query
-            .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
-            .filter(PipelineRun.model_id == model_id)
-        )
+        query = query.filter(PipelineRun.model_id == model_id)
 
     groups = query.order_by(IncidentGroup.created_at.desc(), IncidentGroup.id.desc()).all()
 
@@ -432,6 +450,63 @@ def _parse_remediation(
 
     remediation = rca_report.get("remediation")
     return remediation if isinstance(remediation, dict) else None
+
+
+def _derive_remediation_policy(
+    incident: Incident,
+    rca_report: dict | None,
+    final_report: dict | None,
+):
+    stored_remediation = _parse_remediation(rca_report)
+    failure_types = _extract_failure_types(rca_report, final_report)
+
+    if not failure_types:
+        return stored_remediation
+
+    policy = decide_remediation(
+        {
+            "severity": incident.severity,
+            "failure_types": failure_types,
+        }
+    )
+
+    if stored_remediation:
+        merged_policy = {
+            **stored_remediation,
+            **policy,
+        }
+        return merged_policy
+
+    return policy
+
+
+def _extract_failure_types(
+    rca_report: dict | None,
+    final_report: dict | None,
+) -> list[str]:
+    candidate_sources = [
+        rca_report,
+        final_report,
+    ]
+
+    if isinstance(rca_report, dict):
+        report = rca_report.get("report")
+        if isinstance(report, dict):
+            candidate_sources.append(report)
+
+    for source in candidate_sources:
+        if not isinstance(source, dict):
+            continue
+
+        failure_types = source.get("failure_types")
+        if isinstance(failure_types, list):
+            return [
+                str(failure_type)
+                for failure_type in failure_types
+                if failure_type
+            ]
+
+    return []
 
 
 def _parse_final_report(

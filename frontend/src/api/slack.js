@@ -5,8 +5,13 @@ export async function getSlackStatus() {
   return response.data;
 }
 
-export async function getSlackConnectUrl() {
-  const response = await api.get("/slack/connect");
+export async function getSlackConnectUrl({ workspaceName, slackTeamId } = {}) {
+  const response = await api.get("/slack/connect", {
+    params: {
+      workspace_name: workspaceName,
+      slack_team_id: slackTeamId || undefined,
+    },
+  });
   return response.data;
 }
 

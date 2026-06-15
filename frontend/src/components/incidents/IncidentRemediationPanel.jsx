@@ -41,6 +41,44 @@ const RUN_STATUS_STYLES = {
   default: "border-slate-200 bg-slate-50 text-slate-700",
 };
 
+const APPROVAL_BLOCKER_STYLES = {
+  red: {
+    box: "border-red-200 bg-red-50",
+    icon: "bg-red-100 text-red-700",
+    title: "text-red-950",
+    detail: "text-red-800",
+    dot: "bg-red-500",
+  },
+  amber: {
+    box: "border-amber-200 bg-amber-50",
+    icon: "bg-amber-100 text-amber-700",
+    title: "text-amber-950",
+    detail: "text-amber-800",
+    dot: "bg-amber-500",
+  },
+  violet: {
+    box: "border-violet-200 bg-violet-50",
+    icon: "bg-violet-100 text-violet-700",
+    title: "text-violet-950",
+    detail: "text-violet-800",
+    dot: "bg-violet-500",
+  },
+  blue: {
+    box: "border-blue-200 bg-blue-50",
+    icon: "bg-blue-100 text-blue-700",
+    title: "text-blue-950",
+    detail: "text-blue-800",
+    dot: "bg-blue-500",
+  },
+  slate: {
+    box: "border-slate-200 bg-slate-50",
+    icon: "bg-slate-200 text-slate-700",
+    title: "text-slate-900",
+    detail: "text-slate-600",
+    dot: "bg-slate-400",
+  },
+};
+
 function formatDate(value) {
   if (!value) return "Not available";
 
@@ -117,6 +155,48 @@ function SummaryCard({ label, value, detail, icon: Icon, tone = "slate" }) {
   );
 }
 
+function ApprovalBlockerCard({ blocker }) {
+  const styles = APPROVAL_BLOCKER_STYLES[blocker?.tone] || APPROVAL_BLOCKER_STYLES.slate;
+
+  return (
+    <div className={`mt-3 rounded-lg border p-4 ${styles.box}`}>
+      <div className="flex items-start gap-3">
+        <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${styles.icon}`}>
+          <ShieldAlert size={16} />
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+            Why approval is hidden
+          </p>
+          <p className={`mt-1 text-[13px] font-semibold ${styles.title}`}>
+            {blocker?.title || "No approval action is available right now"}
+          </p>
+          <p className={`mt-1 text-[12px] leading-5 ${styles.detail}`}>
+            {blocker?.detail ||
+              "This incident is currently guidance-only or already covered by an existing remediation run."}
+          </p>
+        </div>
+      </div>
+
+      {blocker?.items?.length > 0 && (
+        <div className="mt-4 rounded-md border border-white/70 bg-white/60 p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+            Production next step
+          </p>
+          <div className="mt-2 space-y-2">
+            {blocker.items.map((item) => (
+              <div key={item} className="flex gap-2 text-[12px] leading-5 text-slate-700">
+                <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${styles.dot}`} />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function deriveRemediationSummary(incident) {
   if (incident?.remediation) {
     return incident.remediation;
@@ -126,20 +206,213 @@ function deriveRemediationSummary(incident) {
     return null;
   }
 
+  const actionType = incident.final_report.action_type;
+  const requiresApproval = Boolean(incident.final_report.requires_approval);
+  const approvalBackedAction =
+    requiresApproval &&
+    ["retrain_model", "retrain_clustering", "clustering_retrain"].includes(actionType);
+  const manualOnly =
+    Boolean(incident.final_report.manual_action_required) && !approvalBackedAction;
+
   return {
     recommended_action:
       incident.final_report.recommended_action ||
       incident.final_report.action_taken ||
       "Review the final report before executing remediation.",
-    action_type: incident.final_report.action_type,
+    action_type: actionType,
     action_mode: incident.final_report.action_mode,
-    requires_approval: Boolean(incident.final_report.requires_approval),
-    allowed_to_execute: !incident.final_report.manual_action_required,
-    manual_only: Boolean(incident.final_report.manual_action_required),
+    requires_approval: requiresApproval,
+    allowed_to_execute: approvalBackedAction || !manualOnly,
+    manual_only: manualOnly,
     reason:
       incident.final_report.timeline_summary ||
       incident.final_report.action_taken ||
       "Refer to the final incident report for lifecycle details.",
+  };
+}
+
+const SOURCE_DATA_FAILURE_TYPES = new Set([
+  "SCHEMA_MISMATCH",
+  "MISSING_COLUMNS",
+  "EXTRA_COLUMNS",
+  "DATA_QUALITY",
+  "NULL_SPIKE",
+  "RANGE_VIOLATION",
+  "CATEGORICAL_SHIFT",
+]);
+
+const RETRAINING_FAILURE_TYPES = new Set([
+  "DATA_DRIFT",
+  "CONCEPT_DRIFT",
+  "MODEL_DEGRADATION",
+]);
+
+function extractFailureTypes(incident) {
+  const sources = [
+    incident?.remediation?.failure_types,
+    incident?.final_report?.failure_types,
+    incident?.report?.failure_types,
+    incident?.rca_report?.failure_types,
+  ];
+
+  return [
+    ...new Set(
+      sources
+        .flatMap((value) => (Array.isArray(value) ? value : []))
+        .map((value) => String(value || "").trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function getIncidentSeverity(incident, remediation) {
+  return String(
+    remediation?.severity ||
+      incident?.severity ||
+      incident?.final_report?.severity ||
+      incident?.report?.severity ||
+      "",
+  ).toLowerCase();
+}
+
+function buildApprovalBlocker({
+  incident,
+  remediation,
+  context,
+  activeRun,
+  reviewRun,
+  stagedRun,
+  terminalRun,
+  isAdmin,
+}) {
+  const failureTypes = extractFailureTypes(incident);
+  const sourceDataBlockers = failureTypes.filter((type) => SOURCE_DATA_FAILURE_TYPES.has(type));
+  const hasRetrainingSignal = failureTypes.some((type) => RETRAINING_FAILURE_TYPES.has(type));
+  const severity = getIncidentSeverity(incident, remediation);
+
+  if (!isAdmin) {
+    return {
+      tone: "slate",
+      title: "Admin approval required",
+      detail: "Only workspace admins can approve retraining, stage candidates, reject runs, or confirm deployment.",
+      items: ["Ask a workspace admin to review this incident and choose the next production action."],
+    };
+  }
+
+  if (activeRun) {
+    return {
+      tone: "amber",
+      title: `Remediation run #${activeRun.id} is already ${humanize(activeRun.status)}`,
+      detail: "OpsSight allows one active remediation run per incident to avoid duplicate candidate models and conflicting state transitions.",
+      items: ["Wait for the run to finish, or request cancellation if the current run is no longer valid."],
+    };
+  }
+
+  if (reviewRun) {
+    return {
+      tone: "violet",
+      title: `Candidate run #${reviewRun.id} is waiting for promotion review`,
+      detail: "A candidate model already exists. Review its metrics and either stage or reject it before starting another retraining run.",
+      items: ["Use Stage candidate to move it to the staging alias, or Reject candidate to discard it."],
+    };
+  }
+
+  if (stagedRun) {
+    return {
+      tone: "blue",
+      title: `Candidate run #${stagedRun.id} is already staged`,
+      detail: "The model is waiting for deployment confirmation. OpsSight should not create another candidate until CI/CD finishes deploying this staged version.",
+      items: ["Deploy the staged MLflow alias in your serving pipeline, run smoke tests, then confirm deployment here."],
+    };
+  }
+
+  if (terminalRun) {
+    return {
+      tone: "blue",
+      title: `Remediation run #${terminalRun.id} is already ${humanize(terminalRun.status)}`,
+      detail:
+        "The candidate lifecycle for this incident is complete, so OpsSight should not start another retraining run for the same incident.",
+      items: [
+        "Monitor the promoted model version in the next production DAG runs.",
+        "Resolve or close this incident after confirming production health checks, Slack alerts, and report records are correct.",
+      ],
+    };
+  }
+
+  if (severity === "critical") {
+    return {
+      tone: "red",
+      title: "Critical incident is manual-first",
+      detail: "For production safety, critical incidents are not retrained directly from the failed batch. The source issue must be validated or fixed first.",
+      items: [
+        sourceDataBlockers.length
+          ? `Blocking evidence: ${sourceDataBlockers.map(humanize).join(", ")}.`
+          : "Review the RCA report and validate the production data source.",
+        "Fix the upstream data, schema, or ingestion problem, then rerun the DAG with corrected data.",
+        "Approve retraining only if the next incident is a retraining-safe drift or model degradation case.",
+      ],
+    };
+  }
+
+  if (sourceDataBlockers.length > 0) {
+    return {
+      tone: "amber",
+      title: "Retraining is blocked by data or schema quality",
+      detail: "The approval button appears only after the batch is safe enough to train from. This incident still contains source-data problems.",
+      items: [
+        `Blocking evidence: ${sourceDataBlockers.map(humanize).join(", ")}.`,
+        "Fix or approve the source/schema change, rerun the DAG, and use the new incident for remediation approval.",
+      ],
+    };
+  }
+
+  if (context?.cleaned_data_available === false) {
+    return {
+      tone: "amber",
+      title: "Cleaned training data is not available",
+      detail: "Retraining needs a validated cleaned dataset from the pipeline run before OpsSight can create a candidate model.",
+      items: ["Rerun the DAG and confirm the cleaned output is saved before approving remediation."],
+    };
+  }
+
+  if (remediation?.manual_only) {
+    return {
+      tone: "slate",
+      title: "Manual investigation required",
+      detail:
+        remediation?.reason ||
+        "The current remediation policy marked this incident as guidance-only.",
+      items: ["Document the investigation outcome, fix the source issue, and rerun monitoring."],
+    };
+  }
+
+  if (remediation?.requires_approval && !hasRetrainingSignal) {
+    return {
+      tone: "slate",
+      title: "No retraining-safe signal was detected",
+      detail: "Production retraining approval is shown only for drift, concept drift, or model degradation without data/schema blockers.",
+      items: ["Use the RCA report to decide whether this is a source fix, schema approval, or baseline refresh instead."],
+    };
+  }
+
+  if (remediation && !remediation.allowed_to_execute) {
+    return {
+      tone: "slate",
+      title: "Remediation execution is disabled by policy",
+      detail:
+        remediation?.reason ||
+        "The backend remediation policy did not allow this incident to start a retraining run.",
+      items: ["Review the report recommendation and rerun the pipeline after the production issue is resolved."],
+    };
+  }
+
+  return {
+    tone: "slate",
+    title: "No approval action is available right now",
+    detail:
+      remediation?.reason ||
+      "This incident is currently guidance-only, already resolved, or not eligible for automated remediation.",
+    items: ["Review the report and keep the incident open until the owner documents the next action."],
   };
 }
 
@@ -150,6 +423,7 @@ export default function IncidentRemediationPanel({
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === "admin";
   const remediation = deriveRemediationSummary(incident);
+  const incidentId = incident?.id;
 
   const [context, setContext] = useState(null);
   const [runs, setRuns] = useState([]);
@@ -167,18 +441,18 @@ export default function IncidentRemediationPanel({
   const loadVersionRef = useRef(0);
 
   const loadContext = useCallback(async (version = loadVersionRef.current) => {
-    if (!incident?.id) return;
+    if (!incidentId) return;
 
     try {
       setLoadingContext(true);
-      const data = await retryOnce(() => getRemediationContext(incident.id));
+      const data = await retryOnce(() => getRemediationContext(incidentId));
       if (version !== loadVersionRef.current) return;
       setContext(data);
     } catch (error) {
       console.log(error);
       if (version === loadVersionRef.current) {
         toast.error("Failed to load remediation context", {
-          id: `remediation-context-${incident.id}`,
+          id: `remediation-context-${incidentId}`,
         });
       }
     } finally {
@@ -186,14 +460,14 @@ export default function IncidentRemediationPanel({
         setLoadingContext(false);
       }
     }
-  }, [incident?.id]);
+  }, [incidentId]);
 
   const loadRuns = useCallback(async (version = loadVersionRef.current) => {
-    if (!incident?.id) return;
+    if (!incidentId) return;
 
     try {
       setLoadingRuns(true);
-      const data = await retryOnce(() => getRemediationRunsForIncident(incident.id));
+      const data = await retryOnce(() => getRemediationRunsForIncident(incidentId));
       if (version !== loadVersionRef.current) return;
       setRuns(data || []);
       const preferredRun = (data || []).find((run) =>
@@ -206,7 +480,7 @@ export default function IncidentRemediationPanel({
       console.log(error);
       if (version === loadVersionRef.current) {
         toast.error("Failed to load remediation history", {
-          id: `remediation-runs-${incident.id}`,
+          id: `remediation-runs-${incidentId}`,
         });
       }
     } finally {
@@ -214,7 +488,7 @@ export default function IncidentRemediationPanel({
         setLoadingRuns(false);
       }
     }
-  }, [incident?.id]);
+  }, [incidentId]);
 
   const loadLogs = useCallback(async (remediationRunId, version = loadVersionRef.current) => {
     if (!remediationRunId) {
@@ -252,7 +526,7 @@ export default function IncidentRemediationPanel({
     setReviewNotes("");
     loadContext(version);
     loadRuns(version);
-  }, [incident?.id, loadContext, loadRuns]);
+  }, [incidentId, loadContext, loadRuns]);
 
   useEffect(() => {
     if (!targetColumn && context) {
@@ -294,6 +568,14 @@ export default function IncidentRemediationPanel({
     [runs],
   );
 
+  const terminalRun = useMemo(
+    () =>
+      runs.find((run) =>
+        ["deployed", "promoted"].includes(String(run.status || "").toLowerCase()),
+      ) || null,
+    [runs],
+  );
+
   const latestRun = runs[0] || null;
   const canApprove = Boolean(
     isAdmin &&
@@ -301,7 +583,8 @@ export default function IncidentRemediationPanel({
       remediation?.requires_approval &&
       !activeRun &&
       !reviewRun &&
-      !stagedRun,
+      !stagedRun &&
+      !terminalRun,
   );
   const canReject = Boolean(
     isAdmin &&
@@ -310,6 +593,16 @@ export default function IncidentRemediationPanel({
   );
   const canPromote = Boolean(isAdmin && reviewRun);
   const canConfirmDeployment = Boolean(isAdmin && stagedRun);
+  const approvalBlocker = buildApprovalBlocker({
+    incident,
+    remediation,
+    context,
+    activeRun,
+    reviewRun,
+    stagedRun,
+    terminalRun,
+    isAdmin,
+  });
   const candidateLogPayload = useMemo(() => {
     const matchingPayload = logs
       .map((log) => log?.payload)
@@ -339,7 +632,7 @@ export default function IncidentRemediationPanel({
     try {
       setSubmitting(true);
       const response = await approveRemediationForIncident(
-        incident.id,
+        incidentId,
         targetRequired ? normalizedTarget : null,
       );
       toast.success(response.message || "Remediation approved.");
@@ -572,11 +865,11 @@ export default function IncidentRemediationPanel({
                       <input
                         value={targetColumn}
                         onChange={(event) => setTargetColumn(event.target.value)}
-                        list={`target-columns-${incident.id}`}
+                        list={`target-columns-${incidentId}`}
                         placeholder="Enter target column"
                         className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-[14px] text-slate-900 outline-none transition focus:border-blue-300 focus:bg-white"
                       />
-                      <datalist id={`target-columns-${incident.id}`}>
+                      <datalist id={`target-columns-${incidentId}`}>
                         {(context?.target_candidates || []).map((column) => (
                           <option key={column} value={column} />
                         ))}
@@ -740,17 +1033,7 @@ export default function IncidentRemediationPanel({
                   </button>
                 </div>
               ) : (
-                <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[13px] font-semibold text-slate-800">
-                    {isAdmin
-                      ? "No approval action is available right now."
-                      : "Only admins can approve or reject remediation."}
-                  </p>
-                  <p className="mt-1 text-[12px] leading-5 text-slate-500">
-                    {remediation?.reason ||
-                      "This incident is currently guidance-only or already covered by an existing remediation run."}
-                  </p>
-                </div>
+                <ApprovalBlockerCard blocker={approvalBlocker} />
               )}
             </div>
           </div>

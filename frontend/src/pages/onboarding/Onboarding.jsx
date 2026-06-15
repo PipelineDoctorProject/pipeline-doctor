@@ -16,8 +16,6 @@ export default function OnboardingPage() {
 
   const inviteMember = useAuthStore((state) => state.inviteMember);
 
-  const workspace = useAuthStore((state) => state.workspace);
-
   const inviteStepRequested = searchParams.get("step") === "invite";
   const [step, setStep] = useState(inviteStepRequested ? 2 : 1);
 
