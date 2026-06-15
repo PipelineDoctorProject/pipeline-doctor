@@ -49,8 +49,11 @@ jobs:
         with:
           terraform_version: "1.9.8"
 
+      - name: Prepare Terraform variables
+        run: cp terraform.tfvars.example terraform.tfvars
+
       - name: Terraform init
-        run: terraform init
+        run: terraform init -input=false
 
       - name: Terraform format
         run: terraform fmt -check -recursive
@@ -59,8 +62,8 @@ jobs:
         run: terraform validate
 
       - name: Terraform plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -input=false -out=tfplan
 
       - name: Terraform apply
         if: inputs.action == 'apply'
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -input=false -auto-approve tfplan
