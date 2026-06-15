@@ -1,0 +1,90 @@
+name: Container Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub/Azure environment to use.
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: staging
+      image_tag:
+        description: Image tag to push to Azure Container Registry.
+        required: true
+        default: latest
+      push_images:
+        description: Push images to ACR after building.
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  API_IMAGE: opssight-api
+  FRONTEND_IMAGE: opssight-frontend
+
+jobs:
+  build:
+    name: Build And Optionally Push Images
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        if: inputs.push_images
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        if: inputs.push_images
+        run: az acr login --name "${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}"
+
+      - name: Build API image
+        run: |
+          docker build \
+            -t ${{ env.API_IMAGE }}:${{ inputs.image_tag }} \
+            ./backend/fastapi
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f frontend/Dockerfile \
+            -t ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }} \
+            .
+
+      - name: Tag images for ACR
+        if: inputs.push_images
+        run: |
+          docker tag \
+            ${{ env.API_IMAGE }}:${{ inputs.image_tag }} \
+            ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
+          docker tag \
+            ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }} \
+            ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
+
+      - name: Push API image
+        if: inputs.push_images
+        run: docker push ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
+
+      - name: Push frontend image
+        if: inputs.push_images
+        run: docker push ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
+
+      - name: Release summary
+        run: |
+          echo "Built images with tag: ${{ inputs.image_tag }}"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Push enabled: ${{ inputs.push_images }}"

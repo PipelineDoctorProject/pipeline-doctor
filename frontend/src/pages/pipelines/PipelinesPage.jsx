@@ -14,6 +14,7 @@ import {
 import { Link, useSearchParams } from "react-router-dom";
 import { getPipelineRuns } from "../../store/pipelineStore";
 import { getAccessToken } from "../../api/client";
+import { apiUrl } from "../../config/runtime";
 
 export default function PipelinesPage() {
   const [runs, setRuns] = useState([]);
@@ -50,7 +51,7 @@ export default function PipelinesPage() {
     try {
       setDownloading(runId);
       const response = await fetch(
-        `http://localhost:8000/runs/${runId}/download-cleaned`,
+        apiUrl(`/runs/${runId}/download-cleaned`),
         {
           credentials: "include",
           headers: getAccessToken()

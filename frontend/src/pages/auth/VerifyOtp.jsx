@@ -5,7 +5,6 @@ import "@fontsource/inter/600.css";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import Logo from "../../assets/logo_og.png";
 import Logo2 from "../../assets/logo2.png";
 import useAuthStore from "../../store/authStore";
 

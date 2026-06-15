@@ -106,9 +106,11 @@ Important:
 
 The Airflow DAG:
 
-1. locates an input CSV
+1. resolves an explicit input CSV path or HTTPS URL
 2. authenticates to the OpsSight API using an Airflow Connection
 3. sends the file to `/data-quality/validate` with a resolved model id, or `/data-quality/validate-auto`
+
+The DAG intentionally does not pick the newest CSV from the local folder. Every run must say which batch artifact it is validating. This keeps incident evidence traceable in production.
 
 ### Production auth rule
 
@@ -119,8 +121,8 @@ Use Airflow Connection `opssight_api` instead:
 - connection type: `http`
 - host: `api`
 - port: `8000`
-- auth option A: login/password (workspace user credentials)
-- auth option B: set `extra.api_token` for service-token style auth
+- development auth option: login/password
+- production auth option: set `extra.api_token` for service-token style auth
 
 Connection id can be overridden with:
 
@@ -149,6 +151,33 @@ When using login/password, the DAG should:
 3. call the validation endpoint
 
 This avoids static long-lived tokens in code/config.
+
+### Input artifact rule
+
+Every DAG run must provide one of:
+
+1. `dag_run.conf.input_path`
+2. `dag_run.conf.input_uri`
+
+Development path example:
+
+```json
+{
+  "model_name": "spotify-kmeans-recommender",
+  "input_path": "/opt/airflow/data/pure_drift_high_retraining_approval.csv"
+}
+```
+
+Production URI example:
+
+```json
+{
+  "model_name": "spotify-kmeans-recommender",
+  "input_uri": "https://storage.example.com/batches/run-20260611.csv?<signed-query>"
+}
+```
+
+Unsupported object-store schemes such as `s3://` should be converted to pre-signed HTTPS URLs or mounted into the Airflow worker filesystem by the platform.
 
 ---
 
@@ -197,11 +226,11 @@ airflow variables set opssight_model_name '<model_name>'
 Manual development run examples:
 
 ```bash
-airflow dags trigger opssight_daily_pipeline --conf '{"model_id": 1}'
+airflow dags trigger opssight_daily_pipeline --conf '{"model_id": 1, "input_path": "/opt/airflow/data/incoming.csv"}'
 ```
 
 ```bash
-airflow dags trigger opssight_daily_pipeline --conf '{"model_name": "spotify-kmeans-recommender"}'
+airflow dags trigger opssight_daily_pipeline --conf '{"model_name": "spotify-kmeans-recommender", "input_path": "/opt/airflow/data/incoming.csv"}'
 ```
 
 With a custom input file:

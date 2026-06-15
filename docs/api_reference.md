@@ -339,7 +339,29 @@ Live RCA step updates for one run.
 
 ### `WS /ws/incidents`
 
-Live incident feed used for grouped incident refresh.
+Live incident feed used for grouped incident refresh and navbar notifications.
+
+Common event payload:
+
+```json
+{
+  "event": "incident_created",
+  "incident": {
+    "id": 1,
+    "pipeline_run_id": 10,
+    "severity": "high",
+    "status": "open"
+  }
+}
+```
+
+Frontend behavior:
+
+- ignores heartbeat frames such as `connected` and `ping`
+- refetches tenant-scoped incidents before rendering details
+- updates the incident list, drawer context, navbar unread count, and notification dropdown
+
+Production note: REST refetches are tenant-protected, but the WebSocket transport should also be tenant-authenticated and tenant-scoped before public multi-tenant deployment.
 
 ---
 

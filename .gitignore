@@ -149,6 +149,9 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
+!*.env.example
 .envrc
 .venv
 env/
@@ -174,6 +177,38 @@ venv.bak/
 mlruns/
 mlartifacts/
 mlflow.db
+
+# OpsSight runtime artifacts
+frontend/dist/
+frontend/.vite/
+backend/fastapi/mlartifacts/
+backend/fastapi/celerybeat-schedule*
+backend/fastapi/cleaned/*
+!backend/fastapi/cleaned/.gitkeep
+backend/fastapi/uploads/incoming/*
+!backend/fastapi/uploads/incoming/.gitkeep
+backend/fastapi/300707/
+backend/fastapi/v/
+cleaned/
+uploads/
+airflow-setup/logs/
+
+# Terraform local state and plans
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ansible local secrets and retry files
+*.retry
+*.vault
+vault.yml
 
 
 # mypy
@@ -226,8 +261,3 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-#ml
-mlartifacts
-mlfow.db
-mlflow_backup.db/backend/fastapi/mlflow.db
-mlflow_backup.db/backend/fastapi/mlflow.db

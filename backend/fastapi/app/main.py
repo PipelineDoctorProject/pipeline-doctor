@@ -2,65 +2,35 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.settings import get_allowed_origins
-from app.db.session import SessionLocal
-from app.models.tenant import Tenant
-from app.utils.schema_utils import ensure_all_tenant_schemas
 
 from app.api.routes import (
-    health,
-    runs,
-    incidents,
-    predictions,
-    drift_findings,
-    data_quality,
     auth,
-    onboarding,
-    invite,
-    upload_baseline,
-    schema,
-    dashboard,
-    tenant,
     agent_trace,
+    dashboard,
+    data_quality,
+    drift_findings,
+    health,
+    incidents,
+    invite,
+    ml_models,
+    onboarding,
+    predictions,
     remediation,
-    slack,
     reports,
+    runs,
+    schema,
+    slack,
+    tenant,
+    upload_baseline,
 )
 
 from app.middleware.auth_middleware import AuthMiddleware
 
-app = FastAPI()
-
-
-@app.on_event("startup")
-def repair_existing_tenant_schemas():
-    db = SessionLocal()
-
-    try:
-        tenants = db.query(Tenant).all()
-        repaired_schemas = ensure_all_tenant_schemas(db, tenants)
-        print(
-            f"Tenant schema repair complete for {len(repaired_schemas)} schema(s)."
-        )
-    finally:
-        db.close()
-
-
+app = FastAPI(title="PipelineDoctor API", version="1.0.0")
 
 # ==========================================
 # MIDDLEWARE
 # ==========================================
-
-from app.api.routes import (health, 
-                            runs,
-                            incidents,
-                            predictions,
-                            drift_findings,
-                            auth,upload_baseline,
-                            schema,
-                            ml_models
-                            )
-
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -90,7 +60,6 @@ app.include_router(invite.router)
 app.include_router(upload_baseline.router)
 app.include_router(ml_models.router)
 app.include_router(dashboard.router)
-app.include_router(upload_baseline.router)
 app.include_router(schema.router)
 app.include_router(tenant.router)
 app.include_router(agent_trace.router)  # WS /ws/agent-trace/{run_id}

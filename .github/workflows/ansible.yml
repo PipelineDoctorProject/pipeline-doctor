@@ -1,0 +1,57 @@
+name: Ansible Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Inventory environment.
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      playbook:
+        description: Playbook to run.
+        required: true
+        type: choice
+        options:
+          - site
+          - verify
+        default: verify
+
+permissions:
+  contents: read
+
+jobs:
+  ansible:
+    name: Run Ansible ${{ inputs.playbook }} (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible
+        run: python -m pip install ansible
+
+      - name: Syntax check
+        working-directory: deploy/ansible
+        run: |
+          ansible-playbook \
+            --syntax-check \
+            playbooks/${{ inputs.playbook }}.yml \
+            -i inventories/${{ inputs.environment }}/hosts.ini
+
+      - name: Run playbook
+        working-directory: deploy/ansible
+        run: |
+          ansible-playbook \
+            playbooks/${{ inputs.playbook }}.yml \
+            -i inventories/${{ inputs.environment }}/hosts.ini

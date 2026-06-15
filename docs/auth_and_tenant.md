@@ -23,7 +23,7 @@ This workstream covers onboarding, invite flows, and tenant-isolation reliabilit
 
 - API now prefers the current bearer token over stale cookies
 - tenant schema creation checks the tenant schema explicitly
-- startup repair covers older half-created tenant schemas
+- tenant schema repair now runs as an explicit migration/maintenance job, not inside API startup
 - model-scoped endpoints validate that the requested model belongs to the current tenant
 
 ---
