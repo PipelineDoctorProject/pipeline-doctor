@@ -37,6 +37,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Restore Terraform state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            deploy/terraform/environments/${{ inputs.environment }}/terraform.tfstate
+            deploy/terraform/environments/${{ inputs.environment }}/terraform.tfstate.backup
+          key: terraform-state-${{ inputs.environment }}-${{ github.run_id }}
+          restore-keys: |
+            terraform-state-${{ inputs.environment }}-
+
       - name: Azure login
         uses: azure/login@v2
         with:
@@ -67,47 +77,18 @@ jobs:
       - name: Terraform validate
         run: terraform validate
 
-      - name: Import existing Azure resources
-        run: |
-          set -euo pipefail
-
-          tf_value() {
-            terraform console -var-file=terraform.tfvars <<< "var.$1" | tr -d '"'
-          }
-
-          import_if_exists() {
-            local address="$1"
-            local resource_id="$2"
-
-            if [ -z "$resource_id" ]; then
-              return
-            fi
-
-            if terraform state show "$address" > /dev/null 2>&1; then
-              return
-            fi
-
-            terraform import -input=false "$address" "$resource_id"
-          }
-
-          resource_group_name="$(tf_value resource_group_name)"
-          container_registry_name="$(tf_value container_registry_name)"
-          container_apps_environment_name="$(tf_value container_apps_environment_name)"
-          log_analytics_workspace_name="$(tf_value log_analytics_workspace_name)"
-
-          resource_group_id="$(az group show --name "$resource_group_name" --query id -o tsv 2> /dev/null || true)"
-          log_analytics_workspace_id="$(az monitor log-analytics workspace show --resource-group "$resource_group_name" --workspace-name "$log_analytics_workspace_name" --query id -o tsv 2> /dev/null || true)"
-          container_registry_id="$(az acr show --resource-group "$resource_group_name" --name "$container_registry_name" --query id -o tsv 2> /dev/null || true)"
-          container_apps_environment_id="$(az resource show --resource-group "$resource_group_name" --resource-type Microsoft.App/managedEnvironments --name "$container_apps_environment_name" --query id -o tsv 2> /dev/null || true)"
-
-          import_if_exists module.platform.azurerm_resource_group.this "$resource_group_id"
-          import_if_exists module.platform.azurerm_log_analytics_workspace.this "$log_analytics_workspace_id"
-          import_if_exists module.platform.azurerm_container_registry.this "$container_registry_id"
-          import_if_exists module.platform.azurerm_container_app_environment.this "$container_apps_environment_id"
-
       - name: Terraform plan
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform apply
         if: inputs.action == 'apply'
         run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Save Terraform state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            deploy/terraform/environments/${{ inputs.environment }}/terraform.tfstate
+            deploy/terraform/environments/${{ inputs.environment }}/terraform.tfstate.backup
+          key: terraform-state-${{ inputs.environment }}-${{ github.run_id }}
