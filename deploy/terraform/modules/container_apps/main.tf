@@ -35,23 +35,9 @@ resource "azurerm_container_registry" "this" {
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
   sku                 = var.container_registry_sku
-  admin_enabled       = false
+  admin_enabled       = true
 
   tags = var.tags
-}
-
-resource "azurerm_user_assigned_identity" "container_apps" {
-  name                = "opssight-${var.deployment_environment}-container-apps-identity"
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
-
-  tags = var.tags
-}
-
-resource "azurerm_role_assignment" "container_apps_acr_pull" {
-  scope                = azurerm_container_registry.this.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_user_assigned_identity.container_apps.principal_id
 }
 
 resource "azurerm_container_app" "api" {
@@ -60,14 +46,10 @@ resource "azurerm_container_app" "api" {
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
 
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.container_apps.id]
-  }
-
   registry {
-    server   = azurerm_container_registry.this.login_server
-    identity = azurerm_user_assigned_identity.container_apps.id
+    server               = azurerm_container_registry.this.login_server
+    username             = azurerm_container_registry.this.admin_username
+    password_secret_name = "acr-password"
   }
 
   ingress {
@@ -122,9 +104,12 @@ resource "azurerm_container_app" "api" {
     }
   }
 
-  tags = var.tags
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.this.admin_password
+  }
 
-  depends_on = [azurerm_role_assignment.container_apps_acr_pull]
+  tags = var.tags
 }
 
 resource "azurerm_container_app" "frontend" {
@@ -133,14 +118,10 @@ resource "azurerm_container_app" "frontend" {
   resource_group_name          = azurerm_resource_group.this.name
   revision_mode                = "Single"
 
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.container_apps.id]
-  }
-
   registry {
-    server   = azurerm_container_registry.this.login_server
-    identity = azurerm_user_assigned_identity.container_apps.id
+    server               = azurerm_container_registry.this.login_server
+    username             = azurerm_container_registry.this.admin_username
+    password_secret_name = "acr-password"
   }
 
   ingress {
@@ -174,7 +155,10 @@ resource "azurerm_container_app" "frontend" {
     }
   }
 
-  tags = var.tags
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.this.admin_password
+  }
 
-  depends_on = [azurerm_role_assignment.container_apps_acr_pull]
+  tags = var.tags
 }
