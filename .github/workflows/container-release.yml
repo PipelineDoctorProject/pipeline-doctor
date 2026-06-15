@@ -95,6 +95,10 @@ jobs:
 
           if ! az acr show --name "${AZURE_CONTAINER_REGISTRY_NAME}" > /dev/null; then
             echo "Azure Container Registry '${AZURE_CONTAINER_REGISTRY_NAME}' was not found in the logged-in subscription."
+            echo "Visible resource groups:"
+            az group list --query "[].name" -o tsv
+            echo "Visible Azure Container Registries:"
+            az acr list --query "[].{name:name,resourceGroup:resourceGroup,loginServer:loginServer}" -o table
             echo "Run the IaC workflow with environment='${{ inputs.environment }}' and action='apply', then rerun this workflow."
             exit 1
           fi
