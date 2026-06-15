@@ -74,6 +74,104 @@ jobs:
       - name: Prepare Terraform variables
         run: cp terraform.tfvars.example terraform.tfvars
 
+      - name: Prepare API runtime variables
+        env:
+          API_APP_ENV: ${{ vars.API_APP_ENV || 'development' }}
+          API_SECRET_KEY: ${{ secrets.API_SECRET_KEY || secrets.SECRET_KEY }}
+          API_ALGORITHM: ${{ vars.API_ALGORITHM || 'HS256' }}
+          API_DB_NAME: ${{ secrets.API_DB_NAME || secrets.DB_NAME }}
+          API_DB_USER: ${{ secrets.API_DB_USER || secrets.DB_USER }}
+          API_DB_PASSWORD: ${{ secrets.API_DB_PASSWORD || secrets.DB_PASSWORD }}
+          API_DB_HOST: ${{ secrets.API_DB_HOST || secrets.DB_HOST }}
+          API_DB_PORT: ${{ vars.API_DB_PORT || secrets.API_DB_PORT || secrets.DB_PORT || '5432' }}
+          API_DB_SSLMODE: ${{ vars.API_DB_SSLMODE || secrets.API_DB_SSLMODE || secrets.DB_SSLMODE || 'require' }}
+          API_REDIS_URL: ${{ secrets.API_REDIS_URL || secrets.REDIS_URL }}
+          API_MLFLOW_TRACKING_URI: ${{ secrets.API_MLFLOW_TRACKING_URI || secrets.MLFLOW_TRACKING_URI }}
+          API_MAIL_USERNAME: ${{ secrets.API_MAIL_USERNAME || secrets.MAIL_USERNAME }}
+          API_MAIL_PASSWORD: ${{ secrets.API_MAIL_PASSWORD || secrets.MAIL_PASSWORD }}
+          API_MAIL_FROM: ${{ secrets.API_MAIL_FROM || secrets.MAIL_FROM }}
+          API_MAIL_PORT: ${{ vars.API_MAIL_PORT || secrets.API_MAIL_PORT || secrets.MAIL_PORT || '587' }}
+          API_MAIL_SERVER: ${{ vars.API_MAIL_SERVER || secrets.API_MAIL_SERVER || secrets.MAIL_SERVER || 'smtp.gmail.com' }}
+          API_MAIL_FROM_NAME: ${{ vars.API_MAIL_FROM_NAME || secrets.API_MAIL_FROM_NAME || secrets.MAIL_FROM_NAME || 'OpsSight.ai' }}
+          API_GROQ_API_KEY: ${{ secrets.API_GROQ_API_KEY || secrets.GROQ_API_KEY }}
+          API_GROQ_MODEL: ${{ vars.API_GROQ_MODEL || secrets.API_GROQ_MODEL || secrets.GROQ_MODEL || 'llama-3.3-70b-versatile' }}
+          API_EVIDENTLY_TOKEN: ${{ secrets.API_EVIDENTLY_TOKEN || secrets.EVIDENTLY_TOKEN }}
+          API_EVIDENTLY_PROJECT_ID: ${{ secrets.API_EVIDENTLY_PROJECT_ID || secrets.EVIDENTLY_PROJECT_ID }}
+          API_EVIDENTLY_PROJECT_NAME: ${{ vars.API_EVIDENTLY_PROJECT_NAME || secrets.API_EVIDENTLY_PROJECT_NAME || secrets.EVIDENTLY_PROJECT_NAME || 'pipeline-doctor' }}
+          API_SLACK_CLIENT_ID: ${{ secrets.API_SLACK_CLIENT_ID || secrets.SLACK_CLIENT_ID }}
+          API_SLACK_CLIENT_SECRET: ${{ secrets.API_SLACK_CLIENT_SECRET || secrets.SLACK_CLIENT_SECRET }}
+          API_SLACK_REDIRECT_URI: ${{ vars.API_SLACK_REDIRECT_URI || secrets.API_SLACK_REDIRECT_URI || secrets.SLACK_REDIRECT_URI }}
+        run: |
+          required_missing=0
+          for name in API_SECRET_KEY API_DB_NAME API_DB_USER API_DB_PASSWORD API_DB_HOST; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Environment secret: ${name}"
+              required_missing=1
+            fi
+          done
+
+          if [ "${required_missing}" -ne 0 ]; then
+            exit 1
+          fi
+
+          jq -n \
+            --arg app_env "${API_APP_ENV}" \
+            --arg secret_key "${API_SECRET_KEY}" \
+            --arg algorithm "${API_ALGORITHM}" \
+            --arg db_name "${API_DB_NAME}" \
+            --arg db_user "${API_DB_USER}" \
+            --arg db_password "${API_DB_PASSWORD}" \
+            --arg db_host "${API_DB_HOST}" \
+            --arg db_port "${API_DB_PORT}" \
+            --arg db_sslmode "${API_DB_SSLMODE}" \
+            --arg redis_url "${API_REDIS_URL}" \
+            --arg mlflow_tracking_uri "${API_MLFLOW_TRACKING_URI}" \
+            --arg mail_username "${API_MAIL_USERNAME}" \
+            --arg mail_password "${API_MAIL_PASSWORD}" \
+            --arg mail_from "${API_MAIL_FROM}" \
+            --arg mail_port "${API_MAIL_PORT}" \
+            --arg mail_server "${API_MAIL_SERVER}" \
+            --arg mail_from_name "${API_MAIL_FROM_NAME}" \
+            --arg groq_api_key "${API_GROQ_API_KEY}" \
+            --arg groq_model "${API_GROQ_MODEL}" \
+            --arg evidently_token "${API_EVIDENTLY_TOKEN}" \
+            --arg evidently_project_id "${API_EVIDENTLY_PROJECT_ID}" \
+            --arg evidently_project_name "${API_EVIDENTLY_PROJECT_NAME}" \
+            --arg slack_client_id "${API_SLACK_CLIENT_ID}" \
+            --arg slack_client_secret "${API_SLACK_CLIENT_SECRET}" \
+            --arg slack_redirect_uri "${API_SLACK_REDIRECT_URI}" \
+            '{
+              api_environment_variables: {
+                APP_ENV: $app_env,
+                ALGORITHM: $algorithm,
+                DB_PORT: $db_port,
+                DB_SSLMODE: $db_sslmode,
+                MAIL_PORT: $mail_port,
+                MAIL_SERVER: $mail_server,
+                MAIL_FROM_NAME: $mail_from_name,
+                GROQ_MODEL: $groq_model,
+                EVIDENTLY_PROJECT_NAME: $evidently_project_name
+              },
+              api_secret_environment_variables: {
+                SECRET_KEY: $secret_key,
+                DB_NAME: $db_name,
+                DB_USER: $db_user,
+                DB_PASSWORD: $db_password,
+                DB_HOST: $db_host,
+                REDIS_URL: $redis_url,
+                MLFLOW_TRACKING_URI: $mlflow_tracking_uri,
+                MAIL_USERNAME: $mail_username,
+                MAIL_PASSWORD: $mail_password,
+                MAIL_FROM: $mail_from,
+                GROQ_API_KEY: $groq_api_key,
+                EVIDENTLY_TOKEN: $evidently_token,
+                EVIDENTLY_PROJECT_ID: $evidently_project_id,
+                SLACK_CLIENT_ID: $slack_client_id,
+                SLACK_CLIENT_SECRET: $slack_client_secret,
+                SLACK_REDIRECT_URI: $slack_redirect_uri
+              } | with_entries(select(.value != ""))
+            }' > runtime.auto.tfvars.json
+
       - name: Terraform init
         run: terraform init -input=false
 
