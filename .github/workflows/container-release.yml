@@ -29,6 +29,8 @@ permissions:
 env:
   API_IMAGE: opssight-api
   FRONTEND_IMAGE: opssight-frontend
+  AZURE_CONTAINER_REGISTRY_NAME: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}
+  AZURE_CONTAINER_REGISTRY_LOGIN_SERVER: ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}
 
 jobs:
   build:
@@ -48,9 +50,25 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Resolve ACR settings
+        if: inputs.push_images
+        run: |
+          if [ -z "${AZURE_CONTAINER_REGISTRY_NAME}" ] && [ -n "${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}" ]; then
+            echo "AZURE_CONTAINER_REGISTRY_NAME=${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER%%.azurecr.io}" >> "$GITHUB_ENV"
+          fi
+
+          if [ -z "${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}" ] && [ -n "${AZURE_CONTAINER_REGISTRY_NAME}" ]; then
+            echo "AZURE_CONTAINER_REGISTRY_LOGIN_SERVER=${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io" >> "$GITHUB_ENV"
+          fi
+
+          if [ -z "${AZURE_CONTAINER_REGISTRY_NAME}" ] && [ -z "${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}" ]; then
+            echo "Missing dev environment variables: AZURE_CONTAINER_REGISTRY_NAME and AZURE_CONTAINER_REGISTRY_LOGIN_SERVER"
+            exit 1
+          fi
+
       - name: Login to ACR
         if: inputs.push_images
-        run: az acr login --name "${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}"
+        run: az acr login --name "${AZURE_CONTAINER_REGISTRY_NAME}"
 
       - name: Build API image
         run: |
@@ -70,18 +88,18 @@ jobs:
         run: |
           docker tag \
             ${{ env.API_IMAGE }}:${{ inputs.image_tag }} \
-            ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
+            ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
           docker tag \
             ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }} \
-            ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
+            ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Push API image
         if: inputs.push_images
-        run: docker push ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
+        run: docker push ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Push frontend image
         if: inputs.push_images
-        run: docker push ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
+        run: docker push ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Release summary
         run: |
