@@ -1,6 +1,7 @@
 locals {
   api_container_app_name      = coalesce(var.api_container_app_name, "opssight-api-${var.deployment_environment}")
   frontend_container_app_name = coalesce(var.frontend_container_app_name, "opssight-frontend-${var.deployment_environment}")
+  api_secret_names            = toset(nonsensitive(keys(var.api_secret_environment_variables)))
 }
 
 resource "azurerm_resource_group" "this" {
@@ -102,22 +103,22 @@ resource "azurerm_container_app" "api" {
       }
 
       dynamic "env" {
-        for_each = var.api_secret_environment_variables
+        for_each = local.api_secret_names
 
         content {
-          name        = env.key
-          secret_name = lower(replace(env.key, "_", "-"))
+          name        = env.value
+          secret_name = lower(replace(env.value, "_", "-"))
         }
       }
     }
   }
 
   dynamic "secret" {
-    for_each = var.api_secret_environment_variables
+    for_each = local.api_secret_names
 
     content {
-      name  = lower(replace(secret.key, "_", "-"))
-      value = secret.value
+      name  = lower(replace(secret.value, "_", "-"))
+      value = var.api_secret_environment_variables[secret.value]
     }
   }
 
