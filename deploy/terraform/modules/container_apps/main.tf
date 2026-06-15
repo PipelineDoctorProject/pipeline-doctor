@@ -2,6 +2,13 @@ locals {
   api_container_app_name      = coalesce(var.api_container_app_name, "opssight-api-${var.deployment_environment}")
   frontend_container_app_name = coalesce(var.frontend_container_app_name, "opssight-frontend-${var.deployment_environment}")
   api_secret_names            = toset(nonsensitive(keys(var.api_secret_environment_variables)))
+  frontend_public_url         = coalesce(var.frontend_public_url, "https://${azurerm_container_app.frontend.ingress[0].fqdn}")
+  api_environment_variables = merge(
+    {
+      FRONTEND_URL = local.frontend_public_url
+    },
+    var.api_environment_variables
+  )
 }
 
 resource "azurerm_resource_group" "this" {
@@ -76,7 +83,7 @@ resource "azurerm_container_app" "api" {
       args    = ["app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
 
       dynamic "env" {
-        for_each = var.api_environment_variables
+        for_each = local.api_environment_variables
 
         content {
           name  = env.key
