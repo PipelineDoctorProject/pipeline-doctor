@@ -24,7 +24,7 @@ module "platform" {
   log_analytics_workspace_name    = var.log_analytics_workspace_name
   log_retention_days              = var.log_retention_days
   deployment_environment          = "staging"
-  image_tag                       = "staging-latest"
+  image_tag                       = var.image_tag
 
   tags = merge(var.tags, {
     environment = "staging"
