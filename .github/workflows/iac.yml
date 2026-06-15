@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - dev
+          - staging
           - prod
       action:
         description: Run a plan or apply.

@@ -3,6 +3,15 @@ name: Container Release
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: GitHub/Azure environment to use.
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: staging
       image_tag:
         description: Image tag to push to Azure Container Registry.
         required: true
@@ -25,7 +34,7 @@ jobs:
   build:
     name: Build And Optionally Push Images
     runs-on: ubuntu-latest
-    environment: staging
+    environment: ${{ inputs.environment }}
 
     steps:
       - name: Checkout
@@ -41,7 +50,7 @@ jobs:
 
       - name: Login to ACR
         if: inputs.push_images
-        run: az acr login --name "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}"
+        run: az acr login --name "${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}"
 
       - name: Build API image
         run: |
@@ -61,20 +70,21 @@ jobs:
         run: |
           docker tag \
             ${{ env.API_IMAGE }}:${{ inputs.image_tag }} \
-            ${{ secrets.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
+            ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
           docker tag \
             ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }} \
-            ${{ secrets.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
+            ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Push API image
         if: inputs.push_images
-        run: docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
+        run: docker push ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Push frontend image
         if: inputs.push_images
-        run: docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
+        run: docker push ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Release summary
         run: |
           echo "Built images with tag: ${{ inputs.image_tag }}"
+          echo "Environment: ${{ inputs.environment }}"
           echo "Push enabled: ${{ inputs.push_images }}"

@@ -6,6 +6,18 @@ Terraform in `../terraform` is now the preferred infrastructure-as-code path.
 The Bicep files in this folder remain as useful Azure Container Apps references
 and can still be used manually if needed.
 
+The current Terraform module provisions the first Azure foundation:
+
+- Resource group
+- Log Analytics workspace
+- Azure Container Apps environment
+- Azure Container Registry
+
+Application Container Apps, managed databases, Redis, Blob Storage, Key Vault
+references, domains, and deployment slots should be added in the next
+infrastructure phase after the Azure account, GitHub OIDC, and remote Terraform
+state are configured.
+
 The key production rule is:
 
 ```text
@@ -30,23 +42,30 @@ and keep secrets, databases, queues, and artifacts outside app containers.
 
 ## Production Deployment Flow
 
-1. Build and push backend image to Azure Container Registry.
-2. Build and push frontend image, or build the Vite app in Azure Static Web Apps.
-3. Create production database and Redis.
-4. Add all backend environment variables as Container App secrets.
-5. Run `alembic upgrade head` once as a migration job.
-6. Run `python scripts/repair_tenant_schemas.py` in that migration job.
-7. Deploy API app from the backend image.
-8. Deploy Celery worker app from the backend image.
-9. Deploy Celery beat as a single-replica app from the backend image.
-10. Deploy frontend with `VITE_API_URL` and `VITE_WS_URL` pointing to the public API host.
-11. Configure Slack OAuth redirect URL to the public API callback.
-12. Configure Airflow `opssight_api` connection with a service token.
-13. Trigger a staging DAG run with explicit model and input artifact.
+1. Create Azure subscription, GitHub OIDC credentials, and Terraform remote state.
+2. Run the GitHub Actions `IaC` workflow with `action=plan`.
+3. Review the Terraform plan and run `action=apply`.
+4. Save Terraform ACR outputs into GitHub Environment variables.
+5. Run the GitHub Actions `Container Release` workflow for the target environment.
+6. Create production database, Redis, Blob Storage, and Key Vault-backed secrets.
+7. Add all backend environment variables as Container App secrets.
+8. Run `alembic upgrade head` once as a migration job.
+9. Run `python scripts/repair_tenant_schemas.py` in that migration job.
+10. Deploy API app from the backend image.
+11. Deploy Celery worker app from the backend image.
+12. Deploy Celery beat as a single-replica app from the backend image.
+13. Deploy frontend with `VITE_API_URL` and `VITE_WS_URL` pointing to the public API host.
+14. Configure Slack OAuth redirect URL to the public API callback.
+15. Configure Airflow `opssight_api` connection with a service token.
+16. Trigger a staging DAG run with explicit model and input artifact.
 
 ## Build Images
 
-From the repository root:
+The preferred path is the GitHub Actions `Container Release` workflow. It can
+build images for `dev`, `staging`, or `prod` and optionally push to the selected
+environment's Azure Container Registry.
+
+For manual local testing from the repository root:
 
 ```powershell
 docker build -t <acr>.azurecr.io/opssight-api:<tag> ./backend/fastapi
