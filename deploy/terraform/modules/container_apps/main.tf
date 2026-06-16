@@ -35,7 +35,7 @@ locals {
   )
   mlflow_secret_environment_variables = merge(
     {
-      MLFLOW_BACKEND_STORE_URI       = coalesce(var.mlflow_backend_store_uri, local.managed_mlflow_backend_store_uri)
+      MLFLOW_BACKEND_STORE_URI        = coalesce(var.mlflow_backend_store_uri, local.managed_mlflow_backend_store_uri)
       AZURE_STORAGE_CONNECTION_STRING = azurerm_storage_account.mlflow.primary_connection_string
     },
     var.mlflow_secret_environment_variables
