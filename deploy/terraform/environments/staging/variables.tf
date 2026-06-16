@@ -36,6 +36,107 @@ variable "image_tag" {
   default     = "staging-latest"
 }
 
+variable "api_container_app_name" {
+  description = "Staging FastAPI Container App name."
+  type        = string
+  default     = "opssight-api-staging"
+}
+
+variable "frontend_container_app_name" {
+  description = "Staging frontend Container App name."
+  type        = string
+  default     = "opssight-frontend-staging"
+}
+
+variable "worker_container_app_name" {
+  description = "Staging Celery worker Container App name."
+  type        = string
+  default     = "opssight-worker-staging"
+}
+
+variable "beat_container_app_name" {
+  description = "Staging Celery beat Container App name."
+  type        = string
+  default     = "opssight-beat-staging"
+}
+
+variable "mlflow_container_app_name" {
+  description = "Staging MLflow Container App name."
+  type        = string
+  default     = "opssight-mlflow-staging"
+}
+
+variable "redis_cache_name" {
+  description = "Staging Azure Cache for Redis name."
+  type        = string
+  default     = "opssight-staging-redis"
+}
+
+variable "mlflow_postgresql_server_name" {
+  description = "Staging MLflow Azure PostgreSQL Flexible Server name."
+  type        = string
+  default     = "opssight-staging-mlflow-pg"
+}
+
+variable "mlflow_storage_account_name" {
+  description = "Staging MLflow artifact storage account name."
+  type        = string
+  default     = "opssightstagingmlflow"
+}
+
+variable "mlflow_storage_container_name" {
+  description = "Staging MLflow artifact blob container name."
+  type        = string
+  default     = "mlflow"
+}
+
+variable "api_environment_variables" {
+  description = "Non-secret FastAPI runtime environment variables."
+  type        = map(string)
+  default = {
+    APP_ENV = "staging"
+  }
+}
+
+variable "api_secret_environment_variables" {
+  description = "Secret FastAPI runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "mlflow_postgresql_admin_password" {
+  description = "Administrator password for the staging MLflow PostgreSQL server."
+  type        = string
+  sensitive   = true
+}
+
+variable "mlflow_backend_store_uri" {
+  description = "Optional external MLflow backend store URI. Leave null to use Terraform-managed Azure PostgreSQL."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "mlflow_artifact_root" {
+  description = "Optional MLflow artifact root. Leave null to use Terraform-managed Azure Blob Storage."
+  type        = string
+  default     = null
+}
+
+variable "mlflow_environment_variables" {
+  description = "Non-secret MLflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+}
+
+variable "mlflow_secret_environment_variables" {
+  description = "Secret MLflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
 variable "tags" {
   description = "Additional Azure tags."
   type        = map(string)

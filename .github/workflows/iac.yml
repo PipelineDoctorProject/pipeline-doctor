@@ -65,6 +65,9 @@ jobs:
           az provider register --namespace Microsoft.App
           az provider register --namespace Microsoft.OperationalInsights
           az provider register --namespace Microsoft.ContainerRegistry
+          az provider register --namespace Microsoft.Cache
+          az provider register --namespace Microsoft.DBforPostgreSQL
+          az provider register --namespace Microsoft.Storage
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -103,6 +106,9 @@ jobs:
           API_SLACK_CLIENT_ID: ${{ secrets.API_SLACK_CLIENT_ID || secrets.SLACK_CLIENT_ID }}
           API_SLACK_CLIENT_SECRET: ${{ secrets.API_SLACK_CLIENT_SECRET || secrets.SLACK_CLIENT_SECRET }}
           API_SLACK_REDIRECT_URI: ${{ vars.API_SLACK_REDIRECT_URI || secrets.API_SLACK_REDIRECT_URI || secrets.SLACK_REDIRECT_URI }}
+          MLFLOW_POSTGRESQL_ADMIN_PASSWORD: ${{ secrets.MLFLOW_POSTGRESQL_ADMIN_PASSWORD }}
+          MLFLOW_BACKEND_STORE_URI: ${{ secrets.MLFLOW_BACKEND_STORE_URI }}
+          MLFLOW_ARTIFACT_ROOT: ${{ vars.MLFLOW_ARTIFACT_ROOT || secrets.MLFLOW_ARTIFACT_ROOT }}
         run: |
           required_missing=0
           for name in API_SECRET_KEY API_DB_NAME API_DB_USER API_DB_PASSWORD API_DB_HOST; do
@@ -111,6 +117,10 @@ jobs:
               required_missing=1
             fi
           done
+          if [ -z "${MLFLOW_POSTGRESQL_ADMIN_PASSWORD}" ]; then
+            echo "Missing required GitHub Environment secret: MLFLOW_POSTGRESQL_ADMIN_PASSWORD"
+            required_missing=1
+          fi
 
           if [ "${required_missing}" -ne 0 ]; then
             exit 1
@@ -142,6 +152,9 @@ jobs:
             --arg slack_client_id "${API_SLACK_CLIENT_ID}" \
             --arg slack_client_secret "${API_SLACK_CLIENT_SECRET}" \
             --arg slack_redirect_uri "${API_SLACK_REDIRECT_URI}" \
+            --arg mlflow_postgresql_admin_password "${MLFLOW_POSTGRESQL_ADMIN_PASSWORD}" \
+            --arg mlflow_backend_store_uri "${MLFLOW_BACKEND_STORE_URI}" \
+            --arg mlflow_artifact_root "${MLFLOW_ARTIFACT_ROOT}" \
             '{
               api_environment_variables: {
                 APP_ENV: $app_env,
@@ -172,7 +185,10 @@ jobs:
                 SLACK_CLIENT_SECRET: $slack_client_secret,
                 SLACK_REDIRECT_URI: $slack_redirect_uri
               } | with_entries(select(.value != ""))
-            }' > runtime.auto.tfvars.json
+            }
+            + {mlflow_postgresql_admin_password: $mlflow_postgresql_admin_password}
+            + (if $mlflow_backend_store_uri != "" then {mlflow_backend_store_uri: $mlflow_backend_store_uri} else {} end)
+            + (if $mlflow_artifact_root != "" then {mlflow_artifact_root: $mlflow_artifact_root} else {} end)' > runtime.auto.tfvars.json
 
       - name: Terraform init
         run: terraform init -input=false

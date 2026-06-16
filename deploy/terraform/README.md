@@ -1,8 +1,8 @@
 # Terraform Infrastructure
 
-Terraform is the source of truth for cloud infrastructure. It should create and own Azure resources such as the resource group, Azure Container Registry, Log Analytics, and the Container Apps environment.
+Terraform is the source of truth for Azure infrastructure. It creates and owns the resource group, Azure Container Registry, Log Analytics, the Container Apps environment, Azure Cache for Redis, Azure PostgreSQL/Blob resources for MLflow, and the API/frontend/worker/beat/MLflow Container Apps.
 
-Application runtime settings, image promotion, and verification can be handled after infrastructure exists. Keep secrets in GitHub Environments, Azure Key Vault, or the target platform secret store. Do not commit real secrets in Terraform variables.
+Application runtime settings are passed from GitHub Environments into Terraform during the `IaC` workflow. Keep secrets in GitHub Environments, Azure Key Vault, or the target platform secret store. Do not commit real secrets in Terraform variables.
 
 ## Layout
 
@@ -30,6 +30,41 @@ After Terraform creates the Azure Container Registry, add these environment vari
 - `AZURE_CONTAINER_REGISTRY_NAME`
 - `AZURE_CONTAINER_REGISTRY_LOGIN_SERVER`
 
+Frontend build values:
+
+- `VITE_API_URL`
+- `VITE_WS_URL`
+
+Required API runtime secrets:
+
+- `API_SECRET_KEY`
+- `API_DB_NAME`
+- `API_DB_USER`
+- `API_DB_PASSWORD`
+- `API_DB_HOST`
+
+Common optional API runtime values:
+
+- `API_DB_PORT`
+- `API_DB_SSLMODE`
+- `API_ALGORITHM`
+- `API_REDIS_URL`
+- `API_MLFLOW_TRACKING_URI`
+- `API_GROQ_API_KEY`
+- `API_MAIL_USERNAME`
+- `API_MAIL_PASSWORD`
+- `API_MAIL_FROM`
+- `API_SLACK_CLIENT_ID`
+- `API_SLACK_CLIENT_SECRET`
+
+MLflow hosting values:
+
+- `MLFLOW_POSTGRESQL_ADMIN_PASSWORD`: required. Terraform uses this to create the Azure PostgreSQL Flexible Server for MLflow metadata.
+- `MLFLOW_BACKEND_STORE_URI`: optional override only. Leave unset to use the Terraform-managed Azure PostgreSQL database.
+- `MLFLOW_ARTIFACT_ROOT`: optional override only. Leave unset to use the Terraform-managed Azure Blob container.
+
+The application database is still Supabase through `API_DB_*`. Do not point `API_DB_*` at the MLflow PostgreSQL server.
+
 Keep Azure identifiers that are safe to print as environment variables. Keep credentials, client IDs, tenant IDs, subscription IDs, database URLs, Redis URLs, Slack secrets, JWT secrets, and SMTP secrets as GitHub Environment secrets or Azure Key Vault secrets.
 
 ## First Azure Bootstrap
@@ -46,8 +81,11 @@ Recommended order:
 6. Add `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` to each GitHub Environment.
 7. Run the `IaC` workflow with `action=plan`.
 8. Run the `IaC` workflow with `action=apply` after reviewing the plan.
-9. Copy Terraform outputs for the ACR name and login server into GitHub Environment variables.
-10. Run the `Container Release` workflow for the target environment.
+9. Copy Terraform outputs for the ACR name, login server, API URL, and frontend URL into GitHub Environment variables.
+10. Set `VITE_API_URL` and `VITE_WS_URL` from the API URL.
+11. Add `MLFLOW_POSTGRESQL_ADMIN_PASSWORD` to the GitHub Environment secrets.
+12. Run the `Container Release` workflow for the target environment with an immutable image tag.
+13. Run the `IaC` workflow again with `action=apply` and the same image tag.
 
 ## Local Commands
 
@@ -65,9 +103,74 @@ Use the `IaC` workflow first. It selects the matching Terraform environment fold
 
 Use the `Container Release` workflow after the Azure Container Registry exists. It builds backend and frontend Docker images and can optionally push them to the selected environment registry.
 
+Normal update flow:
+
+1. Choose a new immutable image tag, for example `dev-005`.
+2. Run `Container Release` with that tag and `push_images=true`.
+3. Run `IaC` with the same `image_tag` and `action=apply`.
+4. Confirm Azure Container Apps active revisions use that tag.
+
+The `IaC` workflow writes two generated files during the run:
+
+- `runtime.auto.tfvars.json`: API runtime secrets and optional settings from GitHub Environments.
+- `zz-workflow.auto.tfvars.json`: workflow-controlled values such as `image_tag`.
+
+The second file intentionally sorts after `terraform.tfvars` so workflow input wins over checked-in defaults. Do not put `image_tag` in `terraform.tfvars.example`; use the workflow input instead.
+
+## Image Tags
+
+Use immutable tags for deployments:
+
+```text
+dev-005
+staging-014
+prod-2026-06-16-1
+<short-commit-sha>
+```
+
+Avoid deploying `dev-latest` through Terraform. It is useful as a moving registry pointer, but it is poor for auditability and rollback.
+
+## Container App Outputs
+
+After apply, Terraform prints:
+
+- `container_registry_name`
+- `container_registry_login_server`
+- `container_apps_environment_id`
+- `api_container_app_url`
+- `frontend_container_app_url`
+- `worker_container_app_name`
+- `beat_container_app_name`
+- `mlflow_container_app_url`
+- `redis_cache_hostname`
+- `mlflow_postgresql_fqdn`
+- `mlflow_storage_account_name`
+- `mlflow_storage_container_name`
+
+Use the API URL to populate `VITE_API_URL` and derive `VITE_WS_URL` by replacing `https://` with `wss://`.
+
+Terraform injects `REDIS_URL` from the managed Azure Cache for Redis by default. If a GitHub Environment secret named `API_REDIS_URL` or `REDIS_URL` is present, it overrides the managed Redis URL. Remove those secrets when you want the Terraform-created Redis cache to be used.
+
+## Service Mapping
+
+The current Terraform production shape is:
+
+| Local Compose service | Azure target |
+|---|---|
+| `redis` | Azure Cache for Redis |
+| `celery-worker` | Azure Container App using the API image |
+| `celery-beat` | Azure Container App using the API image, one replica |
+| `mlflow` | Azure Container App using the API image |
+| `mlflow-db` | Azure PostgreSQL Flexible Server managed by Terraform |
+| `mlflow-artifacts` | Azure Blob Storage managed by Terraform |
+| `airflow-*` | Managed Airflow or separate orchestrator, not this Terraform module |
+| `airflow-db` | Managed by the Airflow platform, or external PostgreSQL if self-hosted |
+
+The application database stays external in Supabase through `API_DB_*` secrets.
+
 ## Remote State
 
-The starter files use local state so development is simple. Before running production applies, configure an Azure Storage backend in each environment:
+The starter files use local state so development is simple. Before running staging or production applies, configure an Azure Storage backend in each environment:
 
 ```hcl
 backend "azurerm" {

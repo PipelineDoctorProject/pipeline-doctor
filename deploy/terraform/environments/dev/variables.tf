@@ -48,6 +48,48 @@ variable "frontend_container_app_name" {
   default     = "opssight-frontend-dev"
 }
 
+variable "worker_container_app_name" {
+  description = "Development Celery worker Container App name."
+  type        = string
+  default     = "opssight-worker-dev"
+}
+
+variable "beat_container_app_name" {
+  description = "Development Celery beat Container App name."
+  type        = string
+  default     = "opssight-beat-dev"
+}
+
+variable "mlflow_container_app_name" {
+  description = "Development MLflow Container App name."
+  type        = string
+  default     = "opssight-mlflow-dev"
+}
+
+variable "redis_cache_name" {
+  description = "Development Azure Cache for Redis name."
+  type        = string
+  default     = "opssight-dev-redis"
+}
+
+variable "mlflow_postgresql_server_name" {
+  description = "Development MLflow Azure PostgreSQL Flexible Server name."
+  type        = string
+  default     = "opssight-dev-mlflow-pg"
+}
+
+variable "mlflow_storage_account_name" {
+  description = "Development MLflow artifact storage account name."
+  type        = string
+  default     = "opssightdevmlflow"
+}
+
+variable "mlflow_storage_container_name" {
+  description = "Development MLflow artifact blob container name."
+  type        = string
+  default     = "mlflow"
+}
+
 variable "api_environment_variables" {
   description = "Non-secret FastAPI runtime environment variables."
   type        = map(string)
@@ -58,6 +100,38 @@ variable "api_environment_variables" {
 
 variable "api_secret_environment_variables" {
   description = "Secret FastAPI runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "mlflow_postgresql_admin_password" {
+  description = "Administrator password for the development MLflow PostgreSQL server."
+  type        = string
+  sensitive   = true
+}
+
+variable "mlflow_backend_store_uri" {
+  description = "Optional external MLflow backend store URI. Leave null to use Terraform-managed Azure PostgreSQL."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "mlflow_artifact_root" {
+  description = "Optional MLflow artifact root. Leave null to use Terraform-managed Azure Blob Storage."
+  type        = string
+  default     = null
+}
+
+variable "mlflow_environment_variables" {
+  description = "Non-secret MLflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+}
+
+variable "mlflow_secret_environment_variables" {
+  description = "Secret MLflow runtime environment variables."
   type        = map(string)
   default     = {}
   sensitive   = true
