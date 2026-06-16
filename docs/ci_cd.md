@@ -109,6 +109,12 @@ Optional API runtime values include:
 - `API_SLACK_CLIENT_ID`
 - `API_SLACK_CLIENT_SECRET`
 
+For MLflow infrastructure, store this as a GitHub Environment secret:
+
+- `MLFLOW_POSTGRESQL_ADMIN_PASSWORD`
+
+Leave `MLFLOW_BACKEND_STORE_URI` and `MLFLOW_ARTIFACT_ROOT` unset unless you intentionally want to override the Terraform-managed Azure PostgreSQL Flexible Server and Azure Blob artifact container.
+
 Do not store database passwords, Slack tokens, JWT secrets, or API keys in the repository. Use GitHub Environment secrets, Azure Key Vault, or Container App secrets.
 
 ## Terraform
@@ -129,6 +135,12 @@ Current Terraform resources:
 - Azure Container Apps Environment
 - FastAPI API Container App
 - Frontend Container App
+- Celery worker Container App
+- Celery beat Container App
+- MLflow Container App
+- Azure Cache for Redis
+- Azure PostgreSQL Flexible Server for MLflow metadata
+- Azure Blob Storage for MLflow artifacts
 
 The API and frontend image tag is controlled by the IaC workflow `image_tag` input. Use immutable tags such as `dev-005`, `staging-014`, or a release SHA. Avoid relying on `dev-latest` for real deploys because it makes rollbacks and verification ambiguous.
 
@@ -169,7 +181,7 @@ ansible-playbook deploy/ansible/playbooks/verify.yml -i deploy/ansible/inventori
 1. Push the repository to GitHub.
 2. Create `dev`, `staging`, and `prod` GitHub Environments.
 3. Configure Azure OIDC federated credentials for this repository.
-4. Add the Azure, ACR, frontend, and API runtime values listed above to GitHub Environments.
+4. Add the Azure, ACR, frontend, API runtime, and MLflow password values listed above to GitHub Environments.
 5. Open a pull request and confirm the `CI` workflow passes.
 6. Run `IaC` with `environment=dev` and `action=plan`.
 7. Review the Terraform plan.
@@ -179,8 +191,10 @@ ansible-playbook deploy/ansible/playbooks/verify.yml -i deploy/ansible/inventori
 11. Run `Container Release` with a new immutable `image_tag` and `push_images=true`.
 12. Run `IaC` again with `action=apply` and the same `image_tag`.
 13. In Azure Container Apps, confirm the active API and frontend revisions use that image tag.
-14. Test `/health` on the API URL and the login flow from the frontend URL.
-15. Run `Ansible Operations` with `playbook=verify` when the environment is reachable.
+14. Confirm worker and beat Container Apps use the same backend image tag.
+15. Confirm MLflow is using the Terraform-managed PostgreSQL server and Blob artifact container.
+16. Test `/health` on the API URL and the login flow from the frontend URL.
+17. Run `Ansible Operations` with `playbook=verify` when the environment is reachable.
 
 ## Branch Strategy
 
@@ -199,4 +213,4 @@ Protect `main` with:
 
 ## Current Boundary
 
-Terraform currently owns the Azure foundation, ACR, API Container App, and frontend Container App. Worker, beat, one-shot migration jobs, Redis, Blob Storage, Key Vault references, custom domains, and production observability still need to be added before a full production rollout.
+Terraform currently owns the Azure foundation, ACR, API Container App, frontend Container App, worker, beat, MLflow Container App, Azure Cache for Redis, Azure PostgreSQL Flexible Server for MLflow metadata, and Azure Blob Storage for MLflow artifacts. The application database remains Supabase through `API_DB_*` secrets. One-shot migration jobs, Blob adapters for uploads/cleaned/report exports, Key Vault references, custom domains, managed Airflow, and production observability still need to be added before a full production rollout.
