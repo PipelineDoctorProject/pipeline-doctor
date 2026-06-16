@@ -13,7 +13,6 @@ import {
 
 import { NavLink } from "react-router-dom";
 import useAuthStore from "../../store/authStore";
-import Logo from "../../assets/logo_og.png";
 import Logo2 from "../../assets/logo2.png";
 
 function SlackNavIcon({ size = 18, ...props }) {

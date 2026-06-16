@@ -11,6 +11,7 @@ from app.models.incident_group import IncidentGroup
 from app.models.agent_run import AgentRun
 from app.models.agent_step_log import AgentStepLog
 from app.models.drift_finding import DriftFinding
+from app.models.ml_model import MLModel
 from app.models.pipeline_run import PipelineRun
 from app.services.incidents.grouping import attach_incident_to_group
 from app.services.incidents.live_events import publish_incident_event
@@ -70,6 +71,7 @@ def list_incidents(
     return _serialized_incidents(
         db,
         model_id=model_id,
+        tenant_id=current_user.tenant_id,
     )
 
 
@@ -85,6 +87,7 @@ def filter_incidents(
     return _serialized_incidents(
         db,
         model_id=model_id,
+        tenant_id=current_user.tenant_id,
     )
 
 
@@ -107,6 +110,8 @@ def get_incident(
             status_code=404,
             detail="Incident not found"
         )
+
+    require_accessible_model(db, incident.run.model_id, current_user.tenant_id)
 
     drift_finding = None
     if incident.finding_type == "drift" and incident.finding_id:
@@ -139,6 +144,8 @@ def get_incident_agent_runs(
             detail="Incident not found"
         )
 
+    require_accessible_model(db, incident.run.model_id, current_user.tenant_id)
+
     runs = (
         db.query(AgentRun)
         .filter(
@@ -169,6 +176,8 @@ def get_incident_children(
             status_code=404,
             detail="Incident not found"
         )
+
+    require_accessible_model(db, incident.run.model_id, current_user.tenant_id)
 
     if not incident.group_id:
         return [_serialize_incident(incident)]
@@ -269,15 +278,19 @@ def _serialize_incident(
 def _serialized_incidents(
     db: Session,
     model_id: int | None = None,
+    tenant_id: str | None = None,
 ):
-    query = db.query(IncidentGroup)
+    query = (
+        db.query(IncidentGroup)
+        .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
+        .join(MLModel, PipelineRun.model_id == MLModel.id)
+    )
+
+    if tenant_id:
+        query = query.filter(MLModel.tenant_id == tenant_id)
 
     if model_id is not None:
-        query = (
-            query
-            .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
-            .filter(PipelineRun.model_id == model_id)
-        )
+        query = query.filter(PipelineRun.model_id == model_id)
 
     groups = query.order_by(IncidentGroup.created_at.desc(), IncidentGroup.id.desc()).all()
 

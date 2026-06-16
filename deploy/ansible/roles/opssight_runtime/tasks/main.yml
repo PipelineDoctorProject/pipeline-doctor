@@ -1,0 +1,17 @@
+---
+- name: Confirm target environment name is set or defaulted
+  ansible.builtin.debug:
+    msg: "OpsSight runtime environment: {{ opssight_environment | default('dev') }}"
+
+- name: Validate required runtime key catalogue
+  ansible.builtin.assert:
+    that:
+      - opssight_required_runtime_keys is defined
+      - "'DATABASE_URL' in opssight_required_runtime_keys"
+      - "'JWT_SECRET_KEY' in opssight_required_runtime_keys"
+      - "'MLFLOW_TRACKING_URI' in opssight_required_runtime_keys"
+    fail_msg: "Runtime key catalogue is incomplete."
+
+- name: Print runtime validation guidance
+  ansible.builtin.debug:
+    msg: "Use GitHub Environment secrets or Azure Key Vault for runtime values. Never commit actual secret values."

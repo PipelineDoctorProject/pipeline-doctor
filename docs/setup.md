@@ -2,6 +2,10 @@
 
 This is the current recommended local setup for PipelineDoctor.
 
+This file is intentionally focused on development mode. For the full split
+between development and production runtime setup, see
+[environment_modes.md](./environment_modes.md).
+
 The project is now Docker-first for the backend stack:
 
 - FastAPI API
@@ -29,13 +33,62 @@ Optional:
 
 ---
 
-## Environment File
+## Environment Files
 
-Create or update:
+OpsSight uses two local env layers. This is intentional:
 
-`backend/fastapi/.env`
+- root `.env` is for Docker Compose, Airflow, and container orchestration
+- `backend/fastapi/.env` is for application secrets and runtime settings
+- `frontend/.env.local` is optional and only needed when overriding Vite defaults
 
-Minimum important values:
+Never commit real `.env` files. Commit only `.env.example` files.
+
+### 1. Root Docker Compose env
+
+Create this from the repo root:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Root `.env` owns deployment/container settings:
+
+```env
+OPSSIGHT_CONN_ID=opssight_api
+AIRFLOW_VAR_OPSSIGHT_API_URL=http://api:8000
+AIRFLOW_CONN_OPSSIGHT_API={"conn_type":"http","host":"http://api","port":8000,"extra":{"api_url":"http://api:8000","api_token":"replace_me_service_token"}}
+
+AIRFLOW_ADMIN_USERNAME=admin
+AIRFLOW_ADMIN_PASSWORD=replace_me
+AIRFLOW_ADMIN_EMAIL=admin@example.com
+
+AIRFLOW_FERNET_KEY=replace_me
+AIRFLOW_WEBSERVER_SECRET_KEY=replace_me
+
+AIRFLOW_DB_PASSWORD=replace_me
+AIRFLOW_DATABASE_SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:replace_me@airflow-db/airflow
+
+MLFLOW_DB_PASSWORD=replace_me
+MLFLOW_BACKEND_STORE_URI=postgresql+psycopg2://mlflow:replace_me@mlflow-db/mlflow
+MLFLOW_ARTIFACT_ROOT=/app/mlartifacts
+```
+
+Important:
+
+- this file should not contain one fixed model id or model name
+- DAG model selection happens from Airflow trigger config or Airflow Variables
+- DAG input selection happens from explicit `input_path` or `input_uri`, not by picking the latest CSV in a folder
+- Airflow should authenticate to OpsSight with a dedicated service token, not a personal admin login
+
+### 2. Backend application env
+
+Create this from the repo root:
+
+```powershell
+Copy-Item backend/fastapi/.env.example backend/fastapi/.env
+```
+
+Minimum important values in `backend/fastapi/.env`:
 
 ```env
 # Database
@@ -62,6 +115,10 @@ SLACK_CLIENT_ID=...
 SLACK_CLIENT_SECRET=...
 SLACK_REDIRECT_URI=http://localhost:8000/slack/callback
 
+# MLflow
+MLFLOW_TRACKING_URI=http://mlflow:5000
+REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI=http://mlflow:5000
+
 # Optional quality overrides
 DATA_QUALITY_NULL_RATIO_THRESHOLD=0.30
 DATA_QUALITY_ROW_ISSUE_THRESHOLD=0.70
@@ -73,6 +130,41 @@ Important:
 
 - use a real `SECRET_KEY` before production deployment
 - Gmail requires an app password, not your normal mailbox password
+- Slack app credentials stay here, but tenant Slack bot tokens are stored after OAuth, not hardcoded here
+
+### 3. Optional frontend env
+
+The frontend defaults API traffic to `http://localhost:8000` and WebSocket traffic to `ws://localhost:8000`.
+Only create `frontend/.env.local` if you need different runtime endpoints:
+
+```powershell
+Copy-Item frontend/.env.example frontend/.env.local
+```
+
+```env
+VITE_API_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000
+```
+
+For production builds, use your deployed endpoints:
+
+```env
+VITE_API_URL=https://api.your-domain.com
+VITE_WS_URL=wss://api.your-domain.com
+```
+
+### Production env rule
+
+In production, do not copy local `.env` files into servers. Use your hosting
+platform's secret manager or environment-variable injection:
+
+- API, worker, and beat get the backend application variables
+- Airflow gets only its own admin, secret, and OpsSight connection variables
+- Airflow DAG runs receive an explicit batch artifact path or pre-signed URI per run
+- MLflow uses a managed backend database and durable artifact storage
+- frontend gets public `VITE_*` build-time values only
+- Slack workspace/channel selection is stored per tenant after OAuth
+- model id/model name is passed per DAG run, not stored globally in `.env`
 
 ---
 
@@ -132,8 +224,26 @@ Frontend URL:
 
 ### 3. Run monitoring
 
-- trigger an Airflow DAG
+- trigger an Airflow DAG with `model_id` or `model_name` plus `input_path` or `input_uri`
 - or upload a CSV through the Data Quality page / API
+
+Example local DAG config:
+
+```json
+{
+  "model_name": "spotify-kmeans-recommender",
+  "input_path": "/opt/airflow/data/pure_drift_high_retraining_approval.csv"
+}
+```
+
+In production, prefer a durable object-store URI or a short-lived pre-signed HTTPS URL:
+
+```json
+{
+  "model_name": "spotify-kmeans-recommender",
+  "input_uri": "https://storage.example.com/signed/customer-batch.csv"
+}
+```
 
 ---
 
@@ -230,7 +340,9 @@ npm run dev
 ## Related Docs
 
 - [README.md](./README.md)
+- [environment_modes.md](./environment_modes.md)
 - [authentication.md](./authentication.md)
 - [data_quality.md](./data_quality.md)
 - [automation_and_scheduler.md](./automation_and_scheduler.md)
+- [production_deployment.md](./production_deployment.md)
 - [reports.md](./reports.md)

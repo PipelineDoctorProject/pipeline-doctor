@@ -1,5 +1,15 @@
+"""
+opssight_pipeline_dag.py
+========================
+A production-oriented Apache Airflow DAG that:
+  1. Reads an explicitly supplied CSV path or HTTPS URL
+  2. Authenticates to OpsSight API via Airflow Connection
+  3. Sends file to validation endpoint (model-specific or auto-detect)
+"""
+
 import os
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 import requests
 from airflow import DAG
@@ -17,6 +27,7 @@ OPSSIGHT_MODEL_ID_VAR = "opssight_model_id"
 OPSSIGHT_MODEL_NAME_VAR = "opssight_model_name"
 
 DATA_DIR = "/opt/airflow/data"
+REMOTE_INPUT_DIR = "/tmp/opssight_airflow_inputs"
 
 
 def _get_connection():
@@ -152,25 +163,91 @@ def _resolve_model_id(kwargs, conn, api_url, headers):
     return None
 
 
-def load_data(**_kwargs):
+def _get_runtime_value(kwargs, key):
+    dag_conf = (kwargs.get("dag_run").conf if kwargs.get("dag_run") else {}) or {}
+    params = kwargs.get("params") or {}
+    value = dag_conf.get(key)
+    if value in (None, ""):
+        value = params.get(key)
+    return str(value).strip() if value not in (None, "") else ""
+
+
+def _download_remote_input(input_uri, run_id):
+    parsed = urlparse(input_uri)
+    filename = os.path.basename(parsed.path) or "input.csv"
+    if not filename.lower().endswith(".csv"):
+        raise AirflowFailException(
+            "Remote input_uri must point to a CSV file or pre-signed CSV URL."
+        )
+
+    safe_run_id = "".join(
+        char if char.isalnum() or char in {"-", "_"} else "_"
+        for char in str(run_id or "manual")
+    )
+    local_path = os.path.join(REMOTE_INPUT_DIR, f"{safe_run_id}_{filename}")
+    os.makedirs(REMOTE_INPUT_DIR, exist_ok=True)
+
+    response = requests.get(input_uri, timeout=(30, 300))
+    if response.status_code != 200:
+        raise AirflowFailException(
+            f"Failed to download input_uri ({response.status_code}): {response.text[:500]}"
+        )
+
+    with open(local_path, "wb") as handle:
+        handle.write(response.content)
+
+    return local_path
+
+
+def _resolve_input_path(kwargs):
+    input_path = _get_runtime_value(kwargs, "input_path")
+    input_uri = _get_runtime_value(kwargs, "input_uri")
+    selected_input = input_path or input_uri
+
+    if not selected_input:
+        raise AirflowFailException(
+            "DAG input is required. Pass dag_run.conf.input_path for local dev "
+            "(example: /opt/airflow/data/incoming.csv) or dag_run.conf.input_uri "
+            "for a pre-signed HTTPS CSV URL in production."
+        )
+
+    parsed = urlparse(selected_input)
+    if parsed.scheme in {"http", "https"}:
+        run_id = kwargs.get("dag_run").run_id if kwargs.get("dag_run") else "manual"
+        return _download_remote_input(selected_input, run_id)
+
+    if parsed.scheme and parsed.scheme not in {"file"}:
+        raise AirflowFailException(
+            f"Unsupported input URI scheme '{parsed.scheme}'. Use a mounted local "
+            "path or a pre-signed HTTPS URL."
+        )
+
+    file_path = parsed.path if parsed.scheme == "file" else selected_input
+    if not os.path.isabs(file_path):
+        file_path = os.path.join(DATA_DIR, file_path)
+
+    if not file_path.lower().endswith(".csv"):
+        raise AirflowFailException(f"Input file must be a CSV: {file_path}")
+    if not os.path.isfile(file_path):
+        raise AirflowFailException(
+            f"Input CSV not found: {file_path}. In local Docker, place files in "
+            "airflow-setup/data and pass /opt/airflow/data/<file>.csv."
+        )
+
+    return file_path
+
+
+def load_data(**kwargs):
     import pandas as pd
 
     print("=" * 60)
     print("TASK 1: Loading data from source...")
     print("=" * 60)
 
-    csv_files = [f for f in os.listdir(DATA_DIR) if f.endswith(".csv")]
-    if not csv_files:
-        raise FileNotFoundError(
-            f"No CSV files found in {DATA_DIR}. "
-            "Place input CSV in airflow-setup/data/."
-        )
-
-    latest_file = sorted(csv_files)[-1]
-    file_path = os.path.join(DATA_DIR, latest_file)
+    file_path = _resolve_input_path(kwargs)
     df = pd.read_csv(file_path)
 
-    print(f"  -> Loaded file: {latest_file}")
+    print(f"  -> Loaded file: {file_path}")
     print(f"  -> Shape: {df.shape[0]} rows x {df.shape[1]} columns")
     print(f"  -> Columns: {list(df.columns)}")
     return file_path
@@ -249,6 +326,24 @@ with DAG(
             type=["null", "string"],
             title="Model name",
             description="Optional. Used only when model_id is empty.",
+        ),
+        "input_path": Param(
+            "",
+            type=["null", "string"],
+            title="Input CSV path",
+            description=(
+                "Required for local/dev runs. Use /opt/airflow/data/<file>.csv "
+                "or a relative filename from airflow-setup/data."
+            ),
+        ),
+        "input_uri": Param(
+            "",
+            type=["null", "string"],
+            title="Input CSV HTTPS URL",
+            description=(
+                "Optional production input. Use a pre-signed HTTPS CSV URL when "
+                "the batch artifact is stored outside the Airflow container."
+            ),
         ),
     },
     tags=["opssight", "ml-monitoring"],

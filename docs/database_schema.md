@@ -300,7 +300,8 @@ The first report version is created after RCA completes. Later remediation event
 
 - new workspaces create a dedicated tenant schema
 - required tenant tables are created in that schema
-- startup repair can backfill older half-created tenant schemas
+- older half-created tenant schemas can be repaired with `python scripts/repair_tenant_schemas.py`
+- production should run that repair command from the migration job after `alembic upgrade head`, not from API startup
 - request middleware sets `search_path` to `<tenant_schema>, public`
 
 ---

@@ -1,0 +1,70 @@
+variable "location" {
+  description = "Azure region."
+  type        = string
+  default     = "eastus"
+}
+
+variable "resource_group_name" {
+  description = "Development resource group name."
+  type        = string
+}
+
+variable "container_registry_name" {
+  description = "Globally unique development ACR name."
+  type        = string
+}
+
+variable "container_apps_environment_name" {
+  description = "Development Container Apps environment name."
+  type        = string
+}
+
+variable "log_analytics_workspace_name" {
+  description = "Development Log Analytics workspace name."
+  type        = string
+}
+
+variable "log_retention_days" {
+  description = "Log retention in days."
+  type        = number
+  default     = 30
+}
+
+variable "image_tag" {
+  description = "Container image tag to deploy."
+  type        = string
+  default     = "dev-latest"
+}
+
+variable "api_container_app_name" {
+  description = "Development FastAPI Container App name."
+  type        = string
+  default     = "opssight-api-dev"
+}
+
+variable "frontend_container_app_name" {
+  description = "Development frontend Container App name."
+  type        = string
+  default     = "opssight-frontend-dev"
+}
+
+variable "api_environment_variables" {
+  description = "Non-secret FastAPI runtime environment variables."
+  type        = map(string)
+  default = {
+    APP_ENV = "development"
+  }
+}
+
+variable "api_secret_environment_variables" {
+  description = "Secret FastAPI runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "tags" {
+  description = "Additional Azure tags."
+  type        = map(string)
+  default     = {}
+}

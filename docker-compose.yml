@@ -10,6 +10,7 @@ services:
     env_file:
       - ./backend/fastapi/.env
     environment:
+      APP_ENV: development
       REDIS_URL: redis://redis:6379/0
       MLFLOW_TRACKING_URI: http://mlflow:5000
       REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI: ${REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI:-http://mlflow:5000}
@@ -43,6 +44,7 @@ services:
     env_file:
       - ./backend/fastapi/.env
     environment:
+      APP_ENV: development
       REDIS_URL: redis://redis:6379/0
       MLFLOW_TRACKING_URI: http://mlflow:5000
       REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI: ${REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI:-http://mlflow:5000}
@@ -51,7 +53,7 @@ services:
       DB_MAX_OVERFLOW: ${WORKER_DB_MAX_OVERFLOW:-0}
       DB_POOL_TIMEOUT: ${WORKER_DB_POOL_TIMEOUT:-15}
       DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-300}
-    command: celery -A app.core.celery_app:celery worker -Q ai,scheduler,emails -l info --concurrency=2 --max-tasks-per-child=20
+    command: celery -A app.core.celery_app:celery worker -Q ai,scheduler,emails,remediation -l info --concurrency=2 --max-tasks-per-child=20
     depends_on:
       redis:
         condition: service_healthy
@@ -72,6 +74,7 @@ services:
     env_file:
       - ./backend/fastapi/.env
     environment:
+      APP_ENV: development
       REDIS_URL: redis://redis:6379/0
       MLFLOW_TRACKING_URI: http://mlflow:5000
       REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI: ${REMEDIATION_CANDIDATE_MLFLOW_TRACKING_URI:-http://mlflow:5000}
@@ -94,8 +97,8 @@ services:
     env_file:
       - ./backend/fastapi/.env
     command: >
-      sh -c "mkdir -p /app/mlartifacts &&
-             mlflow server --backend-store-uri postgresql+psycopg2://mlflow:mlflow@mlflow-db/mlflow --default-artifact-root /app/mlartifacts --workers 1 --host 0.0.0.0 --port 5000 --allowed-hosts mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000"
+      sh -c "mkdir -p ${MLFLOW_ARTIFACT_ROOT:-/app/mlartifacts} &&
+             mlflow server --backend-store-uri ${MLFLOW_BACKEND_STORE_URI:-postgresql+psycopg2://mlflow:mlflow@mlflow-db/mlflow} --default-artifact-root ${MLFLOW_ARTIFACT_ROOT:-/app/mlartifacts} --workers 1 --host 0.0.0.0 --port 5000 --allowed-hosts mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000"
     ports:
       - "5000:5000"
     volumes:
@@ -110,7 +113,7 @@ services:
     container_name: pipeline-doctor-mlflow-db
     environment:
       POSTGRES_USER: mlflow
-      POSTGRES_PASSWORD: mlflow
+      POSTGRES_PASSWORD: ${MLFLOW_DB_PASSWORD:-mlflow}
       POSTGRES_DB: mlflow
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "mlflow"]
@@ -142,7 +145,7 @@ services:
     hostname: airflow-db
     environment:
       POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:-airflow}
       POSTGRES_DB: airflow
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
@@ -161,7 +164,7 @@ services:
       - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_DATABASE_SQL_ALCHEMY_CONN:-postgresql+psycopg2://airflow:airflow@airflow-db/airflow}
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=}
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -200,7 +203,7 @@ services:
       - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_DATABASE_SQL_ALCHEMY_CONN:-postgresql+psycopg2://airflow:airflow@airflow-db/airflow}
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_RECYCLE: "300"
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=}
@@ -248,7 +251,7 @@ services:
       - 8.8.8.8
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_DATABASE_SQL_ALCHEMY_CONN:-postgresql+psycopg2://airflow:airflow@airflow-db/airflow}
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_PRE_PING: "true"
       AIRFLOW__DATABASE__SQL_ALCHEMY_POOL_RECYCLE: "300"
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=}

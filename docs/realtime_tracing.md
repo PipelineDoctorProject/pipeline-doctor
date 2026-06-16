@@ -4,6 +4,7 @@ PipelineDoctor uses WebSockets plus Redis Pub/Sub for two live experiences:
 
 - live RCA step updates while the doctor agent is running
 - live grouped-incident refresh on the incidents page
+- live navbar notification updates when incident events are published
 
 ---
 
@@ -16,6 +17,7 @@ flowchart LR
     C --> D[React hooks]
     D --> E[Incident drawer RCA stepper]
     D --> F[Incidents page grouped refresh]
+    D --> G[Navbar notification bell]
 ```
 
 ---
@@ -36,7 +38,7 @@ Common event types:
 
 ### `WS /ws/incidents`
 
-Used by the incidents page to refresh when incidents are created or updated.
+Used by the incidents page and topbar notification bell to refresh when incidents are created or updated.
 
 Common event types:
 
@@ -68,6 +70,17 @@ The incidents page:
 3. refreshes the grouped incident list when live events arrive
 4. fetches children separately when the drawer opens
 
+### Navbar notifications
+
+The topbar:
+
+1. connects to `WS /ws/incidents` when the app shell loads
+2. ignores heartbeat frames such as `connected` and `ping`
+3. reacts to `incident_created` and `incident_updated`
+4. refetches tenant-scoped incidents through REST before rendering details
+5. updates unread count and recent notification dropdown
+6. falls back to periodic refresh when the socket is unavailable
+
 ---
 
 ## Reliability Notes
@@ -76,6 +89,22 @@ Recent hardening changed two important runtime behaviors:
 
 - the incident WebSocket hook now reconnects after unexpected socket closure
 - the incident list is centered on run-level grouped alerts, not every raw child incident
+- notification read state is scoped by tenant/user in browser storage
+- polling fallback is useful for resilience, but WebSocket delivery is the primary real-time path
+
+---
+
+## Production Hardening
+
+For local development, `/ws/incidents` can subscribe to the shared Redis `incidents` channel. For multi-tenant production, the transport should be tenant-aware before events reach the browser.
+
+Recommended setup:
+
+- authenticate the socket using a short-lived user/session token
+- resolve `tenant_id` on the server
+- subscribe to tenant-specific Redis channels, for example `incidents:{tenant_id}`
+- or filter events server-side before sending them over the socket
+- keep REST refetches tenant-scoped as the final authorization boundary
 
 ---
 
@@ -86,4 +115,5 @@ Recent hardening changed two important runtime behaviors:
 - `backend/fastapi/app/services/incidents/live_events.py`
 - `frontend/src/hooks/useAgentWebSocket.js`
 - `frontend/src/hooks/useIncidentsWebSocket.js`
+- `frontend/src/components/layout/Topbar.jsx`
 - `frontend/src/pages/incidents/IncidentsPage.jsx`
