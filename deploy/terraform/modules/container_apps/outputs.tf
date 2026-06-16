@@ -27,3 +27,38 @@ output "frontend_container_app_url" {
   description = "Public frontend Container App URL."
   value       = "https://${azurerm_container_app.frontend.ingress[0].fqdn}"
 }
+
+output "worker_container_app_name" {
+  description = "Celery worker Container App name."
+  value       = azurerm_container_app.worker.name
+}
+
+output "beat_container_app_name" {
+  description = "Celery beat Container App name."
+  value       = azurerm_container_app.beat.name
+}
+
+output "mlflow_container_app_url" {
+  description = "MLflow Container App URL."
+  value       = "https://${azurerm_container_app.mlflow.ingress[0].fqdn}"
+}
+
+output "redis_cache_hostname" {
+  description = "Azure Cache for Redis hostname."
+  value       = azurerm_redis_cache.this.hostname
+}
+
+output "mlflow_postgresql_fqdn" {
+  description = "MLflow Azure PostgreSQL Flexible Server FQDN."
+  value       = azurerm_postgresql_flexible_server.mlflow.fqdn
+}
+
+output "mlflow_storage_account_name" {
+  description = "MLflow artifact Storage Account name."
+  value       = azurerm_storage_account.mlflow.name
+}
+
+output "mlflow_storage_container_name" {
+  description = "MLflow artifact Blob container name."
+  value       = azurerm_storage_container.mlflow.name
+}

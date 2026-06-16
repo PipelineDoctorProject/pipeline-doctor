@@ -5,6 +5,13 @@ container_apps_environment_name = "opssight-dev-env"
 log_analytics_workspace_name    = "opssight-dev-logs"
 api_container_app_name          = "opssight-api-dev"
 frontend_container_app_name     = "opssight-frontend-dev"
+worker_container_app_name       = "opssight-worker-dev"
+beat_container_app_name         = "opssight-beat-dev"
+mlflow_container_app_name       = "opssight-mlflow-dev"
+redis_cache_name                = "opssight-dev-redis"
+mlflow_postgresql_server_name   = "opssight-dev-mlflow-pg"
+mlflow_storage_account_name     = "opssightdevmlflow"
+mlflow_storage_container_name   = "mlflow"
 
 api_environment_variables = {
   APP_ENV = "development"

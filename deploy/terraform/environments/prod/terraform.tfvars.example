@@ -4,6 +4,19 @@ container_registry_name         = "opssightprodacr"
 container_apps_environment_name = "opssight-prod-env"
 log_analytics_workspace_name    = "opssight-prod-logs"
 log_retention_days              = 90
+api_container_app_name          = "opssight-api-prod"
+frontend_container_app_name     = "opssight-frontend-prod"
+worker_container_app_name       = "opssight-worker-prod"
+beat_container_app_name         = "opssight-beat-prod"
+mlflow_container_app_name       = "opssight-mlflow-prod"
+redis_cache_name                = "opssight-prod-redis"
+mlflow_postgresql_server_name   = "opssight-prod-mlflow-pg"
+mlflow_storage_account_name     = "opssightprodmlflow"
+mlflow_storage_container_name   = "mlflow"
+
+api_environment_variables = {
+  APP_ENV = "production"
+}
 
 tags = {
   owner      = "mlops"
