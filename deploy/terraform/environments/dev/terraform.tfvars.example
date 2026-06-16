@@ -12,6 +12,8 @@ redis_cache_name                = "opssight-dev-redis"
 mlflow_postgresql_server_name   = "opssight-dev-mlflow-pg"
 mlflow_storage_account_name     = "opssightdevmlflow"
 mlflow_storage_container_name   = "mlflow"
+app_storage_account_name        = "opssightdevapp"
+app_storage_container_name      = "app-artifacts"
 
 api_environment_variables = {
   APP_ENV = "development"

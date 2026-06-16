@@ -141,6 +141,7 @@ Current Terraform resources:
 - Azure Cache for Redis
 - Azure PostgreSQL Flexible Server for MLflow metadata
 - Azure Blob Storage for MLflow artifacts
+- Azure Blob Storage for app uploads, cleaned data, reports, and exports
 
 The API and frontend image tag is controlled by the IaC workflow `image_tag` input. Use immutable tags such as `dev-005`, `staging-014`, or a release SHA. Avoid relying on `dev-latest` for real deploys because it makes rollbacks and verification ambiguous.
 
@@ -213,4 +214,4 @@ Protect `main` with:
 
 ## Current Boundary
 
-Terraform currently owns the Azure foundation, ACR, API Container App, frontend Container App, worker, beat, MLflow Container App, Azure Cache for Redis, Azure PostgreSQL Flexible Server for MLflow metadata, and Azure Blob Storage for MLflow artifacts. The application database remains Supabase through `API_DB_*` secrets. One-shot migration jobs, Blob adapters for uploads/cleaned/report exports, Key Vault references, custom domains, managed Airflow, and production observability still need to be added before a full production rollout.
+Terraform currently owns the Azure foundation, ACR, API Container App, frontend Container App, worker, beat, MLflow Container App, Azure Cache for Redis, Azure PostgreSQL Flexible Server for MLflow metadata, Azure Blob Storage for MLflow artifacts, and Azure Blob Storage for app uploads/cleaned/report/export artifacts. The application database remains Supabase through `API_DB_*` secrets. One-shot migration jobs, Key Vault references, custom domains, managed Airflow, and production observability still need to be added before a full production rollout.

@@ -62,3 +62,13 @@ output "mlflow_storage_container_name" {
   description = "MLflow artifact Blob container name."
   value       = module.platform.mlflow_storage_container_name
 }
+
+output "app_storage_account_name" {
+  description = "Application artifact Storage Account name."
+  value       = module.platform.app_storage_account_name
+}
+
+output "app_storage_container_name" {
+  description = "Application artifact Blob container name."
+  value       = module.platform.app_storage_container_name
+}

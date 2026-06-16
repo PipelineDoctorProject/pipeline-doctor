@@ -22,6 +22,8 @@ from app.config.settings import MLFLOW_TRACKING_URI, resolve_mlflow_tracking_uri
 from app.models.baseline import Baseline
 from app.models.ml_model import MLModel
 from app.models.pipeline_run import PipelineRun
+from app.services import file_storage
+from app.services.quality.data_loader import load_dataset
 
 IDENTIFIER_TOKENS = {"id", "uuid", "key"}
 TARGET_NAME_HINTS = {
@@ -47,12 +49,12 @@ def collect_retraining_context(
     training_mode = _infer_training_mode_from_metadata(model_record)
     target_required = training_mode != "unsupervised_clustering"
     cleaned_data_available = bool(
-        pipeline_run.cleaned_data_path and os.path.exists(pipeline_run.cleaned_data_path)
+        file_storage.exists(pipeline_run.cleaned_data_path)
     )
     dataset_columns: list[str] = []
 
     if cleaned_data_available:
-        df = pd.read_csv(pipeline_run.cleaned_data_path, nrows=5)
+        df = load_dataset(pipeline_run.cleaned_data_path).head(5)
         dataset_columns = [str(column) for column in df.columns]
 
     target_candidates = []
@@ -120,10 +122,10 @@ def prepare_retraining_plan(
     model_record: MLModel,
     target_column: str | None,
 ) -> dict[str, Any]:
-    if not pipeline_run.cleaned_data_path or not os.path.exists(pipeline_run.cleaned_data_path):
+    if not file_storage.exists(pipeline_run.cleaned_data_path):
         raise ValueError("Cleaned data path is missing for retraining.")
 
-    df = pd.read_csv(pipeline_run.cleaned_data_path)
+    df = load_dataset(pipeline_run.cleaned_data_path)
     if df.empty:
         raise ValueError("Cleaned data is empty, so retraining cannot start.")
 

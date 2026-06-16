@@ -1,14 +1,12 @@
-from datetime import datetime
-import os
-
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies.auth import require_tenant_user
 from app.models.pipeline_run import PipelineRun
 from app.schemas.run import RunCreate, RunResponse, PipeLineCreate, PipeLineResponse
+from app.services import file_storage
 
 router = APIRouter(prefix="/runs", tags=["Runs"])
 
@@ -25,16 +23,16 @@ def download_cleaned_data(
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
 
-    if not run.cleaned_data_path or not os.path.exists(run.cleaned_data_path):
+    if not file_storage.exists(run.cleaned_data_path):
         raise HTTPException(
             status_code=404,
             detail="Cleaned data file not found for this run. The pipeline may not have completed successfully."
         )
 
-    return FileResponse(
-        path=run.cleaned_data_path,
+    return StreamingResponse(
+        file_storage.open_binary(run.cleaned_data_path),
         media_type="text/csv",
-        filename=f"cleaned_run_{run_id}.csv"
+        headers={"Content-Disposition": f'attachment; filename="cleaned_run_{run_id}.csv"'},
     )
 
 

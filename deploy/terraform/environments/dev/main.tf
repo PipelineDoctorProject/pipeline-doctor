@@ -33,6 +33,8 @@ module "platform" {
   mlflow_postgresql_server_name       = var.mlflow_postgresql_server_name
   mlflow_storage_account_name         = var.mlflow_storage_account_name
   mlflow_storage_container_name       = var.mlflow_storage_container_name
+  app_storage_account_name            = var.app_storage_account_name
+  app_storage_container_name          = var.app_storage_container_name
   api_environment_variables           = var.api_environment_variables
   api_secret_environment_variables    = var.api_secret_environment_variables
   mlflow_postgresql_admin_password    = var.mlflow_postgresql_admin_password

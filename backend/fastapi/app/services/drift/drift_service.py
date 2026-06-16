@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 from sqlalchemy.orm import Session
 
@@ -7,18 +6,20 @@ from app.services.drift.utils import get_baseline_file_for_model
 from app.services.drift.storage import save_drift_finding_and_incident
 from app.services.incidents.live_events import publish_incident_event
 from app.services.quality.baseline_service import get_active_baseline
+from app.services.quality.data_loader import load_dataset
+from app.services import file_storage
 def run_drift_checks(db: Session, run: PipelineRun, tenant_id: str | None = None):
     from app.services.drift.concept_drift import check_concept_drift
     from app.services.drift.data_drift import check_data_drift, check_profile_drift
 
-    if not run.cleaned_data_path or not os.path.exists(run.cleaned_data_path):
+    if not file_storage.exists(run.cleaned_data_path):
         message = f"Cleaned data not found for run {run.id}: {run.cleaned_data_path}"
         print(message)
         return {"saved": 0, "reason": message}
 
     active_baseline = get_active_baseline(db, run.model_id)
     baseline_file = get_baseline_file_for_model(active_baseline)
-    current_data = pd.read_csv(run.cleaned_data_path)
+    current_data = load_dataset(run.cleaned_data_path)
 
     reference_data = None
     data_results = []
@@ -27,7 +28,7 @@ def run_drift_checks(db: Session, run: PipelineRun, tenant_id: str | None = None
 
     if baseline_file:
         try:
-            reference_data = pd.read_csv(baseline_file)
+            reference_data = load_dataset(baseline_file)
             print(
                 "Running drift with raw baseline "
                 f"baseline={baseline_file}, cleaned={run.cleaned_data_path}, "

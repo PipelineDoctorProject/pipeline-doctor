@@ -20,6 +20,7 @@ The current Terraform module provisions the first Azure foundation:
 - Azure Cache for Redis
 - Azure PostgreSQL Flexible Server for MLflow metadata
 - Azure Blob Storage for MLflow artifacts
+- Azure Blob Storage for application uploads, cleaned data, reports, and exports
 
 One-shot migration jobs, Key Vault references, custom domains,
 and advanced deployment slots should be added in the next infrastructure phase
@@ -45,7 +46,7 @@ and keep secrets, databases, queues, and artifacts outside app containers.
 | MLflow | Azure Container Apps | Uses the backend image with a dedicated MLflow command. Keep it private if possible. |
 | MLflow metadata DB | Azure Database for PostgreSQL Flexible Server | Managed by Terraform and kept separate from the application Supabase database. |
 | MLflow artifacts | Azure Blob Storage | Managed by Terraform as a private container. |
-| Application artifacts | Azure Blob Storage | Store uploads, cleaned outputs, and reports durably in a later hardening phase. |
+| Application artifacts | Azure Blob Storage | Managed by Terraform as a private container for uploads, cleaned outputs, reports, and exports. |
 | Secrets | Azure Key Vault / Container App secrets | Never bake secrets into images or committed env files. |
 | Airflow | Managed Airflow, Astronomer, AKS, or customer orchestrator | Production Airflow should not depend on a local Docker volume. |
 
@@ -132,6 +133,7 @@ For production, prefer managed identity plus `AcrPull` on ACR. The dev environme
 | `mlflow` | Azure Container App |
 | `mlflow-db` | Azure PostgreSQL Flexible Server managed by Terraform |
 | `mlflow-artifacts` | Azure Blob Storage managed by Terraform |
+| `uploads`, `cleaned`, `reports`, `exports` | Azure Blob Storage managed by Terraform |
 | `airflow-*` | Managed Airflow or separate orchestrator |
 | `airflow-db` | Managed by the Airflow platform, or external PostgreSQL if self-hosted |
 
@@ -202,7 +204,7 @@ For the current Container App flow, set `VITE_API_URL` and `VITE_WS_URL` in the 
 - Add API health checks and Container App probes.
 - Add central logging with Application Insights.
 - Add alerting for API errors, worker failures, queue backlog, and failed DAG pushes.
-- Move uploads/cleaned/report artifacts to durable object storage. MLflow artifacts already use Terraform-managed Azure Blob Storage.
+- Verify uploads, cleaned datasets, quarantine files, reports, and exports are written to the Terraform-managed app artifact container.
 - Validate Slack public distribution for multi-workspace installation.
 - Validate Terraform plans against the final Azure account, image registry, and DNS names before first production rollout.
 
@@ -210,7 +212,6 @@ For the current Container App flow, set `VITE_API_URL` and `VITE_WS_URL` in the 
 
 The current codebase is ready for a strong staging deployment, but a final production cut should still add:
 
-- Azure Blob storage adapter for uploads, cleaned data, and report exports.
 - Key Vault references or CI/CD secret injection for every sensitive parameter.
 - Service-token based Airflow auth if you do not want Airflow to use admin credentials.
 - Terraform-managed one-shot migration job resources.

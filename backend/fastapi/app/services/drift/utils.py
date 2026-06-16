@@ -1,6 +1,7 @@
 import os
 import glob
 from app.config.settings import BASELINE_UPLOAD_DIR
+from app.services import file_storage
 
 
 def _fastapi_root():
@@ -33,6 +34,9 @@ def get_baseline_file_for_model(baseline):
     file_path = (meta or {}).get("source_file_path")
 
     if file_path:
+        if file_storage.exists(file_path):
+            return file_path
+
         candidate_paths = [
             file_path,
             os.path.abspath(file_path),
