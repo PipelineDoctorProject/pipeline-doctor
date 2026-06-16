@@ -10,11 +10,11 @@ Pull request
 Merge/release
   -> Images are built and pushed to Azure Container Registry
 IaC workflow
-  -> Terraform provisions Azure infrastructure
+  -> Terraform provisions/updates Azure infrastructure and Container Apps
 Migration job
   -> Alembic and tenant repair run once
 Deploy
-  -> API, worker, beat, and frontend are updated
+  -> API and frontend Container Apps run the selected immutable image tag
 Verify
   -> Ansible checks environment readiness
 ```
@@ -24,8 +24,8 @@ Verify
 | Workflow | File | Purpose |
 |---|---|---|
 | CI | `.github/workflows/ci.yml` | Validates backend, frontend, Docker, Terraform, and Ansible on PRs and pushes. |
-| Container Release | `.github/workflows/container-release.yml` | Manually builds and optionally pushes backend/frontend images to Azure Container Registry. |
-| IaC | `.github/workflows/iac.yml` | Manually runs Terraform `plan` or `apply` for `dev` or `prod`. |
+| Container Release | `.github/workflows/container-release.yml` | Manually builds backend/frontend images, verifies frontend build config, and optionally pushes images to Azure Container Registry. |
+| IaC | `.github/workflows/iac.yml` | Manually runs Terraform `plan` or `apply` for `dev`, `staging`, or `prod`, including Azure Container Apps. |
 | Ansible Operations | `.github/workflows/ansible.yml` | Manually runs post-provision verification playbooks. |
 
 ## CI Checks
@@ -69,26 +69,45 @@ Recommended protection:
 - `staging`: at least one reviewer.
 - `prod`: required reviewer approval, no self-approval if possible.
 
-## Required GitHub Secrets
+## Required GitHub Environment Values
 
-For Azure OIDC:
+For Azure OIDC, store these as GitHub Environment secrets:
 
 - `AZURE_CLIENT_ID`
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
 
-For Azure Container Registry:
+For Azure Container Registry, store these as GitHub Environment variables or secrets:
 
 - `AZURE_CONTAINER_REGISTRY_NAME`
 - `AZURE_CONTAINER_REGISTRY_LOGIN_SERVER`
 
-Later deployment workflows will also need:
+For frontend builds, store these as GitHub Environment variables or secrets:
 
-- `AZURE_RESOURCE_GROUP`
-- `AZURE_CONTAINER_APP_API`
-- `AZURE_CONTAINER_APP_WORKER`
-- `AZURE_CONTAINER_APP_BEAT`
-- `AZURE_CONTAINER_APP_FRONTEND`
+- `VITE_API_URL`
+- `VITE_WS_URL`
+
+For API runtime, store at least these as GitHub Environment secrets:
+
+- `API_SECRET_KEY`
+- `API_DB_NAME`
+- `API_DB_USER`
+- `API_DB_PASSWORD`
+- `API_DB_HOST`
+
+Optional API runtime values include:
+
+- `API_DB_PORT`
+- `API_DB_SSLMODE`
+- `API_ALGORITHM`
+- `API_REDIS_URL`
+- `API_MLFLOW_TRACKING_URI`
+- `API_GROQ_API_KEY`
+- `API_MAIL_USERNAME`
+- `API_MAIL_PASSWORD`
+- `API_MAIL_FROM`
+- `API_SLACK_CLIENT_ID`
+- `API_SLACK_CLIENT_SECRET`
 
 Do not store database passwords, Slack tokens, JWT secrets, or API keys in the repository. Use GitHub Environment secrets, Azure Key Vault, or Container App secrets.
 
@@ -108,6 +127,12 @@ Current Terraform resources:
 - Azure Container Registry
 - Log Analytics Workspace
 - Azure Container Apps Environment
+- FastAPI API Container App
+- Frontend Container App
+
+The API and frontend image tag is controlled by the IaC workflow `image_tag` input. Use immutable tags such as `dev-005`, `staging-014`, or a release SHA. Avoid relying on `dev-latest` for real deploys because it makes rollbacks and verification ambiguous.
+
+The IaC workflow writes a generated `zz-workflow.auto.tfvars.json` file so the workflow `image_tag` input wins over checked-in defaults.
 
 Run locally:
 
@@ -144,15 +169,18 @@ ansible-playbook deploy/ansible/playbooks/verify.yml -i deploy/ansible/inventori
 1. Push the repository to GitHub.
 2. Create `dev`, `staging`, and `prod` GitHub Environments.
 3. Configure Azure OIDC federated credentials for this repository.
-4. Add the Azure secrets listed above to GitHub Environments.
+4. Add the Azure, ACR, frontend, and API runtime values listed above to GitHub Environments.
 5. Open a pull request and confirm the `CI` workflow passes.
 6. Run `IaC` with `environment=dev` and `action=plan`.
 7. Review the Terraform plan.
 8. Run `IaC` with `environment=dev` and `action=apply`.
-9. Run `Container Release` with `push_images=false`.
-10. If builds pass, run `Container Release` with `push_images=true`.
-11. Add the final Container Apps deployment update step after Azure app names are finalized.
-12. Run `Ansible Operations` with `playbook=verify`.
+9. Copy the Terraform outputs `container_registry_name`, `container_registry_login_server`, `api_container_app_url`, and `frontend_container_app_url` into the matching GitHub Environment values.
+10. Set `VITE_API_URL` to the API URL and `VITE_WS_URL` to the same host with `wss://`.
+11. Run `Container Release` with a new immutable `image_tag` and `push_images=true`.
+12. Run `IaC` again with `action=apply` and the same `image_tag`.
+13. In Azure Container Apps, confirm the active API and frontend revisions use that image tag.
+14. Test `/health` on the API URL and the login flow from the frontend URL.
+15. Run `Ansible Operations` with `playbook=verify` when the environment is reachable.
 
 ## Branch Strategy
 
@@ -171,4 +199,4 @@ Protect `main` with:
 
 ## Current Boundary
 
-This setup gives us a strong CI/CD and IaC foundation. The next production step is to add the actual Azure Container App resources and deployment update commands after finalizing the Azure topology, domains, and secret strategy.
+Terraform currently owns the Azure foundation, ACR, API Container App, and frontend Container App. Worker, beat, one-shot migration jobs, Redis, Blob Storage, Key Vault references, custom domains, and production observability still need to be added before a full production rollout.

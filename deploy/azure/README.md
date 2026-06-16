@@ -12,11 +12,13 @@ The current Terraform module provisions the first Azure foundation:
 - Log Analytics workspace
 - Azure Container Apps environment
 - Azure Container Registry
+- FastAPI API Container App
+- Frontend Container App
 
-Application Container Apps, managed databases, Redis, Blob Storage, Key Vault
-references, domains, and deployment slots should be added in the next
-infrastructure phase after the Azure account, GitHub OIDC, and remote Terraform
-state are configured.
+Worker, beat, one-shot migration jobs, managed databases, Redis, Blob Storage,
+Key Vault references, custom domains, and advanced deployment slots should be
+added in the next infrastructure phase after remote Terraform state is
+configured.
 
 The key production rule is:
 
@@ -45,19 +47,18 @@ and keep secrets, databases, queues, and artifacts outside app containers.
 1. Create Azure subscription, GitHub OIDC credentials, and Terraform remote state.
 2. Run the GitHub Actions `IaC` workflow with `action=plan`.
 3. Review the Terraform plan and run `action=apply`.
-4. Save Terraform ACR outputs into GitHub Environment variables.
-5. Run the GitHub Actions `Container Release` workflow for the target environment.
-6. Create production database, Redis, Blob Storage, and Key Vault-backed secrets.
-7. Add all backend environment variables as Container App secrets.
-8. Run `alembic upgrade head` once as a migration job.
-9. Run `python scripts/repair_tenant_schemas.py` in that migration job.
-10. Deploy API app from the backend image.
-11. Deploy Celery worker app from the backend image.
-12. Deploy Celery beat as a single-replica app from the backend image.
-13. Deploy frontend with `VITE_API_URL` and `VITE_WS_URL` pointing to the public API host.
-14. Configure Slack OAuth redirect URL to the public API callback.
-15. Configure Airflow `opssight_api` connection with a service token.
-16. Trigger a staging DAG run with explicit model and input artifact.
+4. Save Terraform ACR and Container App URL outputs into GitHub Environment values.
+5. Set `VITE_API_URL` and `VITE_WS_URL` for the frontend build.
+6. Run the GitHub Actions `Container Release` workflow with a new immutable image tag.
+7. Run the GitHub Actions `IaC` workflow again with `action=apply` and the same image tag.
+8. Confirm the active Azure Container App revisions use that image tag.
+9. Create production database, Redis, Blob Storage, and Key Vault-backed secrets.
+10. Run `alembic upgrade head` once as a migration job.
+11. Run `python scripts/repair_tenant_schemas.py` in that migration job.
+12. Add Terraform-managed Celery worker and beat Container Apps.
+13. Configure Slack OAuth redirect URL to the public API callback.
+14. Configure Airflow `opssight_api` connection with a service token.
+15. Trigger a staging DAG run with explicit model and input artifact.
 
 ## Build Images
 
@@ -80,7 +81,9 @@ docker push <acr>.azurecr.io/opssight-frontend:<tag>
 
 ## Provision Container Apps
 
-Use `container-apps.bicep` as the starting infrastructure template for the API, worker, beat, frontend, and Log Analytics workspace:
+Use the GitHub Actions `IaC` workflow and Terraform module for the current API and frontend Container Apps.
+
+The Bicep template remains a reference for manual experiments or future worker/beat expansion:
 
 ```powershell
 az deployment group create `
@@ -90,6 +93,26 @@ az deployment group create `
 ```
 
 For real production, pass sensitive values from Azure Key Vault or CI/CD secrets instead of committing a filled parameter file.
+
+## Image Promotion
+
+Use the same immutable image tag in both workflows:
+
+```text
+Container Release: image_tag=dev-005, push_images=true
+IaC:               image_tag=dev-005, action=apply
+```
+
+After deploy, verify in Azure Portal:
+
+```text
+Container App -> Application -> Revisions and replicas
+Container App -> Application -> Containers -> Image tag
+```
+
+If the portal dropdown shows `dev-latest` by default, check the active revision and the container details for that revision. The dropdown lists all ACR tags and may default to `dev-latest` while browsing; the running revision is what matters.
+
+For production, prefer managed identity plus `AcrPull` on ACR. The dev environment may use ACR admin credentials if the GitHub Actions service principal cannot create Azure role assignments.
 
 ## Run Migrations
 
@@ -143,6 +166,8 @@ VITE_WS_URL=wss://api.your-domain.com
 
 If you use Azure Static Web Apps, set these as build environment variables. If you use the frontend Dockerfile, pass them as Docker build args.
 
+For the current Container App flow, set `VITE_API_URL` and `VITE_WS_URL` in the GitHub Environment before running `Container Release`. Re-run `IaC` with the same tag after the image is pushed.
+
 ## Production Readiness Gates
 
 - Use HTTPS for frontend, API, Slack redirects, and WebSockets.
@@ -156,7 +181,7 @@ If you use Azure Static Web Apps, set these as build environment variables. If y
 - Add alerting for API errors, worker failures, queue backlog, and failed DAG pushes.
 - Move uploads/cleaned/report artifacts to durable object storage.
 - Validate Slack public distribution for multi-workspace installation.
-- Validate the Container Apps Bicep template against your final Azure account, image registry, and DNS names before first production rollout.
+- Validate Terraform plans against the final Azure account, image registry, and DNS names before first production rollout.
 
 ## Remaining Hardening Work
 
@@ -165,6 +190,6 @@ The current codebase is ready for a strong staging deployment, but a final produ
 - Azure Blob storage adapter for uploads, cleaned data, report exports, and MLflow artifacts.
 - Key Vault references or CI/CD secret injection for every sensitive parameter.
 - Service-token based Airflow auth if you do not want Airflow to use admin credentials.
-- Deployment workflow that updates Container Apps after images are pushed.
+- Terraform-managed worker, beat, and one-shot migration job resources.
 - Application Insights instrumentation and structured JSON logs.
 - Separate staging and production Slack apps or redirect URLs.
