@@ -45,18 +45,56 @@ MLflow champion alias + future monitoring
 For Azure, the recommended hosting split is:
 
 ```text
-Azure Static Web Apps or frontend Container App
+Azure Container Apps - frontend
     |
     v
 Azure Container Apps - FastAPI API
     |
-    +-- Azure Container Apps - Celery worker
-    +-- Azure Container Apps - Celery beat
-    +-- Azure Cache for Redis
+    +-- Azure Container Apps - Celery worker       (production hardening)
+    +-- Azure Container Apps - Celery beat         (production hardening)
+    +-- Azure Cache for Redis                      (production hardening)
     +-- Supabase/Azure PostgreSQL
     +-- MLflow on Container Apps or managed ML registry
-    +-- Azure Blob Storage for durable artifacts
+    +-- Azure Blob Storage for durable artifacts   (production hardening)
 ```
+
+---
+
+## Current Azure Hosting Process
+
+The current Azure deployment is managed by GitHub Actions and Terraform:
+
+1. `Container Release` builds `opssight-api` and `opssight-frontend`.
+2. The frontend image is built with `VITE_API_URL` and `VITE_WS_URL` from the selected GitHub Environment.
+3. The workflow verifies the frontend bundle does not still contain `localhost:8000`.
+4. Images are pushed to Azure Container Registry using an immutable `image_tag`.
+5. `IaC` runs Terraform for the same environment and `image_tag`.
+6. Terraform updates the API and frontend Azure Container Apps to use that image tag.
+7. Terraform prints `api_container_app_url`, `frontend_container_app_url`, and ACR outputs.
+
+Use the same image tag in both workflows. Example:
+
+```text
+Container Release: environment=dev, image_tag=dev-005, push_images=true
+IaC:               environment=dev, action=apply, image_tag=dev-005
+```
+
+For real deployments, prefer immutable tags such as `dev-005`, `staging-014`, release versions, or commit SHAs. Keep `dev-latest` only as a convenience pointer, not as the tag you audit in Terraform.
+
+The active Azure Container App revision is the source of truth for what is running. In Azure Portal, check:
+
+```text
+Container App -> Application -> Revisions and replicas -> active revision
+Container App -> Application -> Containers -> Image tag
+```
+
+Production verification should include:
+
+- ACR contains the API and frontend images for the chosen tag.
+- API Container App active revision uses the chosen API image tag.
+- Frontend Container App active revision uses the chosen frontend image tag.
+- API `/health` returns success.
+- Frontend login calls the deployed API URL, not `localhost`.
 
 ---
 
@@ -192,6 +230,15 @@ VITE_WS_URL=wss://api.opssight.example.com
 
 These `VITE_*` values are public build-time configuration, not secrets. If the frontend and API are hosted on different domains, configure backend CORS and `FRONTEND_URL` to match the deployed frontend origin.
 
+In GitHub Environments, set:
+
+- `VITE_API_URL=https://<api-container-app-url>`
+- `VITE_WS_URL=wss://<api-container-app-host>`
+
+After changing these values, rebuild the frontend image with `Container Release`, then apply the same image tag with `IaC`. Vite values are baked into the frontend image at build time, so changing GitHub Environment values alone does not change an already-built frontend container.
+
+The API `FRONTEND_URL` is managed by Terraform from the frontend Container App URL so CORS follows the deployed frontend origin.
+
 ---
 
 ## Database and Migration Rules
@@ -248,6 +295,11 @@ Production checklist:
 - Remediation creates candidates, not direct live replacements.
 - Staging and champion promotion are auditable.
 - Reports include RCA, remediation lifecycle, candidate, staging, and deployment state.
+- GitHub `prod` environment requires reviewer approval.
+- Terraform state is remote and protected.
+- Container Apps use immutable image tags for every release.
+- ACR authentication uses managed identity and `AcrPull` in production where the deployment principal has permission to create role assignments. The current dev fallback can use ACR admin credentials.
+- API runtime secrets come from GitHub Environment secrets, Azure Key Vault, or Container App secrets, never from committed `.env` files.
 
 ---
 
@@ -255,13 +307,15 @@ Production checklist:
 
 For the current project, the next practical production steps are:
 
-1. Move real secrets from `.env` into a secret manager or platform environment variables.
-2. Configure Airflow `opssight_api` with a service identity.
-3. Trigger DAGs with explicit `input_path` or `input_uri`.
-4. Set frontend `VITE_API_URL` and `VITE_WS_URL` per deployment environment.
-5. Move MLflow artifacts to durable storage.
-6. Split migrations into a release job before running multiple API replicas.
-7. Validate the complete incident-to-report-to-remediation-to-promotion flow in a staging environment.
+1. Configure remote Terraform state before any production apply.
+2. Move production secrets from `.env` into GitHub Environment secrets or Azure Key Vault.
+3. Add a one-shot migration job for `alembic upgrade head` and tenant repair.
+4. Add Terraform-managed worker and beat Container Apps.
+5. Add Redis and durable Blob Storage for queues, uploads, cleaned data, reports, and artifacts.
+6. Configure Airflow `opssight_api` with a service identity.
+7. Trigger DAGs with explicit `input_path` or `input_uri`.
+8. Configure production custom domains, HTTPS, and Slack OAuth redirect URLs.
+9. Validate the complete incident-to-report-to-remediation-to-promotion flow in staging before promoting the same image tag to production.
 
 ## Azure Deployment Artifacts
 
