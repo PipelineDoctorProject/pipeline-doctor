@@ -248,6 +248,8 @@ That means:
 - RCA still has access to the raw evidence
 - the cleaned accepted dataset can still pass the gate even when the raw upload was bad
 
+Each finding stores both `model_id` and `pipeline_run_id`, and `pipeline_run_id` references `pipeline_runs.id` so findings remain attached to the run that produced them.
+dock
 This distinction is intentional:
 
 - raw findings explain the problem

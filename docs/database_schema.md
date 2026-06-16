@@ -137,12 +137,15 @@ Raw quality findings captured from the incoming batch.
 
 Important fields:
 
+- `model_id`
 - `pipeline_run_id`
 - `column_name`
 - `check_type`
 - `success`
 - `details`
 - `created_at`
+
+`pipeline_run_id` is a foreign key to `pipeline_runs.id`; this keeps raw quality findings tied to the validation run that produced them.
 
 ### `prediction_logs`
 
