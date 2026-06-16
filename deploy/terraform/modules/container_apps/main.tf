@@ -1,17 +1,17 @@
 locals {
-  api_container_app_name                   = coalesce(var.api_container_app_name, "opssight-api-${var.deployment_environment}")
-  frontend_container_app_name              = coalesce(var.frontend_container_app_name, "opssight-frontend-${var.deployment_environment}")
-  worker_container_app_name                = coalesce(var.worker_container_app_name, "opssight-worker-${var.deployment_environment}")
-  beat_container_app_name                  = coalesce(var.beat_container_app_name, "opssight-beat-${var.deployment_environment}")
-  mlflow_container_app_name                = coalesce(var.mlflow_container_app_name, "opssight-mlflow-${var.deployment_environment}")
-  redis_cache_name                         = coalesce(var.redis_cache_name, "opssight-${var.deployment_environment}-redis")
-  mlflow_postgresql_server_name            = coalesce(var.mlflow_postgresql_server_name, "opssight-${var.deployment_environment}-mlflow-pg")
-  mlflow_storage_account_name              = coalesce(var.mlflow_storage_account_name, "opssight${var.deployment_environment}mlflow")
-  mlflow_storage_container_name            = coalesce(var.mlflow_storage_container_name, "mlflow")
-  frontend_public_url                      = coalesce(var.frontend_public_url, "https://${azurerm_container_app.frontend.ingress[0].fqdn}")
-  mlflow_tracking_uri                      = coalesce(var.mlflow_tracking_uri, "https://${azurerm_container_app.mlflow.ingress[0].fqdn}")
-  managed_mlflow_backend_store_uri         = "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow.fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow.name}?sslmode=require"
-  managed_mlflow_artifact_root             = "wasbs://${azurerm_storage_container.mlflow.name}@${azurerm_storage_account.mlflow.name}.blob.core.windows.net/"
+  api_container_app_name           = coalesce(var.api_container_app_name, "opssight-api-${var.deployment_environment}")
+  frontend_container_app_name      = coalesce(var.frontend_container_app_name, "opssight-frontend-${var.deployment_environment}")
+  worker_container_app_name        = coalesce(var.worker_container_app_name, "opssight-worker-${var.deployment_environment}")
+  beat_container_app_name          = coalesce(var.beat_container_app_name, "opssight-beat-${var.deployment_environment}")
+  mlflow_container_app_name        = coalesce(var.mlflow_container_app_name, "opssight-mlflow-${var.deployment_environment}")
+  redis_cache_name                 = coalesce(var.redis_cache_name, "opssight-${var.deployment_environment}-redis")
+  mlflow_postgresql_server_name    = coalesce(var.mlflow_postgresql_server_name, "opssight-${var.deployment_environment}-mlflow-pg")
+  mlflow_storage_account_name      = coalesce(var.mlflow_storage_account_name, "opssight${var.deployment_environment}mlflow")
+  mlflow_storage_container_name    = coalesce(var.mlflow_storage_container_name, "mlflow")
+  frontend_public_url              = coalesce(var.frontend_public_url, "https://${azurerm_container_app.frontend.ingress[0].fqdn}")
+  mlflow_tracking_uri              = coalesce(var.mlflow_tracking_uri, "https://${azurerm_container_app.mlflow.ingress[0].fqdn}")
+  managed_mlflow_backend_store_uri = "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow.fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow.name}?sslmode=require"
+  managed_mlflow_artifact_root     = "wasbs://${azurerm_storage_container.mlflow.name}@${azurerm_storage_account.mlflow.name}.blob.core.windows.net/"
   managed_api_secret_environment_variables = {
     REDIS_URL           = "rediss://:${azurerm_redis_cache.this.primary_access_key}@${azurerm_redis_cache.this.hostname}:6380/0"
     MLFLOW_TRACKING_URI = local.mlflow_tracking_uri
