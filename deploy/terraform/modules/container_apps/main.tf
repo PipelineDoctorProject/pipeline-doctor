@@ -14,14 +14,18 @@ locals {
   mlflow_tracking_uri              = coalesce(var.mlflow_tracking_uri, "https://${azurerm_container_app.mlflow.ingress[0].fqdn}")
   managed_mlflow_backend_store_uri = "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow.fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow.name}?sslmode=require"
   managed_mlflow_artifact_root     = "wasbs://${azurerm_storage_container.mlflow.name}@${azurerm_storage_account.mlflow.name}.blob.core.windows.net/"
+  external_redis_url               = trimspace(try(var.api_secret_environment_variables["REDIS_URL"], ""))
+  use_managed_redis                = local.external_redis_url == ""
   managed_api_secret_environment_variables = {
-    REDIS_URL                           = "rediss://:${azurerm_redis_cache.this.primary_access_key}@${azurerm_redis_cache.this.hostname}:6380/0"
     MLFLOW_TRACKING_URI                 = local.mlflow_tracking_uri
     APP_STORAGE_BACKEND                 = "azure_blob"
     AZURE_APP_STORAGE_CONTAINER         = azurerm_storage_container.app.name
     AZURE_APP_STORAGE_CONNECTION_STRING = azurerm_storage_account.app.primary_connection_string
   }
   api_secret_environment_variables = merge(
+    local.use_managed_redis ? {
+      REDIS_URL = "rediss://:${azurerm_redis_cache.this[0].primary_access_key}@${azurerm_redis_cache.this[0].hostname}:6380/0"
+    } : {},
     local.managed_api_secret_environment_variables,
     var.api_secret_environment_variables
   )
@@ -85,6 +89,8 @@ resource "azurerm_container_registry" "this" {
 }
 
 resource "azurerm_redis_cache" "this" {
+  count = local.use_managed_redis ? 1 : 0
+
   name                          = local.redis_cache_name
   location                      = azurerm_resource_group.this.location
   resource_group_name           = azurerm_resource_group.this.name
