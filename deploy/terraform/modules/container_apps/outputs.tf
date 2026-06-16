@@ -45,7 +45,7 @@ output "mlflow_container_app_url" {
 
 output "redis_cache_hostname" {
   description = "Azure Cache for Redis hostname."
-  value       = azurerm_redis_cache.this.hostname
+  value       = local.use_managed_redis ? azurerm_redis_cache.this[0].hostname : null
 }
 
 output "mlflow_postgresql_fqdn" {

@@ -1,6 +1,6 @@
 # Terraform Infrastructure
 
-Terraform is the source of truth for Azure infrastructure. It creates and owns the resource group, Azure Container Registry, Log Analytics, the Container Apps environment, Azure Cache for Redis, Azure PostgreSQL/Blob resources for MLflow, Azure Blob resources for application artifacts, and the API/frontend/worker/beat/MLflow Container Apps.
+Terraform is the source of truth for Azure infrastructure. It creates and owns the resource group, Azure Container Registry, Log Analytics, the Container Apps environment, Azure PostgreSQL/Blob resources for MLflow, Azure Blob resources for application artifacts, and the API/frontend/worker/beat/MLflow Container Apps.
 
 Application runtime settings are passed from GitHub Environments into Terraform during the `IaC` workflow. Keep secrets in GitHub Environments, Azure Key Vault, or the target platform secret store. Do not commit real secrets in Terraform variables.
 
@@ -48,7 +48,7 @@ Common optional API runtime values:
 - `API_DB_PORT`
 - `API_DB_SSLMODE`
 - `API_ALGORITHM`
-- `API_REDIS_URL`
+- `API_REDIS_URL`: recommended. Provide your Azure Managed Redis TLS URL here to avoid provisioning the retired legacy Azure Cache for Redis resource.
 - `API_MLFLOW_TRACKING_URI`
 - `API_GROQ_API_KEY`
 - `API_MAIL_USERNAME`
@@ -151,7 +151,7 @@ After apply, Terraform prints:
 
 Use the API URL to populate `VITE_API_URL` and derive `VITE_WS_URL` by replacing `https://` with `wss://`.
 
-Terraform injects `REDIS_URL` from the managed Azure Cache for Redis by default. If a GitHub Environment secret named `API_REDIS_URL` or `REDIS_URL` is present, it overrides the managed Redis URL. Remove those secrets when you want the Terraform-created Redis cache to be used.
+Terraform injects `REDIS_URL` from the GitHub Environment secret named `API_REDIS_URL` or `REDIS_URL` when present. In that case, Terraform skips provisioning the legacy Azure Cache for Redis resource and uses your external Azure Managed Redis instance instead. If neither secret is present, Terraform falls back to creating the legacy Redis resource.
 
 ## Service Mapping
 
@@ -159,7 +159,7 @@ The current Terraform production shape is:
 
 | Local Compose service | Azure target |
 |---|---|
-| `redis` | Azure Cache for Redis |
+| `redis` | Azure Managed Redis via `API_REDIS_URL`, or legacy Azure Cache for Redis only when no external URL is provided |
 | `celery-worker` | Azure Container App using the API image |
 | `celery-beat` | Azure Container App using the API image, one replica |
 | `mlflow` | Azure Container App using the API image |
