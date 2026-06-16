@@ -101,6 +101,18 @@ variable "mlflow_storage_container_name" {
   default     = null
 }
 
+variable "app_storage_account_name" {
+  description = "Azure Storage Account name for application uploads, cleaned data, reports, and exports. Must be globally unique, lowercase, and 3-24 characters."
+  type        = string
+  default     = null
+}
+
+variable "app_storage_container_name" {
+  description = "Azure Blob container name for application uploads, cleaned data, reports, and exports."
+  type        = string
+  default     = null
+}
+
 variable "api_image_name" {
   description = "FastAPI image repository name in ACR."
   type        = string
@@ -318,6 +330,24 @@ variable "mlflow_storage_replication_type" {
 
 variable "mlflow_storage_blob_retention_days" {
   description = "Soft delete retention days for MLflow artifact blobs and containers."
+  type        = number
+  default     = 7
+}
+
+variable "app_storage_account_tier" {
+  description = "Storage account tier for application artifacts."
+  type        = string
+  default     = "Standard"
+}
+
+variable "app_storage_replication_type" {
+  description = "Storage account replication type for application artifacts."
+  type        = string
+  default     = "LRS"
+}
+
+variable "app_storage_blob_retention_days" {
+  description = "Soft delete retention days for application artifact blobs and containers."
   type        = number
   default     = 7
 }

@@ -62,3 +62,13 @@ output "mlflow_storage_container_name" {
   description = "MLflow artifact Blob container name."
   value       = azurerm_storage_container.mlflow.name
 }
+
+output "app_storage_account_name" {
+  description = "Application artifact Storage Account name."
+  value       = azurerm_storage_account.app.name
+}
+
+output "app_storage_container_name" {
+  description = "Application artifact Blob container name."
+  value       = azurerm_storage_container.app.name
+}
