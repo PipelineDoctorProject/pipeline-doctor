@@ -57,6 +57,7 @@ Azure Container Apps - FastAPI API
     +-- MLflow on Azure Container Apps
     +-- Azure PostgreSQL Flexible Server for MLflow metadata
     +-- Azure Blob Storage for MLflow artifacts
+    +-- Azure Blob Storage for uploads, cleaned data, reports, and exports
     +-- Airflow managed/separate later
 ```
 
@@ -71,8 +72,8 @@ The current Azure deployment is managed by GitHub Actions and Terraform:
 3. The workflow verifies the frontend bundle does not still contain `localhost:8000`.
 4. Images are pushed to Azure Container Registry using an immutable `image_tag`.
 5. `IaC` runs Terraform for the same environment and `image_tag`.
-6. Terraform updates API, frontend, worker, beat, MLflow, Redis, MLflow PostgreSQL, and MLflow Blob resources.
-7. Terraform prints `api_container_app_url`, `frontend_container_app_url`, `mlflow_container_app_url`, Redis hostname, MLflow PostgreSQL/Blob outputs, and ACR outputs.
+6. Terraform updates API, frontend, worker, beat, MLflow, Redis, MLflow PostgreSQL, MLflow Blob, and application Blob resources.
+7. Terraform prints `api_container_app_url`, `frontend_container_app_url`, `mlflow_container_app_url`, Redis hostname, MLflow PostgreSQL/Blob outputs, application Blob outputs, and ACR outputs.
 
 The application database remains external. For the current project, keep using Supabase through the existing `API_DB_*` GitHub Environment secrets:
 
@@ -108,6 +109,7 @@ Production verification should include:
 - Redis exists as Azure Cache for Redis and `REDIS_URL` is injected by Terraform unless overridden.
 - MLflow uses Azure PostgreSQL Flexible Server for metadata.
 - MLflow uses the Terraform-managed Azure Blob container for artifacts.
+- Uploads, cleaned datasets, quarantine datasets, reports, and exports use the Terraform-managed application Blob container.
 - API `/health` returns success.
 - Frontend login calls the deployed API URL, not `localhost`.
 
@@ -123,6 +125,7 @@ Production verification should include:
 | Airflow auth | Workspace login/password is acceptable for testing | Scoped service account or service token, rotated regularly |
 | MLflow backend | Local `mlflow-db` Postgres | Terraform-managed Azure PostgreSQL Flexible Server |
 | MLflow artifacts | Local Docker volume | Terraform-managed Azure Blob container |
+| App artifacts | Local `uploads/` and `cleaned/` folders | Terraform-managed Azure Blob container |
 | Frontend runtime config | Vite defaults to localhost | Build with environment-provided API and WebSocket URLs |
 | Model deployment | Local alias promotion | Customer CI/CD deploys `@staging`, then OpsSight confirms `@champion` |
 | Slack | Local OAuth redirect | Publicly distributed Slack app, HTTPS redirect URLs, tenant-scoped installation |
@@ -327,6 +330,7 @@ Production checklist:
 - Airflow API auth uses service token or service account credentials.
 - MLflow metadata is stored in Azure PostgreSQL Flexible Server.
 - MLflow artifacts are stored in Azure Blob Storage.
+- App uploads, cleaned data, quarantine files, reports, and exports are stored in Azure Blob Storage.
 - Frontend builds use environment-provided `VITE_API_URL` and `VITE_WS_URL`.
 - Backend migrations are controlled by deployment.
 - Tenant isolation is verified on every protected route.
@@ -351,7 +355,7 @@ For the current project, the next practical production steps are:
 2. Move production secrets from `.env` into GitHub Environment secrets or Azure Key Vault.
 3. Add `MLFLOW_POSTGRESQL_ADMIN_PASSWORD` to each GitHub Environment that runs IaC.
 4. Add a one-shot migration job for `alembic upgrade head` and tenant repair.
-5. Add durable Blob Storage adapters for uploads, cleaned data, and reports. MLflow artifacts already use Terraform-managed Azure Blob Storage.
+5. Verify uploads, cleaned data, quarantine files, reports, and exports are written to the Terraform-managed app artifact Blob container.
 6. Configure Airflow `opssight_api` with a service identity.
 7. Trigger DAGs with explicit `input_path` or `input_uri`.
 8. Configure production custom domains, HTTPS, and Slack OAuth redirect URLs.

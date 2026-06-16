@@ -1,6 +1,6 @@
 # Terraform Infrastructure
 
-Terraform is the source of truth for Azure infrastructure. It creates and owns the resource group, Azure Container Registry, Log Analytics, the Container Apps environment, Azure Cache for Redis, Azure PostgreSQL/Blob resources for MLflow, and the API/frontend/worker/beat/MLflow Container Apps.
+Terraform is the source of truth for Azure infrastructure. It creates and owns the resource group, Azure Container Registry, Log Analytics, the Container Apps environment, Azure Cache for Redis, Azure PostgreSQL/Blob resources for MLflow, Azure Blob resources for application artifacts, and the API/frontend/worker/beat/MLflow Container Apps.
 
 Application runtime settings are passed from GitHub Environments into Terraform during the `IaC` workflow. Keep secrets in GitHub Environments, Azure Key Vault, or the target platform secret store. Do not commit real secrets in Terraform variables.
 
@@ -146,6 +146,8 @@ After apply, Terraform prints:
 - `mlflow_postgresql_fqdn`
 - `mlflow_storage_account_name`
 - `mlflow_storage_container_name`
+- `app_storage_account_name`
+- `app_storage_container_name`
 
 Use the API URL to populate `VITE_API_URL` and derive `VITE_WS_URL` by replacing `https://` with `wss://`.
 
@@ -163,6 +165,7 @@ The current Terraform production shape is:
 | `mlflow` | Azure Container App using the API image |
 | `mlflow-db` | Azure PostgreSQL Flexible Server managed by Terraform |
 | `mlflow-artifacts` | Azure Blob Storage managed by Terraform |
+| `uploads`, `cleaned`, `reports`, `exports` | Azure Blob Storage managed by Terraform |
 | `airflow-*` | Managed Airflow or separate orchestrator, not this Terraform module |
 | `airflow-db` | Managed by the Airflow platform, or external PostgreSQL if self-hosted |
 

@@ -90,6 +90,18 @@ variable "mlflow_storage_container_name" {
   default     = "mlflow"
 }
 
+variable "app_storage_account_name" {
+  description = "Staging application artifact storage account name."
+  type        = string
+  default     = "opssightstagingapp"
+}
+
+variable "app_storage_container_name" {
+  description = "Staging application artifact blob container name."
+  type        = string
+  default     = "app-artifacts"
+}
+
 variable "api_environment_variables" {
   description = "Non-secret FastAPI runtime environment variables."
   type        = map(string)

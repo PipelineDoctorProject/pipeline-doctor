@@ -25,6 +25,7 @@ from app.services.quality.pipeline_run_service import (
 from app.services.quality.schema_handler import handle_schema
 from app.services.quality.schema_evolution import build_feature_candidates
 from app.services.quality.storage import store_findings
+from app.services.file_storage import store_dataframe_csv
 from app.services.quality.transformer import DataTransformer
 from app.services.quality.validator import DataValidator
 
@@ -152,8 +153,7 @@ def _build_quarantine_path(run_id: int) -> str:
 
 
 def _write_dataframe(df: pd.DataFrame, path: str):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    df.to_csv(path, index=False)
+    return store_dataframe_csv(df, path)
 
 
 def _append_schema_change_annotations(
@@ -420,11 +420,11 @@ def run_data_quality_pipeline(
 
         cleaned_path = _build_cleaned_path(run_id)
         quarantine_path = _build_quarantine_path(run_id)
-        _write_dataframe(cleaned_df, cleaned_path)
+        cleaned_path = _write_dataframe(cleaned_df, cleaned_path)
 
         quarantine_written = False
         if not transformer.removed_rows.empty:
-            _write_dataframe(transformer.removed_rows, quarantine_path)
+            quarantine_path = _write_dataframe(transformer.removed_rows, quarantine_path)
             quarantine_written = True
 
         update_pipeline_run_fields(db, run_id, cleaned_data_path=cleaned_path)

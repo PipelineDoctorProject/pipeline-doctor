@@ -28,6 +28,13 @@ QUARANTINE_OUTPUT_DIR = os.getenv("QUARANTINE_OUTPUT_DIR", os.path.join(CLEANED_
 os.makedirs(CLEANED_OUTPUT_DIR, exist_ok=True)
 os.makedirs(QUARANTINE_OUTPUT_DIR, exist_ok=True)
 
+# Application artifact storage. Local filesystem remains the development default.
+# Production should use Azure Blob Storage.
+APP_STORAGE_BACKEND = os.getenv("APP_STORAGE_BACKEND", "local").lower()
+APP_STORAGE_LOCAL_ROOT = os.getenv("APP_STORAGE_LOCAL_ROOT", ".")
+AZURE_APP_STORAGE_CONNECTION_STRING = os.getenv("AZURE_APP_STORAGE_CONNECTION_STRING")
+AZURE_APP_STORAGE_CONTAINER = os.getenv("AZURE_APP_STORAGE_CONTAINER", "app-artifacts")
+
 
 # JWT Config
 SECRET_KEY = os.getenv("SECRET_KEY")

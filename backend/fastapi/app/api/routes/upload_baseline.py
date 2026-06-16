@@ -10,7 +10,6 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 import pandas as pd
-import os
 import uuid
 
 from app.models.baseline import Baseline
@@ -27,6 +26,7 @@ from app.services.quality.baseline_service import (
     activate_baseline,
 )
 from app.services.access_control import require_accessible_model
+from app.services.file_storage import open_binary, store_upload
 
 from app.config.settings import (
     BASELINE_UPLOAD_DIR,
@@ -162,34 +162,19 @@ async def upload_baseline(
         )
 
     # ==========================================
-    # CREATE DIRECTORY
-    # ==========================================
-    os.makedirs(
-        BASELINE_UPLOAD_DIR,
-        exist_ok=True
-    )
-
-    # ==========================================
     # SAVE FILE
     # ==========================================
-    file_path = os.path.join(
-        BASELINE_UPLOAD_DIR,
-        f"{uuid.uuid4()}_{file.filename}"
+    file_path = await store_upload(
+        file,
+        f"{BASELINE_UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}",
     )
-
-    with open(file_path, "wb") as buffer:
-
-        while chunk := await file.read(
-            1024 * 1024
-        ):
-            buffer.write(chunk)
 
     # ==========================================
     # LOAD CSV
     # ==========================================
     try:
 
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(open_binary(file_path))
 
     except Exception:
 

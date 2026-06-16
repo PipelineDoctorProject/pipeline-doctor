@@ -8,13 +8,18 @@ locals {
   mlflow_postgresql_server_name    = coalesce(var.mlflow_postgresql_server_name, "opssight-${var.deployment_environment}-mlflow-pg")
   mlflow_storage_account_name      = coalesce(var.mlflow_storage_account_name, "opssight${var.deployment_environment}mlflow")
   mlflow_storage_container_name    = coalesce(var.mlflow_storage_container_name, "mlflow")
+  app_storage_account_name         = coalesce(var.app_storage_account_name, "opssight${var.deployment_environment}app")
+  app_storage_container_name       = coalesce(var.app_storage_container_name, "app-artifacts")
   frontend_public_url              = coalesce(var.frontend_public_url, "https://${azurerm_container_app.frontend.ingress[0].fqdn}")
   mlflow_tracking_uri              = coalesce(var.mlflow_tracking_uri, "https://${azurerm_container_app.mlflow.ingress[0].fqdn}")
   managed_mlflow_backend_store_uri = "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow.fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow.name}?sslmode=require"
   managed_mlflow_artifact_root     = "wasbs://${azurerm_storage_container.mlflow.name}@${azurerm_storage_account.mlflow.name}.blob.core.windows.net/"
   managed_api_secret_environment_variables = {
-    REDIS_URL           = "rediss://:${azurerm_redis_cache.this.primary_access_key}@${azurerm_redis_cache.this.hostname}:6380/0"
-    MLFLOW_TRACKING_URI = local.mlflow_tracking_uri
+    REDIS_URL                           = "rediss://:${azurerm_redis_cache.this.primary_access_key}@${azurerm_redis_cache.this.hostname}:6380/0"
+    MLFLOW_TRACKING_URI                 = local.mlflow_tracking_uri
+    APP_STORAGE_BACKEND                 = "azure_blob"
+    AZURE_APP_STORAGE_CONTAINER         = azurerm_storage_container.app.name
+    AZURE_APP_STORAGE_CONNECTION_STRING = azurerm_storage_account.app.primary_connection_string
   }
   api_secret_environment_variables = merge(
     local.managed_api_secret_environment_variables,
@@ -147,6 +152,34 @@ resource "azurerm_storage_account" "mlflow" {
 resource "azurerm_storage_container" "mlflow" {
   name                  = local.mlflow_storage_container_name
   storage_account_id    = azurerm_storage_account.mlflow.id
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_account" "app" {
+  name                            = local.app_storage_account_name
+  resource_group_name             = azurerm_resource_group.this.name
+  location                        = azurerm_resource_group.this.location
+  account_tier                    = var.app_storage_account_tier
+  account_replication_type        = var.app_storage_replication_type
+  min_tls_version                 = "TLS1_2"
+  allow_nested_items_to_be_public = false
+
+  blob_properties {
+    delete_retention_policy {
+      days = var.app_storage_blob_retention_days
+    }
+
+    container_delete_retention_policy {
+      days = var.app_storage_blob_retention_days
+    }
+  }
+
+  tags = var.tags
+}
+
+resource "azurerm_storage_container" "app" {
+  name                  = local.app_storage_container_name
+  storage_account_id    = azurerm_storage_account.app.id
   container_access_type = "private"
 }
 

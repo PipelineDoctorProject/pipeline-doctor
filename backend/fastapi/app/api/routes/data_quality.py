@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-import os
 import uuid
 from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
@@ -11,6 +10,7 @@ from app.schemas.explanations import InsightExplanationResponse
 from app.services.quality.data_loader import load_dataset
 from app.services.ai_explanations import build_data_quality_explanation
 from app.services.access_control import require_accessible_model
+from app.services.file_storage import store_upload
 
 router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
 
@@ -21,14 +21,7 @@ async def save_upload(file: UploadFile) -> str:
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV allowed")
 
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}_{file.filename}")
-
-    with open(file_path, "wb") as buffer:
-        while chunk := await file.read(1024 * 1024):
-            buffer.write(chunk)
-
-    return file_path
+    return await store_upload(file, f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}")
 
 
 def infer_model_from_active_baselines(db: Session, file_path: str):
