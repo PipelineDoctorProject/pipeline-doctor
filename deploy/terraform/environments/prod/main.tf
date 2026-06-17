@@ -30,7 +30,7 @@ module "platform" {
   worker_container_app_name            = var.worker_container_app_name
   beat_container_app_name              = var.beat_container_app_name
   mlflow_container_app_name            = var.mlflow_container_app_name
-  enable_airflow                      = var.enable_airflow
+  enable_airflow                       = var.enable_airflow
   airflow_webserver_container_app_name = var.airflow_webserver_container_app_name
   airflow_scheduler_container_app_name = var.airflow_scheduler_container_app_name
   airflow_postgresql_server_name       = var.airflow_postgresql_server_name
