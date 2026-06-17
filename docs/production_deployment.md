@@ -52,7 +52,7 @@ Azure Container Apps - FastAPI API
     |
     +-- Azure Container Apps - Celery worker
     +-- Azure Container Apps - Celery beat, single replica
-    +-- Azure Cache for Redis
+    +-- Redis Cloud / external Redis via TLS URL
     +-- Supabase Postgres for the application database
     +-- MLflow on Azure Container Apps
     +-- Azure PostgreSQL Flexible Server for MLflow metadata
@@ -84,6 +84,18 @@ The application database remains external. For the current project, keep using S
 - `API_DB_PORT`
 - `API_DB_SSLMODE`
 
+The current Redis production path should use an external TLS Redis URL through a GitHub Environment secret:
+
+- `API_REDIS_URL`
+
+Example shape:
+
+```text
+rediss://default:<password>@<host>:<port>
+```
+
+If you use Redis Cloud, copy the TLS connection string from the Redis Cloud database connection panel and store it as `API_REDIS_URL` in the matching GitHub Environment.
+
 Use the same image tag in both workflows. Example:
 
 ```text
@@ -106,12 +118,13 @@ Production verification should include:
 - API Container App active revision uses the chosen API image tag.
 - Frontend Container App active revision uses the chosen frontend image tag.
 - Worker and beat Container Apps use the same API image tag.
-- Redis exists as Azure Cache for Redis and `REDIS_URL` is injected by Terraform unless overridden.
+- Redis is reachable through `API_REDIS_URL` and `REDIS_URL` is injected by Terraform.
 - MLflow uses Azure PostgreSQL Flexible Server for metadata.
 - MLflow uses the Terraform-managed Azure Blob container for artifacts.
 - Uploads, cleaned datasets, quarantine datasets, reports, and exports use the Terraform-managed application Blob container.
 - API `/health` returns success.
 - Frontend login calls the deployed API URL, not `localhost`.
+- Worker logs show Celery tasks are being consumed from the `emails` queue.
 
 ---
 
@@ -127,6 +140,7 @@ Production verification should include:
 | MLflow artifacts | Local Docker volume | Terraform-managed Azure Blob container |
 | App artifacts | Local `uploads/` and `cleaned/` folders | Terraform-managed Azure Blob container |
 | Frontend runtime config | Vite defaults to localhost | Build with environment-provided API and WebSocket URLs |
+| Redis | Local Docker Redis | External Redis TLS URL stored in `API_REDIS_URL` |
 | Model deployment | Local alias promotion | Customer CI/CD deploys `@staging`, then OpsSight confirms `@champion` |
 | Slack | Local OAuth redirect | Publicly distributed Slack app, HTTPS redirect URLs, tenant-scoped installation |
 
@@ -282,6 +296,42 @@ After changing these values, rebuild the frontend image with `Container Release`
 
 The API `FRONTEND_URL` is managed by Terraform from the frontend Container App URL so CORS follows the deployed frontend origin.
 
+### Mail and OTP delivery
+
+User signup OTP delivery is handled by the Celery worker, not Celery beat.
+
+Required GitHub Environment values for mail:
+
+```text
+API_MAIL_USERNAME
+API_MAIL_PASSWORD
+API_MAIL_FROM
+```
+
+Recommended GitHub Environment variables:
+
+```text
+API_MAIL_SERVER=smtp.gmail.com
+API_MAIL_PORT=587
+API_MAIL_FROM_NAME=OpsSight.ai
+```
+
+If you use Gmail:
+
+- `API_MAIL_USERNAME` should be the Gmail address
+- `API_MAIL_PASSWORD` should be a Google App Password, not the normal Gmail password
+- `API_MAIL_FROM` is usually the same Gmail address
+
+After changing mail settings, re-run `IaC` for the same environment so API, worker, and beat all receive the updated runtime secrets.
+
+If OTP emails are not arriving:
+
+1. check `opssight-worker-<env>` logs
+2. search for `Email service is not configured`
+3. search for `Email error:`
+4. verify the worker revision is healthy and consuming tasks
+5. call the API `/health/celery` endpoint
+
 ---
 
 ## Database and Migration Rules
@@ -332,6 +382,8 @@ Production checklist:
 - MLflow artifacts are stored in Azure Blob Storage.
 - App uploads, cleaned data, quarantine files, reports, and exports are stored in Azure Blob Storage.
 - Frontend builds use environment-provided `VITE_API_URL` and `VITE_WS_URL`.
+- Redis is configured through `API_REDIS_URL`.
+- Mail secrets are configured through `API_MAIL_*`.
 - Backend migrations are controlled by deployment.
 - Tenant isolation is verified on every protected route.
 - Slack installs are tenant-scoped.
@@ -354,12 +406,14 @@ For the current project, the next practical production steps are:
 1. Configure remote Terraform state before any production apply.
 2. Move production secrets from `.env` into GitHub Environment secrets or Azure Key Vault.
 3. Add `MLFLOW_POSTGRESQL_ADMIN_PASSWORD` to each GitHub Environment that runs IaC.
-4. Add a one-shot migration job for `alembic upgrade head` and tenant repair.
-5. Verify uploads, cleaned data, quarantine files, reports, and exports are written to the Terraform-managed app artifact Blob container.
-6. Configure Airflow `opssight_api` with a service identity.
-7. Trigger DAGs with explicit `input_path` or `input_uri`.
-8. Configure production custom domains, HTTPS, and Slack OAuth redirect URLs.
-9. Validate the complete incident-to-report-to-remediation-to-promotion flow in staging before promoting the same image tag to production.
+4. Add `API_REDIS_URL` to each GitHub Environment that runs worker/beat.
+5. Add `API_MAIL_USERNAME`, `API_MAIL_PASSWORD`, and `API_MAIL_FROM` to each GitHub Environment that supports signup or email alerts.
+6. Add a one-shot migration job for `alembic upgrade head` and tenant repair.
+7. Verify uploads, cleaned data, quarantine files, reports, and exports are written to the Terraform-managed app artifact Blob container.
+8. Configure Airflow `opssight_api` with a service identity.
+9. Trigger DAGs with explicit `input_path` or `input_uri`.
+10. Configure production custom domains, HTTPS, and Slack OAuth redirect URLs.
+11. Validate the complete incident-to-report-to-remediation-to-promotion flow in staging before promoting the same image tag to production.
 
 ## Azure Deployment Artifacts
 

@@ -106,6 +106,9 @@ Optional API runtime values include:
 - `API_MAIL_USERNAME`
 - `API_MAIL_PASSWORD`
 - `API_MAIL_FROM`
+- `API_MAIL_SERVER`
+- `API_MAIL_PORT`
+- `API_MAIL_FROM_NAME`
 - `API_SLACK_CLIENT_ID`
 - `API_SLACK_CLIENT_SECRET`
 
@@ -138,7 +141,7 @@ Current Terraform resources:
 - Celery worker Container App
 - Celery beat Container App
 - MLflow Container App
-- Azure Cache for Redis
+- External Redis integration through `API_REDIS_URL`
 - Azure PostgreSQL Flexible Server for MLflow metadata
 - Azure Blob Storage for MLflow artifacts
 - Azure Blob Storage for app uploads, cleaned data, reports, and exports
@@ -189,13 +192,15 @@ ansible-playbook deploy/ansible/playbooks/verify.yml -i deploy/ansible/inventori
 8. Run `IaC` with `environment=dev` and `action=apply`.
 9. Copy the Terraform outputs `container_registry_name`, `container_registry_login_server`, `api_container_app_url`, and `frontend_container_app_url` into the matching GitHub Environment values.
 10. Set `VITE_API_URL` to the API URL and `VITE_WS_URL` to the same host with `wss://`.
-11. Run `Container Release` with a new immutable `image_tag` and `push_images=true`.
-12. Run `IaC` again with `action=apply` and the same `image_tag`.
-13. In Azure Container Apps, confirm the active API and frontend revisions use that image tag.
-14. Confirm worker and beat Container Apps use the same backend image tag.
-15. Confirm MLflow is using the Terraform-managed PostgreSQL server and Blob artifact container.
-16. Test `/health` on the API URL and the login flow from the frontend URL.
-17. Run `Ansible Operations` with `playbook=verify` when the environment is reachable.
+11. Add `API_REDIS_URL` if you are using Redis Cloud or another external Redis provider.
+12. Add `API_MAIL_USERNAME`, `API_MAIL_PASSWORD`, and `API_MAIL_FROM` if signup OTP or alert emails are enabled.
+13. Run `Container Release` with a new immutable `image_tag` and `push_images=true`.
+14. Run `IaC` again with `action=apply` and the same `image_tag`.
+15. In Azure Container Apps, confirm the active API and frontend revisions use that image tag.
+16. Confirm worker and beat Container Apps use the same backend image tag.
+17. Confirm MLflow is using the Terraform-managed PostgreSQL server and Blob artifact container.
+18. Test `/health` on the API URL, `/health/celery` on the API URL, and the login/signup flow from the frontend URL.
+19. Run `Ansible Operations` with `playbook=verify` when the environment is reachable.
 
 ## Branch Strategy
 
@@ -214,4 +219,4 @@ Protect `main` with:
 
 ## Current Boundary
 
-Terraform currently owns the Azure foundation, ACR, API Container App, frontend Container App, worker, beat, MLflow Container App, Azure Cache for Redis, Azure PostgreSQL Flexible Server for MLflow metadata, Azure Blob Storage for MLflow artifacts, and Azure Blob Storage for app uploads/cleaned/report/export artifacts. The application database remains Supabase through `API_DB_*` secrets. One-shot migration jobs, Key Vault references, custom domains, managed Airflow, and production observability still need to be added before a full production rollout.
+Terraform currently owns the Azure foundation, ACR, API Container App, frontend Container App, worker, beat, MLflow Container App, Azure PostgreSQL Flexible Server for MLflow metadata, Azure Blob Storage for MLflow artifacts, and Azure Blob Storage for app uploads/cleaned/report/export artifacts. Redis is expected to come from an external provider through `API_REDIS_URL`. The application database remains Supabase through `API_DB_*` secrets. One-shot migration jobs, Key Vault references, custom domains, managed Airflow, and production observability still need to be added before a full production rollout.

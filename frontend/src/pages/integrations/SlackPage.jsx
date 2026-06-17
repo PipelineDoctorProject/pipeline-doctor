@@ -16,6 +16,7 @@ export default function SlackPage() {
   const [status, setStatus] = useState(null);
   const [channels, setChannels] = useState([]);
   const [selectedChannelId, setSelectedChannelId] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("");
   const [loading, setLoading] = useState(true);
   const [channelsLoading, setChannelsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,9 +80,16 @@ export default function SlackPage() {
   );
 
   async function handleConnect() {
+    const normalizedWorkspaceName = workspaceName.trim();
+
+    if (!normalizedWorkspaceName) {
+      toast.error("Enter the Slack workspace name you want to connect.");
+      return;
+    }
+
     try {
       setConnecting(true);
-      const data = await getSlackConnectUrl();
+      const data = await getSlackConnectUrl({ workspaceName: normalizedWorkspaceName });
       window.location.href = data.connect_url;
     } catch (error) {
       toast.error(error?.response?.data?.detail || "Failed to start Slack connection.");
@@ -183,7 +191,23 @@ export default function SlackPage() {
                   <div>
                     <p className="text-[14px] font-semibold text-slate-800">No Slack workspace is connected yet.</p>
                     <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                      Start Slack OAuth, choose the workspace inside Slack, approve the OpsSight app, then return here to choose the incident alert channel.
+                      Enter the Slack workspace name your tenant wants to connect, then start Slack OAuth. OpsSight will validate that Slack returns the same workspace before saving the installation.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[12px] font-medium text-slate-500">
+                      Slack workspace name
+                    </label>
+                    <input
+                      type="text"
+                      value={workspaceName}
+                      onChange={(event) => setWorkspaceName(event.target.value)}
+                      placeholder="for example: acme-data-platform"
+                      className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none"
+                    />
+                    <p className="text-[12px] leading-5 text-slate-500">
+                      Use the workspace name your team sees in Slack. OpsSight checks this after Slack authorization so the wrong workspace cannot be connected silently.
                     </p>
                   </div>
 
@@ -197,7 +221,7 @@ export default function SlackPage() {
                       {connecting ? "Opening Slack..." : "Connect Slack"}
                     </button>
                     <p className="text-[12px] leading-5 text-slate-500">
-                      If Slack opens the wrong workspace, use Slack's workspace dropdown on the permission screen or sign out of the wrong Slack workspace first.
+                      If Slack still opens the wrong workspace, switch workspace from Slack's picker or sign out of the wrong Slack workspace first.
                     </p>
                   </div>
                 </div>
@@ -354,9 +378,9 @@ export default function SlackPage() {
             <h2 className="text-[18px] font-semibold text-slate-950">How it works</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-4">
               {[
-                "Admin starts OAuth from this page.",
-                "Slack asks the installer to choose and authorize a workspace.",
-                "OpsSight stores Slack team ID plus bot token for this tenant.",
+                "Admin enters the Slack workspace name from this page.",
+                "Slack asks the installer to authorize a workspace.",
+                "OpsSight verifies Slack returned the requested workspace, then stores team ID plus bot token for this tenant.",
                 "Admin selects the incident channel and completes the connection.",
               ].map((item, index) => (
                 <div key={item} className="rounded-md border border-slate-200 bg-slate-50 p-4">
