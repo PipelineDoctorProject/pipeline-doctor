@@ -29,6 +29,7 @@ module "platform" {
   worker_container_app_name           = var.worker_container_app_name
   beat_container_app_name             = var.beat_container_app_name
   mlflow_container_app_name           = var.mlflow_container_app_name
+  enable_airflow                      = var.enable_airflow
   redis_cache_name                    = var.redis_cache_name
   mlflow_postgresql_server_name       = var.mlflow_postgresql_server_name
   mlflow_storage_account_name         = var.mlflow_storage_account_name
@@ -42,6 +43,9 @@ module "platform" {
   mlflow_artifact_root                = var.mlflow_artifact_root
   mlflow_environment_variables        = var.mlflow_environment_variables
   mlflow_secret_environment_variables = var.mlflow_secret_environment_variables
+  airflow_environment_variables       = var.airflow_environment_variables
+  airflow_secret_environment_variables = var.airflow_secret_environment_variables
+  airflow_postgresql_admin_password   = var.airflow_postgresql_admin_password
 
   tags = merge(var.tags, {
     environment = "dev"

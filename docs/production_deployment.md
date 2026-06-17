@@ -58,7 +58,7 @@ Azure Container Apps - FastAPI API
     +-- Azure PostgreSQL Flexible Server for MLflow metadata
     +-- Azure Blob Storage for MLflow artifacts
     +-- Azure Blob Storage for uploads, cleaned data, reports, and exports
-    +-- Airflow managed/separate later
+    +-- Airflow on Azure Container Apps, or managed/customer orchestrator
 ```
 
 ---
@@ -67,13 +67,13 @@ Azure Container Apps - FastAPI API
 
 The current Azure deployment is managed by GitHub Actions and Terraform:
 
-1. `Container Release` builds `opssight-api` and `opssight-frontend`.
+1. `Container Release` builds `opssight-api`, `opssight-airflow`, and `opssight-frontend`.
 2. The frontend image is built with `VITE_API_URL` and `VITE_WS_URL` from the selected GitHub Environment.
 3. The workflow verifies the frontend bundle does not still contain `localhost:8000`.
 4. Images are pushed to Azure Container Registry using an immutable `image_tag`.
 5. `IaC` runs Terraform for the same environment and `image_tag`.
-6. Terraform updates API, frontend, worker, beat, MLflow, Redis, MLflow PostgreSQL, MLflow Blob, and application Blob resources.
-7. Terraform prints `api_container_app_url`, `frontend_container_app_url`, `mlflow_container_app_url`, Redis hostname, MLflow PostgreSQL/Blob outputs, application Blob outputs, and ACR outputs.
+6. Terraform updates API, frontend, worker, beat, MLflow, optional Airflow, Redis, MLflow PostgreSQL, Airflow PostgreSQL, MLflow Blob, and application Blob resources.
+7. Terraform prints `api_container_app_url`, `frontend_container_app_url`, `mlflow_container_app_url`, optional Airflow outputs, Redis hostname, MLflow PostgreSQL/Blob outputs, application Blob outputs, and ACR outputs.
 
 The application database remains external. For the current project, keep using Supabase through the existing `API_DB_*` GitHub Environment secrets:
 
@@ -118,6 +118,8 @@ Production verification should include:
 - API Container App active revision uses the chosen API image tag.
 - Frontend Container App active revision uses the chosen frontend image tag.
 - Worker and beat Container Apps use the same API image tag.
+- Airflow webserver and scheduler use the chosen Airflow image tag when `AIRFLOW_ENABLED=true`.
+- Airflow scheduler lists `opssight_daily_pipeline`.
 - Redis is reachable through `API_REDIS_URL` and `REDIS_URL` is injected by Terraform.
 - MLflow uses Azure PostgreSQL Flexible Server for metadata.
 - MLflow uses the Terraform-managed Azure Blob container for artifacts.
@@ -214,6 +216,41 @@ airflow connections add opssight_api \
 
 Production should prefer service identities over human passwords.
 
+### 4. Production Airflow hosting in this repo
+
+The Terraform production environment now enables Airflow by default through `enable_airflow = true`.
+
+The `Container Release` workflow builds and pushes:
+
+- `opssight-api:<image_tag>`
+- `opssight-airflow:<image_tag>`
+- `opssight-frontend:<image_tag>`
+
+The Airflow image is built from `airflow-setup/Dockerfile` and bakes in `airflow-setup/dags/opssight_pipeline_dag.py`, so production does not rely on a local mounted DAG folder.
+
+Required GitHub Environment secrets when Airflow is enabled:
+
+- `AIRFLOW_ADMIN_PASSWORD`
+- `AIRFLOW_FERNET_KEY`
+- `AIRFLOW_WEBSERVER_SECRET_KEY`
+- `AIRFLOW_POSTGRESQL_ADMIN_PASSWORD`
+- `AIRFLOW_CONN_OPSSIGHT_API`
+
+Recommended production connection URI shape:
+
+```text
+http://service-account:service-password@api-host-or-url
+```
+
+or use an Airflow connection JSON/URI that includes `extra.api_token` for service-token auth. Set `AIRFLOW_VAR_OPSSIGHT_API_URL` to the deployed API URL when the connection host is not enough.
+
+After deploy, verify:
+
+```bash
+airflow dags list | grep opssight_daily_pipeline
+airflow dags trigger opssight_daily_pipeline --conf '{"model_name":"spotify-kmeans-recommender","input_uri":"https://storage.example.com/batches/run.csv?<signed-query>"}'
+```
+
 ---
 
 ## MLflow Production Setup
@@ -224,7 +261,7 @@ Local MLflow is useful for demos and development. The Azure Terraform path now m
 2. MLflow metadata is stored in Azure PostgreSQL Flexible Server.
 3. MLflow artifacts are stored in a private Azure Blob container.
 4. The application database remains Supabase and is still configured only through `API_DB_*`.
-5. Airflow is intentionally left for a managed or separate orchestrator later.
+5. Airflow can run as Terraform-managed Azure Container Apps with a dedicated Airflow PostgreSQL metadata database, or be replaced by a managed/customer orchestrator if preferred.
 
 Required GitHub Environment secret:
 
@@ -364,12 +401,31 @@ Slack must be installed per customer workspace.
 
 Production checklist:
 
-1. Enable Slack public distribution when marketplace prerequisites are complete.
-2. Use HTTPS OAuth redirect URLs.
-3. Store Slack bot token per tenant.
-4. Validate returned Slack `team.id` against the tenant's expected workspace/team id when provided.
-5. Show connected workspace and disconnect action in the UI.
-6. Send one run-level incident alert per incident group.
+1. Use one shared production Slack app for OpsSight, not one app created inside each customer workspace.
+2. Enable Slack public distribution so the app can be installed into external customer workspaces.
+3. Use HTTPS OAuth redirect URLs and add the exact backend callback URL in the Slack app configuration.
+4. Store Slack bot token and Slack team/workspace identifiers per tenant after installation.
+5. Validate returned Slack `team.id` against the tenant's expected workspace/team id when provided.
+6. Show connected workspace, default channel, and disconnect action in the UI.
+7. Send one run-level incident alert per incident group.
+
+Important behavior:
+
+- Slack may still open an authorization page under the domain of a currently signed-in workspace.
+- That visible domain is not the source of truth for the final installation target.
+- The real source of truth is the workspace selected from Slack's workspace picker and the `team.id` returned in the OAuth callback.
+- Passing a workspace name or `team` hint helps Slack preselect a workspace, but Slack is not required to honor that hint every time.
+
+Recommended production pattern:
+
+1. Create a dedicated production Slack app such as `OpsSightProduction`.
+2. Add the production redirect URI, for example `https://api.your-domain.com/slack/callback`.
+3. Activate public distribution.
+4. Let each customer tenant start OAuth from OpsSight.
+5. Save the returned Slack installation per tenant.
+6. Reject the install if Slack returns a workspace/team that does not match the tenant's requested workspace when one was supplied.
+
+Do not treat the app's creator workspace as the tenant workspace. The workspace used to develop the app and the workspace that installs the app are different concerns.
 
 ---
 
