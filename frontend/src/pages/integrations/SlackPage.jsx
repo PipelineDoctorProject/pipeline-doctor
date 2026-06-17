@@ -17,6 +17,7 @@ export default function SlackPage() {
   const [channels, setChannels] = useState([]);
   const [selectedChannelId, setSelectedChannelId] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
+  const [slackTeamId, setSlackTeamId] = useState("");
   const [loading, setLoading] = useState(true);
   const [channelsLoading, setChannelsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -81,6 +82,7 @@ export default function SlackPage() {
 
   async function handleConnect() {
     const normalizedWorkspaceName = workspaceName.trim();
+    const normalizedSlackTeamId = slackTeamId.trim();
 
     if (!normalizedWorkspaceName) {
       toast.error("Enter the Slack workspace name you want to connect.");
@@ -89,7 +91,10 @@ export default function SlackPage() {
 
     try {
       setConnecting(true);
-      const data = await getSlackConnectUrl({ workspaceName: normalizedWorkspaceName });
+      const data = await getSlackConnectUrl({
+        workspaceName: normalizedWorkspaceName,
+        slackTeamId: normalizedSlackTeamId || undefined,
+      });
       window.location.href = data.connect_url;
     } catch (error) {
       toast.error(error?.response?.data?.detail || "Failed to start Slack connection.");
@@ -195,19 +200,35 @@ export default function SlackPage() {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-[12px] font-medium text-slate-500">
+                        Slack workspace name
+                      </label>
+                      <input
+                        type="text"
+                        value={workspaceName}
+                        onChange={(event) => setWorkspaceName(event.target.value)}
+                        placeholder="for example: acme-data-platform"
+                        className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none"
+                      />
+                      <p className="text-[12px] leading-5 text-slate-500">
+                        Use the workspace name your team sees in Slack. OpsSight checks this after Slack authorization so the wrong workspace cannot be connected silently.
+                      </p>
+                    </div>
+
                     <label className="block text-[12px] font-medium text-slate-500">
-                      Slack workspace name
+                      Slack team ID (optional but recommended)
                     </label>
                     <input
                       type="text"
-                      value={workspaceName}
-                      onChange={(event) => setWorkspaceName(event.target.value)}
-                      placeholder="for example: acme-data-platform"
+                      value={slackTeamId}
+                      onChange={(event) => setSlackTeamId(event.target.value)}
+                      placeholder="for example: T0123456789"
                       className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none"
                     />
                     <p className="text-[12px] leading-5 text-slate-500">
-                      Use the workspace name your team sees in Slack. OpsSight checks this after Slack authorization so the wrong workspace cannot be connected silently.
+                      Slack uses team ID to preselect the workspace during OAuth. Without this, Slack may still open the currently signed-in workspace first and OpsSight can only reject the mismatch after callback.
                     </p>
                   </div>
 
@@ -221,7 +242,7 @@ export default function SlackPage() {
                       {connecting ? "Opening Slack..." : "Connect Slack"}
                     </button>
                     <p className="text-[12px] leading-5 text-slate-500">
-                      If Slack still opens the wrong workspace, switch workspace from Slack's picker or sign out of the wrong Slack workspace first.
+                      Best result: provide the Slack team ID. If Slack still opens the wrong workspace, switch workspace from Slack's picker or sign out of the wrong Slack workspace first.
                     </p>
                   </div>
                 </div>
@@ -379,6 +400,7 @@ export default function SlackPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-4">
               {[
                 "Admin enters the Slack workspace name from this page.",
+                "Admin can optionally enter the Slack team ID so Slack preselects the correct workspace.",
                 "Slack asks the installer to authorize a workspace.",
                 "OpsSight verifies Slack returned the requested workspace, then stores team ID plus bot token for this tenant.",
                 "Admin selects the incident channel and completes the connection.",
