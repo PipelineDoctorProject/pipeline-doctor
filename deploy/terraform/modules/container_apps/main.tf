@@ -116,6 +116,12 @@ resource "azurerm_postgresql_flexible_server" "mlflow" {
   backup_retention_days         = var.mlflow_postgresql_backup_retention_days
   public_network_access_enabled = true
 
+  lifecycle {
+    ignore_changes = [
+      zone,
+    ]
+  }
+
   tags = var.tags
 }
 
