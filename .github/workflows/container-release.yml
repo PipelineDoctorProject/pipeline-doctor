@@ -28,6 +28,7 @@ permissions:
 
 env:
   API_IMAGE: opssight-api
+  AIRFLOW_IMAGE: opssight-airflow
   FRONTEND_IMAGE: opssight-frontend
   AZURE_CONTAINER_REGISTRY_NAME: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME || secrets.AZURE_CONTAINER_REGISTRY_NAME }}
   AZURE_CONTAINER_REGISTRY_LOGIN_SERVER: ${{ vars.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER || secrets.AZURE_CONTAINER_REGISTRY_LOGIN_SERVER }}
@@ -115,6 +116,12 @@ jobs:
             -t ${{ env.API_IMAGE }}:${{ inputs.image_tag }} \
             ./backend/fastapi
 
+      - name: Build Airflow image
+        run: |
+          docker build \
+            -t ${{ env.AIRFLOW_IMAGE }}:${{ inputs.image_tag }} \
+            ./airflow-setup
+
       - name: Resolve frontend build config
         run: |
           if [ -z "${VITE_API_URL}" ]; then
@@ -128,6 +135,18 @@ jobs:
             VITE_WS_URL="${VITE_WS_URL/http:/ws:}"
             echo "VITE_WS_URL=${VITE_WS_URL}" >> "$GITHUB_ENV"
           fi
+
+          VITE_WS_URL="${VITE_WS_URL/https:/wss:}"
+          VITE_WS_URL="${VITE_WS_URL/http:/ws:}"
+          echo "VITE_WS_URL=${VITE_WS_URL}" >> "$GITHUB_ENV"
+
+          case "${VITE_WS_URL}" in
+            ws://*|wss://*) ;;
+            *)
+              echo "VITE_WS_URL must start with ws:// or wss://. Current value: ${VITE_WS_URL}"
+              exit 1
+              ;;
+          esac
 
       - name: Build frontend image
         run: |
@@ -161,12 +180,19 @@ jobs:
             ${{ env.API_IMAGE }}:${{ inputs.image_tag }} \
             ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
           docker tag \
+            ${{ env.AIRFLOW_IMAGE }}:${{ inputs.image_tag }} \
+            ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.AIRFLOW_IMAGE }}:${{ inputs.image_tag }}
+          docker tag \
             ${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }} \
             ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.FRONTEND_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Push API image
         if: inputs.push_images
         run: docker push ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.API_IMAGE }}:${{ inputs.image_tag }}
+
+      - name: Push Airflow image
+        if: inputs.push_images
+        run: docker push ${AZURE_CONTAINER_REGISTRY_LOGIN_SERVER}/${{ env.AIRFLOW_IMAGE }}:${{ inputs.image_tag }}
 
       - name: Push frontend image
         if: inputs.push_images

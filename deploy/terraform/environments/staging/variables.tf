@@ -66,6 +66,32 @@ variable "mlflow_container_app_name" {
   default     = "opssight-mlflow-staging"
 }
 
+variable "enable_airflow" {
+  description = "Whether to deploy staging Airflow."
+  type        = bool
+  default     = false
+}
+
+variable "airflow_environment_variables" {
+  description = "Non-secret Airflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+}
+
+variable "airflow_secret_environment_variables" {
+  description = "Secret Airflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "airflow_postgresql_admin_password" {
+  description = "Administrator password for the staging Airflow PostgreSQL server."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "redis_cache_name" {
   description = "Staging Azure Cache for Redis name."
   type        = string

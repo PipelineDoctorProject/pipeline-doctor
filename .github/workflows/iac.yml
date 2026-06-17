@@ -106,6 +106,17 @@ jobs:
           API_SLACK_CLIENT_ID: ${{ secrets.API_SLACK_CLIENT_ID || secrets.SLACK_CLIENT_ID }}
           API_SLACK_CLIENT_SECRET: ${{ secrets.API_SLACK_CLIENT_SECRET || secrets.SLACK_CLIENT_SECRET }}
           API_SLACK_REDIRECT_URI: ${{ vars.API_SLACK_REDIRECT_URI || secrets.API_SLACK_REDIRECT_URI || secrets.SLACK_REDIRECT_URI }}
+          AIRFLOW_ENABLED: ${{ vars.AIRFLOW_ENABLED || (inputs.environment == 'prod' && 'true' || 'false') }}
+          AIRFLOW_ADMIN_USERNAME: ${{ vars.AIRFLOW_ADMIN_USERNAME || secrets.AIRFLOW_ADMIN_USERNAME || 'admin' }}
+          AIRFLOW_ADMIN_PASSWORD: ${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
+          AIRFLOW_ADMIN_EMAIL: ${{ vars.AIRFLOW_ADMIN_EMAIL || secrets.AIRFLOW_ADMIN_EMAIL || 'admin@example.com' }}
+          AIRFLOW_FERNET_KEY: ${{ secrets.AIRFLOW_FERNET_KEY }}
+          AIRFLOW_WEBSERVER_SECRET_KEY: ${{ secrets.AIRFLOW_WEBSERVER_SECRET_KEY }}
+          AIRFLOW_POSTGRESQL_ADMIN_PASSWORD: ${{ secrets.AIRFLOW_POSTGRESQL_ADMIN_PASSWORD }}
+          AIRFLOW_CONN_OPSSIGHT_API: ${{ secrets.AIRFLOW_CONN_OPSSIGHT_API }}
+          AIRFLOW_VAR_OPSSIGHT_API_URL: ${{ vars.AIRFLOW_VAR_OPSSIGHT_API_URL || secrets.AIRFLOW_VAR_OPSSIGHT_API_URL }}
+          AIRFLOW_VAR_OPSSIGHT_MODEL_ID: ${{ vars.AIRFLOW_VAR_OPSSIGHT_MODEL_ID || secrets.AIRFLOW_VAR_OPSSIGHT_MODEL_ID }}
+          AIRFLOW_VAR_OPSSIGHT_MODEL_NAME: ${{ vars.AIRFLOW_VAR_OPSSIGHT_MODEL_NAME || secrets.AIRFLOW_VAR_OPSSIGHT_MODEL_NAME }}
           MLFLOW_POSTGRESQL_ADMIN_PASSWORD: ${{ secrets.MLFLOW_POSTGRESQL_ADMIN_PASSWORD }}
           MLFLOW_BACKEND_STORE_URI: ${{ secrets.MLFLOW_BACKEND_STORE_URI }}
           MLFLOW_ARTIFACT_ROOT: ${{ vars.MLFLOW_ARTIFACT_ROOT || secrets.MLFLOW_ARTIFACT_ROOT }}
@@ -120,6 +131,14 @@ jobs:
           if [ -z "${MLFLOW_POSTGRESQL_ADMIN_PASSWORD}" ]; then
             echo "Missing required GitHub Environment secret: MLFLOW_POSTGRESQL_ADMIN_PASSWORD"
             required_missing=1
+          fi
+          if [ "${AIRFLOW_ENABLED}" = "true" ]; then
+            for name in AIRFLOW_ADMIN_PASSWORD AIRFLOW_FERNET_KEY AIRFLOW_WEBSERVER_SECRET_KEY AIRFLOW_POSTGRESQL_ADMIN_PASSWORD AIRFLOW_CONN_OPSSIGHT_API; do
+              if [ -z "${!name}" ]; then
+                echo "Missing required GitHub Environment secret because AIRFLOW_ENABLED=true: ${name}"
+                required_missing=1
+              fi
+            done
           fi
 
           if [ "${required_missing}" -ne 0 ]; then
@@ -152,6 +171,17 @@ jobs:
             --arg slack_client_id "${API_SLACK_CLIENT_ID}" \
             --arg slack_client_secret "${API_SLACK_CLIENT_SECRET}" \
             --arg slack_redirect_uri "${API_SLACK_REDIRECT_URI}" \
+            --arg airflow_enabled "${AIRFLOW_ENABLED}" \
+            --arg airflow_admin_username "${AIRFLOW_ADMIN_USERNAME}" \
+            --arg airflow_admin_password "${AIRFLOW_ADMIN_PASSWORD}" \
+            --arg airflow_admin_email "${AIRFLOW_ADMIN_EMAIL}" \
+            --arg airflow_fernet_key "${AIRFLOW_FERNET_KEY}" \
+            --arg airflow_webserver_secret_key "${AIRFLOW_WEBSERVER_SECRET_KEY}" \
+            --arg airflow_postgresql_admin_password "${AIRFLOW_POSTGRESQL_ADMIN_PASSWORD}" \
+            --arg airflow_conn_opssight_api "${AIRFLOW_CONN_OPSSIGHT_API}" \
+            --arg airflow_var_opssight_api_url "${AIRFLOW_VAR_OPSSIGHT_API_URL}" \
+            --arg airflow_var_opssight_model_id "${AIRFLOW_VAR_OPSSIGHT_MODEL_ID}" \
+            --arg airflow_var_opssight_model_name "${AIRFLOW_VAR_OPSSIGHT_MODEL_NAME}" \
             --arg mlflow_postgresql_admin_password "${MLFLOW_POSTGRESQL_ADMIN_PASSWORD}" \
             --arg mlflow_backend_store_uri "${MLFLOW_BACKEND_STORE_URI}" \
             --arg mlflow_artifact_root "${MLFLOW_ARTIFACT_ROOT}" \
@@ -186,7 +216,24 @@ jobs:
                 SLACK_REDIRECT_URI: $slack_redirect_uri
               } | with_entries(select(.value != ""))
             }
+            + {
+              enable_airflow: ($airflow_enabled == "true"),
+              airflow_environment_variables: {
+                AIRFLOW_ADMIN_USERNAME: $airflow_admin_username,
+                AIRFLOW_ADMIN_EMAIL: $airflow_admin_email
+              } | with_entries(select(.value != "")),
+              airflow_secret_environment_variables: {
+                AIRFLOW_ADMIN_PASSWORD: $airflow_admin_password,
+                AIRFLOW__CORE__FERNET_KEY: $airflow_fernet_key,
+                AIRFLOW__WEBSERVER__SECRET_KEY: $airflow_webserver_secret_key,
+                AIRFLOW_CONN_OPSSIGHT_API: $airflow_conn_opssight_api,
+                AIRFLOW_VAR_OPSSIGHT_API_URL: $airflow_var_opssight_api_url,
+                AIRFLOW_VAR_OPSSIGHT_MODEL_ID: $airflow_var_opssight_model_id,
+                AIRFLOW_VAR_OPSSIGHT_MODEL_NAME: $airflow_var_opssight_model_name
+              } | with_entries(select(.value != ""))
+            }
             + {mlflow_postgresql_admin_password: $mlflow_postgresql_admin_password}
+            + (if $airflow_postgresql_admin_password != "" then {airflow_postgresql_admin_password: $airflow_postgresql_admin_password} else {} end)
             + (if $mlflow_backend_store_uri != "" then {mlflow_backend_store_uri: $mlflow_backend_store_uri} else {} end)
             + (if $mlflow_artifact_root != "" then {mlflow_artifact_root: $mlflow_artifact_root} else {} end)' > runtime.auto.tfvars.json
 

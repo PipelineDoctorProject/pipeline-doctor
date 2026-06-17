@@ -23,6 +23,8 @@ import AgentTraceStepper from "../../components/agents/AgentTraceStepper";
 import IncidentReasoningCard from "../../components/agents/IncidentReasoningCard";
 import IncidentRemediationPanel from "../../components/incidents/IncidentRemediationPanel";
 
+const INCIDENT_LIST_POLL_INTERVAL_MS = 15000;
+
 const severityConfig = {
   critical: {
     className: "border-red-200 bg-red-50 text-red-700",
@@ -331,6 +333,7 @@ export default function IncidentsPage() {
     disconnect: wsDisconnect,
   } = useAgentWebSocket();
   const {
+    isLive: incidentsFeedLive,
     lastMessage: lastIncidentMessage,
     connect: connectIncidentsFeed,
     disconnect: disconnectIncidentsFeed,
@@ -451,6 +454,16 @@ export default function IncidentsPage() {
 
     loadIncidents({ silent: true, announceDelta: true });
   }, [lastIncidentMessage, loadIncidents]);
+
+  useEffect(() => {
+    if (incidentsFeedLive) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      loadIncidents({ silent: true, announceDelta: true });
+    }, INCIDENT_LIST_POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [incidentsFeedLive, loadIncidents]);
 
   useEffect(() => {
     processedLiveEventRef.current.clear();

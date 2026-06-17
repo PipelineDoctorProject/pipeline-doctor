@@ -77,6 +77,30 @@ variable "mlflow_container_app_name" {
   default     = null
 }
 
+variable "enable_airflow" {
+  description = "Whether to deploy self-hosted Airflow webserver and scheduler Container Apps."
+  type        = bool
+  default     = false
+}
+
+variable "airflow_webserver_container_app_name" {
+  description = "Airflow webserver Container App name."
+  type        = string
+  default     = null
+}
+
+variable "airflow_scheduler_container_app_name" {
+  description = "Airflow scheduler Container App name."
+  type        = string
+  default     = null
+}
+
+variable "airflow_postgresql_server_name" {
+  description = "Azure PostgreSQL Flexible Server name for Airflow metadata."
+  type        = string
+  default     = null
+}
+
 variable "redis_cache_name" {
   description = "Azure Cache for Redis name."
   type        = string
@@ -123,6 +147,12 @@ variable "frontend_image_name" {
   description = "Frontend image repository name in ACR."
   type        = string
   default     = "opssight-frontend"
+}
+
+variable "airflow_image_name" {
+  description = "Airflow image repository name in ACR."
+  type        = string
+  default     = "opssight-airflow"
 }
 
 variable "api_environment_variables" {
@@ -182,6 +212,86 @@ variable "mlflow_secret_environment_variables" {
   type        = map(string)
   default     = {}
   sensitive   = true
+}
+
+variable "airflow_environment_variables" {
+  description = "Non-secret Airflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+}
+
+variable "airflow_secret_environment_variables" {
+  description = "Secret Airflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "airflow_postgresql_admin_login" {
+  description = "Administrator login for the Airflow Azure PostgreSQL Flexible Server."
+  type        = string
+  default     = "airflowadmin"
+}
+
+variable "airflow_postgresql_admin_password" {
+  description = "Administrator password for the Airflow Azure PostgreSQL Flexible Server."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "airflow_postgresql_database_name" {
+  description = "Airflow metadata database name."
+  type        = string
+  default     = "airflow"
+}
+
+variable "airflow_postgresql_version" {
+  description = "Azure PostgreSQL Flexible Server version for Airflow."
+  type        = string
+  default     = "16"
+}
+
+variable "airflow_postgresql_sku_name" {
+  description = "Azure PostgreSQL Flexible Server SKU for Airflow."
+  type        = string
+  default     = "B_Standard_B1ms"
+}
+
+variable "airflow_postgresql_storage_mb" {
+  description = "Azure PostgreSQL Flexible Server storage size in MB for Airflow."
+  type        = number
+  default     = 32768
+}
+
+variable "airflow_postgresql_backup_retention_days" {
+  description = "Backup retention days for the Airflow PostgreSQL server."
+  type        = number
+  default     = 7
+}
+
+variable "airflow_webserver_cpu" {
+  description = "Airflow webserver container CPU."
+  type        = number
+  default     = 0.5
+}
+
+variable "airflow_webserver_memory" {
+  description = "Airflow webserver container memory."
+  type        = string
+  default     = "1Gi"
+}
+
+variable "airflow_scheduler_cpu" {
+  description = "Airflow scheduler container CPU."
+  type        = number
+  default     = 0.5
+}
+
+variable "airflow_scheduler_memory" {
+  description = "Airflow scheduler container memory."
+  type        = string
+  default     = "1Gi"
 }
 
 variable "mlflow_external_enabled" {

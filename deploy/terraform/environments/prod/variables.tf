@@ -66,6 +66,30 @@ variable "mlflow_container_app_name" {
   default     = "opssight-mlflow-prod"
 }
 
+variable "enable_airflow" {
+  description = "Whether to deploy production Airflow."
+  type        = bool
+  default     = true
+}
+
+variable "airflow_webserver_container_app_name" {
+  description = "Production Airflow webserver Container App name."
+  type        = string
+  default     = "opssight-airflow-webserver-prod"
+}
+
+variable "airflow_scheduler_container_app_name" {
+  description = "Production Airflow scheduler Container App name."
+  type        = string
+  default     = "opssight-airflow-scheduler-prod"
+}
+
+variable "airflow_postgresql_server_name" {
+  description = "Production Airflow Azure PostgreSQL Flexible Server name."
+  type        = string
+  default     = "opssight-prod-airflow-pg"
+}
+
 variable "redis_cache_name" {
   description = "Production Azure Cache for Redis name."
   type        = string
@@ -146,6 +170,26 @@ variable "mlflow_secret_environment_variables" {
   description = "Secret MLflow runtime environment variables."
   type        = map(string)
   default     = {}
+  sensitive   = true
+}
+
+variable "airflow_environment_variables" {
+  description = "Non-secret Airflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+}
+
+variable "airflow_secret_environment_variables" {
+  description = "Secret Airflow runtime environment variables."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "airflow_postgresql_admin_password" {
+  description = "Administrator password for the production Airflow PostgreSQL server."
+  type        = string
+  default     = null
   sensitive   = true
 }
 

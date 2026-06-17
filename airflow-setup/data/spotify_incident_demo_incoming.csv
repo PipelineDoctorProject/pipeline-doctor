@@ -1,0 +1,16 @@
+id,name,artist,genres,danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,liveness,valence,duration_ms,time_signature,cluster,cluster_label,unexpected_feature
+incident001,Broken Tempo Track,Demo Artist,"['qawwali']",not_a_number,8.75,0,-999,1,0.95,0.01,0.0,0.05,1.8,-5000,4,99,Unknown Cluster,new_source_column
+incident002,Unit Shift Track,Demo Artist,"['bollywood']",4.2,6.1,14,25,1,1.3,2.4,0.0,1.7,-0.4,9999999,7,-3,Invalid Label,new_source_column
+incident003,Negative Energy,Demo Artist,"['ghazal']",-1.5,-2.0,3,-120,0,0.02,0.88,0.0,0.11,0.25,120000,4,3,Acoustic Chill,new_source_column
+incident004,Text Energy,Demo Artist,"['pop']",0.51,very_high,10,-8.615,1,0.0505,0.337,0.0,0.601,0.745,290027,4,0,Energetic Happy,new_source_column
+incident005,Extreme Loudness,Demo Artist,"['rap']",0.62,0.625,9,500,1,0.553,0.287,0.0,0.314,0.665,284856,4,2,Instrumental Calm,new_source_column
+incident006,Bad Duration,Demo Artist,"['ghazal']",0.515,0.568,6,-10.213,0,0.0377,0.705,0.0,0.553,0.783,not_available,4,0,Energetic Happy,new_source_column
+incident007,Outlier Dance,Demo Artist,"['qawwali']",12.0,0.839,0,-5.645,1,0.13,0.151,0.0,0.138,0.951,337846,4,2,Instrumental Calm,new_source_column
+incident008,Wrong Time Signature,Demo Artist,"['qawwali']",0.503,0.571,1,-13.238,1,0.0523,0.511,0.0,0.175,0.691,299733,99,1,Dance Party,new_source_column
+incident009,Impossible Valence,Demo Artist,[],0.834,0.731,10,-5.603,0,0.0566,0.0462,0.0,0.0731,42.0,176720,4,2,Instrumental Calm,new_source_column
+incident010,High Acousticness,Demo Artist,[],0.647,0.838,11,-3.752,0,0.0566,9.5,0.0,0.129,0.371,184762,4,2,Instrumental Calm,new_source_column
+incident011,Bad Cluster Type,Demo Artist,"['dance pop']",0.77,0.804,5,-4.09,1,0.038,0.021,0.0,0.09,0.66,210000,4,cluster_x,Dance Party,new_source_column
+incident012,Negative Speechiness,Demo Artist,"['hip hop']",0.42,0.91,2,-6.4,1,-0.7,0.12,0.0,0.19,0.44,201000,4,1,Dance Party,new_source_column
+incident013,Huge Instrumentalness,Demo Artist,"['instrumental']",0.31,0.22,8,-18.0,0,0.02,0.92,15.0,0.13,0.12,260000,4,2,Instrumental Calm,new_source_column
+incident014,Mode As Text,Demo Artist,"['indie']",0.58,0.49,4,-9.3,major,0.04,0.34,0.0,0.18,0.52,230000,4,3,Acoustic Chill,new_source_column
+incident015,Extreme Batch Drift,Demo Artist,"['metal']",0.99,0.99,11,10,1,0.99,0.0,0.0,0.99,0.99,8888888,4,99,Unknown Cluster,new_source_column
