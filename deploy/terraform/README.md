@@ -1,6 +1,6 @@
 # Terraform Infrastructure
 
-Terraform is the source of truth for Azure infrastructure. It creates and owns the resource group, Azure Container Registry, Log Analytics, the Container Apps environment, Azure PostgreSQL/Blob resources for MLflow, Azure Blob resources for application artifacts, and the API/frontend/worker/beat/MLflow Container Apps.
+Terraform is the source of truth for Azure infrastructure. It creates and owns the resource group, Azure Container Registry, Log Analytics, the Container Apps environment, Azure PostgreSQL/Blob resources for MLflow, Azure Blob resources for application artifacts, and the API/frontend/worker/beat/MLflow Container Apps. Production can also deploy Airflow webserver/scheduler Container Apps with a dedicated Airflow PostgreSQL metadata database.
 
 Application runtime settings are passed from GitHub Environments into Terraform during the `IaC` workflow. Keep secrets in GitHub Environments, Azure Key Vault, or the target platform secret store. Do not commit real secrets in Terraform variables.
 
@@ -63,6 +63,23 @@ MLflow hosting values:
 - `MLFLOW_BACKEND_STORE_URI`: optional override only. Leave unset to use the Terraform-managed Azure PostgreSQL database.
 - `MLFLOW_ARTIFACT_ROOT`: optional override only. Leave unset to use the Terraform-managed Azure Blob container.
 
+Airflow hosting values, required when `AIRFLOW_ENABLED=true`:
+
+- `AIRFLOW_ADMIN_PASSWORD`
+- `AIRFLOW_FERNET_KEY`
+- `AIRFLOW_WEBSERVER_SECRET_KEY`
+- `AIRFLOW_POSTGRESQL_ADMIN_PASSWORD`
+- `AIRFLOW_CONN_OPSSIGHT_API`: Airflow connection URI for the deployed OpsSight API.
+
+Optional Airflow values:
+
+- `AIRFLOW_ENABLED`: defaults to `true` for `prod` and `false` for `dev`/`staging`.
+- `AIRFLOW_ADMIN_USERNAME`
+- `AIRFLOW_ADMIN_EMAIL`
+- `AIRFLOW_VAR_OPSSIGHT_API_URL`
+- `AIRFLOW_VAR_OPSSIGHT_MODEL_ID`
+- `AIRFLOW_VAR_OPSSIGHT_MODEL_NAME`
+
 The application database is still Supabase through `API_DB_*`. Do not point `API_DB_*` at the MLflow PostgreSQL server.
 
 Keep Azure identifiers that are safe to print as environment variables. Keep credentials, client IDs, tenant IDs, subscription IDs, database URLs, Redis URLs, Slack secrets, JWT secrets, and SMTP secrets as GitHub Environment secrets or Azure Key Vault secrets.
@@ -101,7 +118,7 @@ For staging or production, run the same commands with `environments/staging` or 
 
 Use the `IaC` workflow first. It selects the matching Terraform environment folder from the `environment` input and supports `plan` or `apply`.
 
-Use the `Container Release` workflow after the Azure Container Registry exists. It builds backend and frontend Docker images and can optionally push them to the selected environment registry.
+Use the `Container Release` workflow after the Azure Container Registry exists. It builds backend, Airflow, and frontend Docker images and can optionally push them to the selected environment registry.
 
 Normal update flow:
 
@@ -142,6 +159,9 @@ After apply, Terraform prints:
 - `worker_container_app_name`
 - `beat_container_app_name`
 - `mlflow_container_app_url`
+- `airflow_webserver_container_app_url`
+- `airflow_scheduler_container_app_name`
+- `airflow_postgresql_fqdn`
 - `redis_cache_hostname`
 - `mlflow_postgresql_fqdn`
 - `mlflow_storage_account_name`
@@ -166,8 +186,9 @@ The current Terraform production shape is:
 | `mlflow-db` | Azure PostgreSQL Flexible Server managed by Terraform |
 | `mlflow-artifacts` | Azure Blob Storage managed by Terraform |
 | `uploads`, `cleaned`, `reports`, `exports` | Azure Blob Storage managed by Terraform |
-| `airflow-*` | Managed Airflow or separate orchestrator, not this Terraform module |
-| `airflow-db` | Managed by the Airflow platform, or external PostgreSQL if self-hosted |
+| `airflow-webserver` | Azure Container App using the Airflow image when `enable_airflow=true` |
+| `airflow-scheduler` | Azure Container App using the Airflow image when `enable_airflow=true` |
+| `airflow-db` | Azure PostgreSQL Flexible Server managed by Terraform when `enable_airflow=true` |
 
 The application database stays external in Supabase through `API_DB_*` secrets.
 

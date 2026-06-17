@@ -43,6 +43,21 @@ output "mlflow_container_app_url" {
   value       = module.platform.mlflow_container_app_url
 }
 
+output "airflow_webserver_container_app_url" {
+  description = "Airflow webserver Container App URL."
+  value       = module.platform.airflow_webserver_container_app_url
+}
+
+output "airflow_scheduler_container_app_name" {
+  description = "Airflow scheduler Container App name."
+  value       = module.platform.airflow_scheduler_container_app_name
+}
+
+output "airflow_postgresql_fqdn" {
+  description = "Airflow Azure PostgreSQL Flexible Server FQDN."
+  value       = module.platform.airflow_postgresql_fqdn
+}
+
 output "redis_cache_hostname" {
   description = "Azure Cache for Redis hostname."
   value       = module.platform.redis_cache_hostname

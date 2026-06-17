@@ -1,21 +1,24 @@
 locals {
-  api_container_app_name           = coalesce(var.api_container_app_name, "opssight-api-${var.deployment_environment}")
-  frontend_container_app_name      = coalesce(var.frontend_container_app_name, "opssight-frontend-${var.deployment_environment}")
-  worker_container_app_name        = coalesce(var.worker_container_app_name, "opssight-worker-${var.deployment_environment}")
-  beat_container_app_name          = coalesce(var.beat_container_app_name, "opssight-beat-${var.deployment_environment}")
-  mlflow_container_app_name        = coalesce(var.mlflow_container_app_name, "opssight-mlflow-${var.deployment_environment}")
-  redis_cache_name                 = coalesce(var.redis_cache_name, "opssight-${var.deployment_environment}-redis")
-  mlflow_postgresql_server_name    = coalesce(var.mlflow_postgresql_server_name, "opssight-${var.deployment_environment}-mlflow-pg")
-  mlflow_storage_account_name      = coalesce(var.mlflow_storage_account_name, "opssight${var.deployment_environment}mlflow")
-  mlflow_storage_container_name    = coalesce(var.mlflow_storage_container_name, "mlflow")
-  app_storage_account_name         = coalesce(var.app_storage_account_name, "opssight${var.deployment_environment}app")
-  app_storage_container_name       = coalesce(var.app_storage_container_name, "app-artifacts")
-  frontend_public_url              = coalesce(var.frontend_public_url, "https://${azurerm_container_app.frontend.ingress[0].fqdn}")
-  mlflow_tracking_uri              = coalesce(var.mlflow_tracking_uri, "https://${azurerm_container_app.mlflow.ingress[0].fqdn}")
-  managed_mlflow_backend_store_uri = "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow.fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow.name}?sslmode=require"
-  managed_mlflow_artifact_root     = "wasbs://${azurerm_storage_container.mlflow.name}@${azurerm_storage_account.mlflow.name}.blob.core.windows.net/"
-  external_redis_url               = trimspace(try(var.api_secret_environment_variables["REDIS_URL"], ""))
-  use_managed_redis                = local.external_redis_url == ""
+  api_container_app_name               = coalesce(var.api_container_app_name, "opssight-api-${var.deployment_environment}")
+  frontend_container_app_name          = coalesce(var.frontend_container_app_name, "opssight-frontend-${var.deployment_environment}")
+  worker_container_app_name            = coalesce(var.worker_container_app_name, "opssight-worker-${var.deployment_environment}")
+  beat_container_app_name              = coalesce(var.beat_container_app_name, "opssight-beat-${var.deployment_environment}")
+  mlflow_container_app_name            = coalesce(var.mlflow_container_app_name, "opssight-mlflow-${var.deployment_environment}")
+  airflow_webserver_container_app_name = coalesce(var.airflow_webserver_container_app_name, "opssight-airflow-webserver-${var.deployment_environment}")
+  airflow_scheduler_container_app_name = coalesce(var.airflow_scheduler_container_app_name, "opssight-airflow-scheduler-${var.deployment_environment}")
+  redis_cache_name                     = coalesce(var.redis_cache_name, "opssight-${var.deployment_environment}-redis")
+  mlflow_postgresql_server_name        = coalesce(var.mlflow_postgresql_server_name, "opssight-${var.deployment_environment}-mlflow-pg")
+  airflow_postgresql_server_name       = coalesce(var.airflow_postgresql_server_name, "opssight-${var.deployment_environment}-airflow-pg")
+  mlflow_storage_account_name          = coalesce(var.mlflow_storage_account_name, "opssight${var.deployment_environment}mlflow")
+  mlflow_storage_container_name        = coalesce(var.mlflow_storage_container_name, "mlflow")
+  app_storage_account_name             = coalesce(var.app_storage_account_name, "opssight${var.deployment_environment}app")
+  app_storage_container_name           = coalesce(var.app_storage_container_name, "app-artifacts")
+  frontend_public_url                  = coalesce(var.frontend_public_url, "https://${azurerm_container_app.frontend.ingress[0].fqdn}")
+  mlflow_tracking_uri                  = coalesce(var.mlflow_tracking_uri, "https://${azurerm_container_app.mlflow.ingress[0].fqdn}")
+  managed_mlflow_backend_store_uri     = "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow.fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow.name}?sslmode=require"
+  managed_mlflow_artifact_root         = "wasbs://${azurerm_storage_container.mlflow.name}@${azurerm_storage_account.mlflow.name}.blob.core.windows.net/"
+  external_redis_url                   = trimspace(try(var.api_secret_environment_variables["REDIS_URL"], ""))
+  use_managed_redis                    = local.external_redis_url == ""
   managed_api_secret_environment_variables = {
     MLFLOW_TRACKING_URI                 = local.mlflow_tracking_uri
     APP_STORAGE_BACKEND                 = "azure_blob"
@@ -49,7 +52,28 @@ locals {
     },
     var.mlflow_secret_environment_variables
   )
-  mlflow_secret_names = toset(nonsensitive(keys(local.mlflow_secret_environment_variables)))
+  mlflow_secret_names               = toset(nonsensitive(keys(local.mlflow_secret_environment_variables)))
+  airflow_database_sql_alchemy_conn = var.enable_airflow ? "postgresql+psycopg2://${var.airflow_postgresql_admin_login}:${urlencode(var.airflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.airflow[0].fqdn}:5432/${azurerm_postgresql_flexible_server_database.airflow[0].name}?sslmode=require" : null
+  managed_airflow_secret_environment_variables = var.enable_airflow ? {
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN = local.airflow_database_sql_alchemy_conn
+  } : {}
+  airflow_environment_variables = merge(
+    {
+      AIRFLOW__CORE__EXECUTOR                            = "LocalExecutor"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION         = "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES                       = "false"
+      AIRFLOW__WEBSERVER__SHOW_TRIGGER_FORM_IF_NO_PARAMS = "true"
+      AIRFLOW__SCHEDULER__PARSING_PROCESSES              = "1"
+      AIRFLOW_ADMIN_USERNAME                             = "admin"
+      AIRFLOW_ADMIN_EMAIL                                = "admin@example.com"
+    },
+    var.airflow_environment_variables
+  )
+  airflow_secret_environment_variables = merge(
+    local.managed_airflow_secret_environment_variables,
+    var.airflow_secret_environment_variables
+  )
+  airflow_secret_names = toset(nonsensitive(keys(local.airflow_secret_environment_variables)))
 }
 
 resource "azurerm_resource_group" "this" {
@@ -135,6 +159,47 @@ resource "azurerm_postgresql_flexible_server_database" "mlflow" {
 resource "azurerm_postgresql_flexible_server_firewall_rule" "mlflow_allow_azure" {
   name             = "allow-azure-services"
   server_id        = azurerm_postgresql_flexible_server.mlflow.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
+}
+
+resource "azurerm_postgresql_flexible_server" "airflow" {
+  count = var.enable_airflow ? 1 : 0
+
+  name                          = local.airflow_postgresql_server_name
+  resource_group_name           = azurerm_resource_group.this.name
+  location                      = azurerm_resource_group.this.location
+  version                       = var.airflow_postgresql_version
+  administrator_login           = var.airflow_postgresql_admin_login
+  administrator_password        = var.airflow_postgresql_admin_password
+  sku_name                      = var.airflow_postgresql_sku_name
+  storage_mb                    = var.airflow_postgresql_storage_mb
+  backup_retention_days         = var.airflow_postgresql_backup_retention_days
+  public_network_access_enabled = true
+
+  lifecycle {
+    ignore_changes = [
+      zone,
+    ]
+  }
+
+  tags = var.tags
+}
+
+resource "azurerm_postgresql_flexible_server_database" "airflow" {
+  count = var.enable_airflow ? 1 : 0
+
+  name      = var.airflow_postgresql_database_name
+  server_id = azurerm_postgresql_flexible_server.airflow[0].id
+  charset   = "UTF8"
+  collation = "en_US.utf8"
+}
+
+resource "azurerm_postgresql_flexible_server_firewall_rule" "airflow_allow_azure" {
+  count = var.enable_airflow ? 1 : 0
+
+  name             = "allow-azure-services"
+  server_id        = azurerm_postgresql_flexible_server.airflow[0].id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
 }
@@ -503,6 +568,144 @@ resource "azurerm_container_app" "frontend" {
           value = env.value
         }
       }
+    }
+  }
+
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.this.admin_password
+  }
+
+  tags = var.tags
+}
+
+resource "azurerm_container_app" "airflow_webserver" {
+  count = var.enable_airflow ? 1 : 0
+
+  name                         = local.airflow_webserver_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.this.id
+  resource_group_name          = azurerm_resource_group.this.name
+  revision_mode                = "Single"
+
+  registry {
+    server               = azurerm_container_registry.this.login_server
+    username             = azurerm_container_registry.this.name
+    password_secret_name = "acr-password"
+  }
+
+  ingress {
+    external_enabled = true
+    target_port      = 8080
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "airflow-webserver"
+      image  = "${azurerm_container_registry.this.login_server}/${var.airflow_image_name}:${var.image_tag}"
+      cpu    = var.airflow_webserver_cpu
+      memory = var.airflow_webserver_memory
+
+      command = ["/bin/bash"]
+      args    = ["-c", "airflow db migrate && (airflow users create --username \"$${AIRFLOW_ADMIN_USERNAME:-admin}\" --password \"$${AIRFLOW_ADMIN_PASSWORD}\" --firstname Airflow --lastname Admin --role Admin --email \"$${AIRFLOW_ADMIN_EMAIL:-admin@example.com}\" || true) && exec airflow webserver"]
+
+      dynamic "env" {
+        for_each = local.airflow_environment_variables
+
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = local.airflow_secret_names
+
+        content {
+          name        = env.value
+          secret_name = lower(replace(env.value, "_", "-"))
+        }
+      }
+    }
+  }
+
+  dynamic "secret" {
+    for_each = local.airflow_secret_names
+
+    content {
+      name  = lower(replace(secret.value, "_", "-"))
+      value = local.airflow_secret_environment_variables[secret.value]
+    }
+  }
+
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.this.admin_password
+  }
+
+  tags = var.tags
+}
+
+resource "azurerm_container_app" "airflow_scheduler" {
+  count = var.enable_airflow ? 1 : 0
+
+  name                         = local.airflow_scheduler_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.this.id
+  resource_group_name          = azurerm_resource_group.this.name
+  revision_mode                = "Single"
+
+  registry {
+    server               = azurerm_container_registry.this.login_server
+    username             = azurerm_container_registry.this.name
+    password_secret_name = "acr-password"
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "airflow-scheduler"
+      image  = "${azurerm_container_registry.this.login_server}/${var.airflow_image_name}:${var.image_tag}"
+      cpu    = var.airflow_scheduler_cpu
+      memory = var.airflow_scheduler_memory
+
+      command = ["/bin/bash"]
+      args    = ["-c", "airflow db migrate; exec airflow scheduler"]
+
+      dynamic "env" {
+        for_each = local.airflow_environment_variables
+
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = local.airflow_secret_names
+
+        content {
+          name        = env.value
+          secret_name = lower(replace(env.value, "_", "-"))
+        }
+      }
+    }
+  }
+
+  dynamic "secret" {
+    for_each = local.airflow_secret_names
+
+    content {
+      name  = lower(replace(secret.value, "_", "-"))
+      value = local.airflow_secret_environment_variables[secret.value]
     }
   }
 

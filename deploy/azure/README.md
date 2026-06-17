@@ -21,6 +21,7 @@ The current Terraform module provisions the first Azure foundation:
 - Azure PostgreSQL Flexible Server for MLflow metadata
 - Azure Blob Storage for MLflow artifacts
 - Azure Blob Storage for application uploads, cleaned data, reports, and exports
+- Optional Airflow webserver/scheduler Container Apps with Terraform-managed Airflow PostgreSQL metadata
 
 One-shot migration jobs, Key Vault references, custom domains,
 and advanced deployment slots should be added in the next infrastructure phase
@@ -48,7 +49,7 @@ and keep secrets, databases, queues, and artifacts outside app containers.
 | MLflow artifacts | Azure Blob Storage | Managed by Terraform as a private container. |
 | Application artifacts | Azure Blob Storage | Managed by Terraform as a private container for uploads, cleaned outputs, reports, and exports. |
 | Secrets | Azure Key Vault / Container App secrets | Never bake secrets into images or committed env files. |
-| Airflow | Managed Airflow, Astronomer, AKS, or customer orchestrator | Production Airflow should not depend on a local Docker volume. |
+| Airflow | Azure Container Apps or managed Airflow/customer orchestrator | Terraform can deploy the built-in Airflow image for prod; production Airflow should not depend on a local Docker volume. |
 
 ## Production Deployment Flow
 
@@ -66,7 +67,7 @@ and keep secrets, databases, queues, and artifacts outside app containers.
 12. Add `MLFLOW_POSTGRESQL_ADMIN_PASSWORD` as a GitHub Environment secret.
 13. Leave `MLFLOW_BACKEND_STORE_URI` and `MLFLOW_ARTIFACT_ROOT` unset unless intentionally overriding the Terraform-managed MLflow PostgreSQL/Blob resources.
 14. Configure Slack OAuth redirect URL to the public API callback.
-15. Configure Airflow `opssight_api` connection with a service token.
+15. Configure `AIRFLOW_CONN_OPSSIGHT_API` with a service token.
 16. Trigger a staging DAG run with explicit model and input artifact.
 
 ## Build Images
@@ -79,18 +80,20 @@ For manual local testing from the repository root:
 
 ```powershell
 docker build -t <acr>.azurecr.io/opssight-api:<tag> ./backend/fastapi
+docker build -t <acr>.azurecr.io/opssight-airflow:<tag> ./airflow-setup
 docker build `
   --build-arg VITE_API_URL=https://<api-domain> `
   --build-arg VITE_WS_URL=wss://<api-domain> `
   -f frontend/Dockerfile `
   -t <acr>.azurecr.io/opssight-frontend:<tag> .
 docker push <acr>.azurecr.io/opssight-api:<tag>
+docker push <acr>.azurecr.io/opssight-airflow:<tag>
 docker push <acr>.azurecr.io/opssight-frontend:<tag>
 ```
 
 ## Provision Container Apps
 
-Use the GitHub Actions `IaC` workflow and Terraform module for the current API, frontend, worker, beat, MLflow, and Redis resources.
+Use the GitHub Actions `IaC` workflow and Terraform module for the current API, frontend, worker, beat, MLflow, Redis, and optional Airflow resources.
 
 The Bicep template remains a reference for manual experiments:
 
@@ -134,8 +137,9 @@ For production, prefer managed identity plus `AcrPull` on ACR. The dev environme
 | `mlflow-db` | Azure PostgreSQL Flexible Server managed by Terraform |
 | `mlflow-artifacts` | Azure Blob Storage managed by Terraform |
 | `uploads`, `cleaned`, `reports`, `exports` | Azure Blob Storage managed by Terraform |
-| `airflow-*` | Managed Airflow or separate orchestrator |
-| `airflow-db` | Managed by the Airflow platform, or external PostgreSQL if self-hosted |
+| `airflow-webserver` | Azure Container App when `enable_airflow=true` |
+| `airflow-scheduler` | Azure Container App when `enable_airflow=true` |
+| `airflow-db` | Azure PostgreSQL Flexible Server managed by Terraform when `enable_airflow=true` |
 
 The application database remains Supabase and is configured only through `API_DB_*` secrets.
 

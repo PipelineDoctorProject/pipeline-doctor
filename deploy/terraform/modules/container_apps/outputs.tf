@@ -43,6 +43,21 @@ output "mlflow_container_app_url" {
   value       = "https://${azurerm_container_app.mlflow.ingress[0].fqdn}"
 }
 
+output "airflow_webserver_container_app_url" {
+  description = "Airflow webserver Container App URL."
+  value       = var.enable_airflow ? "https://${azurerm_container_app.airflow_webserver[0].ingress[0].fqdn}" : null
+}
+
+output "airflow_scheduler_container_app_name" {
+  description = "Airflow scheduler Container App name."
+  value       = var.enable_airflow ? azurerm_container_app.airflow_scheduler[0].name : null
+}
+
+output "airflow_postgresql_fqdn" {
+  description = "Airflow Azure PostgreSQL Flexible Server FQDN."
+  value       = var.enable_airflow ? azurerm_postgresql_flexible_server.airflow[0].fqdn : null
+}
+
 output "redis_cache_hostname" {
   description = "Azure Cache for Redis hostname."
   value       = local.use_managed_redis ? azurerm_redis_cache.this[0].hostname : null

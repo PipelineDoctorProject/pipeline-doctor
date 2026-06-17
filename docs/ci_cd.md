@@ -24,7 +24,7 @@ Verify
 | Workflow | File | Purpose |
 |---|---|---|
 | CI | `.github/workflows/ci.yml` | Validates backend, frontend, Docker, Terraform, and Ansible on PRs and pushes. |
-| Container Release | `.github/workflows/container-release.yml` | Manually builds backend/frontend images, verifies frontend build config, and optionally pushes images to Azure Container Registry. |
+| Container Release | `.github/workflows/container-release.yml` | Manually builds backend/Airflow/frontend images, verifies frontend build config, and optionally pushes images to Azure Container Registry. |
 | IaC | `.github/workflows/iac.yml` | Manually runs Terraform `plan` or `apply` for `dev`, `staging`, or `prod`, including Azure Container Apps. |
 | Ansible Operations | `.github/workflows/ansible.yml` | Manually runs post-provision verification playbooks. |
 
@@ -111,6 +111,14 @@ Optional API runtime values include:
 - `API_MAIL_FROM_NAME`
 - `API_SLACK_CLIENT_ID`
 - `API_SLACK_CLIENT_SECRET`
+- `API_SLACK_REDIRECT_URI`
+
+Slack production notes:
+
+- `API_SLACK_REDIRECT_URI` must exactly match the callback URL configured in the Slack app.
+- For Azure dev, this usually looks like `https://<api-container-app-host>/slack/callback`.
+- If you rebuild or replace the API host/custom domain, update the Slack redirect URI too.
+- For multi-workspace customer installs, enable Slack public distribution on the production Slack app.
 
 For MLflow infrastructure, store this as a GitHub Environment secret:
 
