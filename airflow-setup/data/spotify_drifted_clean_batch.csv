@@ -1,0 +1,31 @@
+id,name,artist,genres,danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,liveness,valence,tempo,duration_ms,time_signature,cluster,cluster_label
+drift001,Drifted Track One,Demo Artist,"['qawwali']",0.86,0.12,0,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift002,Drifted Track Two,Demo Artist,"['bollywood']",0.86,0.12,5,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift003,Drifted Track Three,Demo Artist,"['ghazal']",0.86,0.12,3,-19.0,0,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,3,Acoustic Chill
+drift004,Drifted Track Four,Demo Artist,"['pop']",0.86,0.12,10,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift005,Drifted Track Five,Demo Artist,"['pop']",0.86,0.12,9,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,2,Instrumental Calm
+drift006,Drifted Track Six,Demo Artist,"['ghazal']",0.86,0.12,6,-19.0,0,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,3,Acoustic Chill
+drift007,Drifted Track Seven,Demo Artist,"['qawwali']",0.86,0.12,0,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift008,Drifted Track Eight,Demo Artist,"['pop', 'indie']",0.86,0.12,7,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift009,Drifted Track Nine,Demo Artist,"['pop']",0.86,0.12,2,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift010,Drifted Track Ten,Demo Artist,"['bollywood']",0.86,0.12,4,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift011,Drifted Track Eleven,Demo Artist,"['ghazal']",0.86,0.12,8,-19.0,0,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,3,Acoustic Chill
+drift012,Drifted Track Twelve,Demo Artist,"['qawwali']",0.86,0.12,1,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift013,Drifted Track Thirteen,Demo Artist,"['pop']",0.86,0.12,11,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,2,Instrumental Calm
+drift014,Drifted Track Fourteen,Demo Artist,"['pop', 'indie']",0.86,0.12,6,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift015,Drifted Track Fifteen,Demo Artist,"['pop']",0.86,0.12,5,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift016,Drifted Track Sixteen,Demo Artist,"['ghazal']",0.86,0.12,9,-19.0,0,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,3,Acoustic Chill
+drift017,Drifted Track Seventeen,Demo Artist,"['bollywood']",0.86,0.12,3,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift018,Drifted Track Eighteen,Demo Artist,"['qawwali']",0.86,0.12,2,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift019,Drifted Track Nineteen,Demo Artist,"['pop']",0.86,0.12,10,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,2,Instrumental Calm
+drift020,Drifted Track Twenty,Demo Artist,"['pop', 'indie']",0.86,0.12,7,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift021,Drifted Track Twenty One,Demo Artist,"['pop']",0.86,0.12,4,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift022,Drifted Track Twenty Two,Demo Artist,"['bollywood']",0.86,0.12,8,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift023,Drifted Track Twenty Three,Demo Artist,"['ghazal']",0.86,0.12,1,-19.0,0,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,3,Acoustic Chill
+drift024,Drifted Track Twenty Four,Demo Artist,"['qawwali']",0.86,0.12,6,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift025,Drifted Track Twenty Five,Demo Artist,"['pop']",0.86,0.12,11,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,2,Instrumental Calm
+drift026,Drifted Track Twenty Six,Demo Artist,"['pop', 'indie']",0.86,0.12,0,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,1,Dance Party
+drift027,Drifted Track Twenty Seven,Demo Artist,"['pop']",0.86,0.12,2,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy
+drift028,Drifted Track Twenty Eight,Demo Artist,"['ghazal']",0.86,0.12,5,-19.0,0,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,3,Acoustic Chill
+drift029,Drifted Track Twenty Nine,Demo Artist,"['pop']",0.86,0.12,9,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,2,Instrumental Calm
+drift030,Drifted Track Thirty,Demo Artist,"['bollywood']",0.86,0.12,4,-19.0,1,0.40,0.98,0.0,0.85,0.90,185.0,150000,4,0,Energetic Happy

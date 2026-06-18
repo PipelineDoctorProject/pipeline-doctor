@@ -48,14 +48,21 @@ def collect_retraining_context(
     expected_features, feature_source = resolve_expected_features(db, pipeline_run, model_record)
     training_mode = _infer_training_mode_from_metadata(model_record)
     target_required = training_mode != "unsupervised_clustering"
-    cleaned_data_available = bool(
-        file_storage.exists(pipeline_run.cleaned_data_path)
-    )
+    cleaned_data_available = False
     dataset_columns: list[str] = []
+    storage_error = None
 
-    if cleaned_data_available:
-        df = load_dataset(pipeline_run.cleaned_data_path).head(5)
-        dataset_columns = [str(column) for column in df.columns]
+    try:
+        if pipeline_run.cleaned_data_path:
+            cleaned_data_available = bool(
+                file_storage.exists(pipeline_run.cleaned_data_path)
+            )
+            if cleaned_data_available:
+                df = load_dataset(pipeline_run.cleaned_data_path).head(5)
+                dataset_columns = [str(column) for column in df.columns]
+    except Exception as exc:
+        cleaned_data_available = False
+        storage_error = f"Failed to access or load cleaned data from storage: {exc}"
 
     target_candidates = []
     if target_required:
@@ -66,7 +73,9 @@ def collect_retraining_context(
         ]
 
     readiness_warnings: list[str] = []
-    if not cleaned_data_available:
+    if storage_error:
+        readiness_warnings.append(storage_error)
+    elif not cleaned_data_available:
         readiness_warnings.append(
             "Cleaned data is not available for this run, so retraining cannot start."
         )
