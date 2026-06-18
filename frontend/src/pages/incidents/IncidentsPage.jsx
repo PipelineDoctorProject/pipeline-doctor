@@ -522,14 +522,15 @@ export default function IncidentsPage() {
     liveTraceRunId === selectedRunIdLabel &&
     ["running", "complete", "failed"].includes(runStatus);
   const shouldShowRcaReport =
-    Boolean(selectedRcaReport) &&
+    Boolean(selectedRcaReport) && (
+    !latestAgentRunStatus ||
     isRcaReportReady({
       latestAgentRunStatus,
       shouldShowLiveTrace,
       liveSteps: wsSteps,
       storedSteps: displayAgentSteps,
       liveRunStatus: runStatus,
-    });
+    }));
 
   useEffect(() => {
     if (!selectedRun || !lastMessage) return;
