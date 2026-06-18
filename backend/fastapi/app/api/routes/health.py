@@ -3,12 +3,25 @@ from datetime import datetime, timezone
 
 import redis
 from fastapi import APIRouter
+from urllib.parse import urlsplit, urlunsplit
 
 from app.config.settings import REDIS_URL
 from app.core.celery_app import celery
 
 router = APIRouter()
 INSPECT_TIMEOUT_SECONDS = 5
+
+
+def _mask_url_secret(url: str) -> str:
+    parsed = urlsplit(url)
+    if not parsed.password:
+        return url
+
+    username = parsed.username or ""
+    credentials = f"{username}:***" if username else ":***"
+    hostname = parsed.hostname or ""
+    port = f":{parsed.port}" if parsed.port else ""
+    return urlunsplit((parsed.scheme, f"{credentials}@{hostname}{port}", parsed.path, parsed.query, parsed.fragment))
 
 @router.get("/health")
 def health_check():
@@ -63,7 +76,7 @@ def celery_health_check():
     return {
         "status": "healthy" if overall_ok else "degraded",
         "redis": {
-            "url": REDIS_URL,
+            "url": _mask_url_secret(REDIS_URL),
             "connected": redis_ok,
             "error": redis_error,
         },

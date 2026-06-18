@@ -23,7 +23,7 @@ import AgentTraceStepper from "../../components/agents/AgentTraceStepper";
 import IncidentReasoningCard from "../../components/agents/IncidentReasoningCard";
 import IncidentRemediationPanel from "../../components/incidents/IncidentRemediationPanel";
 
-const INCIDENT_LIST_POLL_INTERVAL_MS = 15000;
+const INCIDENT_LIST_POLL_INTERVAL_MS = 5000;
 
 const severityConfig = {
   critical: {
@@ -456,14 +456,12 @@ export default function IncidentsPage() {
   }, [lastIncidentMessage, loadIncidents]);
 
   useEffect(() => {
-    if (incidentsFeedLive) return undefined;
-
     const intervalId = window.setInterval(() => {
       loadIncidents({ silent: true, announceDelta: true });
     }, INCIDENT_LIST_POLL_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [incidentsFeedLive, loadIncidents]);
+  }, [loadIncidents]);
 
   useEffect(() => {
     processedLiveEventRef.current.clear();
