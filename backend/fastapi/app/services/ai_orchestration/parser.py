@@ -53,7 +53,9 @@ def classify_failure_types(text: str) -> List[str]:
         if any(keyword in haystack for keyword in keywords):
             matches.append(failure_type)
 
-    if not matches and ("fail" in haystack or "quality" in haystack):
+    # Strip JSON keys to avoid matching 'fail' inside 'failure_types'
+    cleaned_text = re.sub(r'"\w+":', "", haystack)
+    if not matches and ("fail" in cleaned_text or "quality" in cleaned_text):
         matches.append("DATA_QUALITY")
 
     return matches

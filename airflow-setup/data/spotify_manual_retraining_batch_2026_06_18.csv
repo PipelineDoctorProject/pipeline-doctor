@@ -1,0 +1,31 @@
+id,name,artist,genres,danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,liveness,valence,tempo,duration_ms,time_signature,cluster,cluster_label
+fix001,Corrected Tempo Track,Demo Artist,"['qawwali']",0.42,0.58,0,-8.9,1,0.045,0.41,0.0,0.12,0.46,120.0,214000,4,1,Dance Party
+fix002,Stable Unit Track,Demo Artist,"['bollywood']",0.67,0.72,5,-6.2,1,0.061,0.22,0.0,0.18,0.73,125.0,246000,4,0,Energetic Happy
+fix003,Recovered Energy,Demo Artist,"['ghazal']",0.51,0.43,3,-11.8,0,0.034,0.71,0.0,0.1,0.39,95.0,188000,4,3,Acoustic Chill
+fix004,Normal Energy Track,Demo Artist,"['pop']",0.59,0.64,10,-7.4,1,0.052,0.32,0.0,0.28,0.68,110.0,230500,4,0,Energetic Happy
+fix005,Normalized Loudness,Demo Artist,"['pop']",0.62,0.69,9,-5.9,1,0.118,0.18,0.0,0.23,0.61,105.0,205400,4,2,Instrumental Calm
+fix006,Valid Duration Track,Demo Artist,"['ghazal']",0.48,0.39,6,-12.1,0,0.038,0.76,0.0,0.2,0.35,100.0,197000,4,3,Acoustic Chill
+fix007,Corrected Dance Track,Demo Artist,"['qawwali']",0.56,0.77,0,-6.8,1,0.074,0.19,0.0,0.16,0.81,118.0,223000,4,0,Energetic Happy
+fix008,Schema Safe Track,Demo Artist,"['pop', 'indie']",0.64,0.55,7,-9.1,1,0.041,0.44,0.0,0.14,0.52,122.0,241200,4,1,Dance Party
+fix009,Production Clean One,Demo Artist,"['pop']",0.72,0.82,2,-4.7,1,0.067,0.1,0.0,0.19,0.76,135.0,219800,4,0,Energetic Happy
+fix010,Production Clean Two,Demo Artist,"['bollywood']",0.61,0.66,4,-7.2,1,0.054,0.25,0.0,0.21,0.69,130.0,234100,4,0,Energetic Happy
+fix011,Production Clean Three,Demo Artist,"['ghazal']",0.39,0.35,8,-13.5,0,0.031,0.82,0.0,0.17,0.31,115.0,201300,4,3,Acoustic Chill
+fix012,Production Clean Four,Demo Artist,"['qawwali']",0.53,0.49,1,-10.4,1,0.047,0.55,0.0,0.22,0.44,128.0,255000,4,1,Dance Party
+fix013,Production Clean Five,Demo Artist,"['pop']",0.7,0.74,11,-6.0,1,0.141,0.16,0.0,0.29,0.58,112.0,212900,4,2,Instrumental Calm
+fix014,Production Clean Six,Demo Artist,"['pop', 'indie']",0.58,0.57,6,-8.6,1,0.039,0.47,0.0,0.13,0.49,124.0,225700,4,1,Dance Party
+fix015,Production Clean Seven,Demo Artist,"['pop']",0.76,0.79,5,-5.3,1,0.059,0.12,0.0,0.15,0.84,118.0,218600,4,0,Energetic Happy
+fix016,Manual Review Track One,Demo Artist,"['ghazal']",0.44,0.41,9,-12.7,0,0.033,0.79,0.0,0.18,0.37,107.0,207500,4,3,Acoustic Chill
+fix017,Manual Review Track Two,Demo Artist,"['bollywood']",0.63,0.68,3,-7.0,1,0.057,0.28,0.0,0.2,0.71,136.0,236400,4,0,Energetic Happy
+fix018,Manual Review Track Three,Demo Artist,"['qawwali']",0.5,0.52,2,-9.8,1,0.046,0.58,0.0,0.24,0.48,128.0,248900,4,1,Dance Party
+fix019,Manual Review Track Four,Demo Artist,"['pop']",0.68,0.71,10,-6.4,1,0.132,0.21,0.0,0.26,0.63,109.0,209600,4,2,Instrumental Calm
+fix020,Manual Review Track Five,Demo Artist,"['pop', 'indie']",0.57,0.54,7,-8.9,1,0.043,0.49,0.0,0.16,0.51,124.0,231100,4,1,Dance Party
+fix021,Retraining Candidate One,Demo Artist,"['pop']",0.74,0.81,4,-4.9,1,0.063,0.11,0.0,0.18,0.8,116.0,216300,4,0,Energetic Happy
+fix022,Retraining Candidate Two,Demo Artist,"['bollywood']",0.6,0.62,8,-7.8,1,0.05,0.3,0.0,0.19,0.65,129.0,229400,4,0,Energetic Happy
+fix023,Retraining Candidate Three,Demo Artist,"['ghazal']",0.41,0.38,1,-13.0,0,0.032,0.84,0.0,0.14,0.33,103.0,203200,4,3,Acoustic Chill
+fix024,Retraining Candidate Four,Demo Artist,"['qawwali']",0.55,0.5,6,-10.0,1,0.049,0.52,0.0,0.23,0.47,128.0,250700,4,1,Dance Party
+fix025,Retraining Candidate Five,Demo Artist,"['pop']",0.66,0.73,11,-6.1,1,0.126,0.17,0.0,0.27,0.6,111.0,211800,4,2,Instrumental Calm
+fix026,Retraining Candidate Six,Demo Artist,"['pop', 'indie']",0.59,0.56,0,-8.4,1,0.04,0.45,0.0,0.12,0.5,126.0,226900,4,1,Dance Party
+fix027,Retraining Candidate Seven,Demo Artist,"['pop']",0.71,0.78,2,-5.5,1,0.06,0.13,0.0,0.17,0.79,120.0,220200,4,0,Energetic Happy
+fix028,Retraining Candidate Eight,Demo Artist,"['ghazal']",0.43,0.36,5,-13.2,0,0.03,0.81,0.0,0.15,0.34,99.0,199600,4,3,Acoustic Chill
+fix029,Retraining Candidate Nine,Demo Artist,"['pop']",0.69,0.7,9,-6.6,1,0.137,0.2,0.0,0.25,0.62,113.0,213500,4,2,Instrumental Calm
+fix030,Retraining Candidate Ten,Demo Artist,"['bollywood']",0.62,0.65,4,-7.5,1,0.055,0.27,0.0,0.2,0.67,123.0,232800,4,0,Energetic Happy

@@ -8,7 +8,7 @@ import {
 
 import { getModels } from "../../store/modelStore";
 
-import { uploadBaseline } from "../../store/baselineStorre"
+import { uploadBaseline } from "../../store/baselineStore"
 export default function UploadBaselineModal({
   onClose,
   onUploaded,
