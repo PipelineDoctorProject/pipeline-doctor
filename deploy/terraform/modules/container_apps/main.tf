@@ -37,7 +37,7 @@ locals {
     {
       DB_MAX_OVERFLOW = "8"
       DB_POOL_TIMEOUT = "30"
-      FRONTEND_URL     = local.frontend_public_url
+      FRONTEND_URL    = local.frontend_public_url
     },
     var.api_environment_variables
   )
