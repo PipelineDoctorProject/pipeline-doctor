@@ -20,7 +20,8 @@ import { getModels } from "../../store/modelStore";
 import useSelectedModelStore from "../../store/selectedModelStore";
 
 const NOTIFICATION_LIMIT = 8;
-const POLL_INTERVAL_MS = 5000;
+const LIVE_POLL_INTERVAL_MS = 60000;
+const FALLBACK_POLL_INTERVAL_MS = 20000;
 
 function isResolved(status) {
   return ["resolved", "closed", "deployed", "promoted"].includes(
@@ -223,12 +224,15 @@ export default function Topbar() {
 
   useEffect(() => {
     loadNotificationData();
-    const intervalId = window.setInterval(loadNotificationData, POLL_INTERVAL_MS);
+    const intervalId = window.setInterval(
+      loadNotificationData,
+      incidentsFeedLive ? LIVE_POLL_INTERVAL_MS : FALLBACK_POLL_INTERVAL_MS,
+    );
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [loadNotificationData]);
+  }, [incidentsFeedLive, loadNotificationData]);
 
   useEffect(() => {
     connectIncidentsFeed();

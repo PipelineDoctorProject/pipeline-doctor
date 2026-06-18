@@ -23,7 +23,9 @@ import AgentTraceStepper from "../../components/agents/AgentTraceStepper";
 import IncidentReasoningCard from "../../components/agents/IncidentReasoningCard";
 import IncidentRemediationPanel from "../../components/incidents/IncidentRemediationPanel";
 
-const INCIDENT_LIST_POLL_INTERVAL_MS = 5000;
+const INCIDENT_LIST_LIVE_POLL_INTERVAL_MS = 60000;
+const INCIDENT_LIST_FALLBACK_POLL_INTERVAL_MS = 20000;
+const AGENT_DATA_POLL_INTERVAL_MS = 5000;
 
 const severityConfig = {
   critical: {
@@ -312,6 +314,8 @@ export default function IncidentsPage() {
   const incidentSnapshotRef = useRef(new Map());
   const hasBootstrappedIncidentsRef = useRef(false);
   const processedLiveEventRef = useRef(new Set());
+  const loadingIncidentsRef = useRef(false);
+  const loadingAgentDataRef = useRef(false);
   const [searchParams] = useSearchParams();
   const runParam = searchParams.get("run");
   const [incidents, setIncidents] = useState([]);
@@ -341,6 +345,9 @@ export default function IncidentsPage() {
 
   const loadIncidents = useCallback(
     async ({ silent = false, announceDelta = false } = {}) => {
+      if (loadingIncidentsRef.current) return;
+      loadingIncidentsRef.current = true;
+
       try {
         if (!silent) {
           setLoading(true);
@@ -384,6 +391,7 @@ export default function IncidentsPage() {
           toast.error("Failed to load incidents");
         }
       } finally {
+        loadingIncidentsRef.current = false;
         if (!silent) {
           setLoading(false);
         }
@@ -395,6 +403,9 @@ export default function IncidentsPage() {
   const loadAgentData = useCallback(
     async (incidentId, { silent = false } = {}) => {
       if (!incidentId) return;
+      if (loadingAgentDataRef.current) return;
+      loadingAgentDataRef.current = true;
+
       try {
         if (!silent) {
           setAgentLoading(true);
@@ -430,6 +441,7 @@ export default function IncidentsPage() {
       } catch (err) {
         console.log("Agent data load error:", err);
       } finally {
+        loadingAgentDataRef.current = false;
         if (!silent) {
           setAgentLoading(false);
         }
@@ -460,10 +472,12 @@ export default function IncidentsPage() {
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       loadIncidents({ silent: true, announceDelta: true });
-    }, INCIDENT_LIST_POLL_INTERVAL_MS);
+    }, incidentsFeedLive
+      ? INCIDENT_LIST_LIVE_POLL_INTERVAL_MS
+      : INCIDENT_LIST_FALLBACK_POLL_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [loadIncidents]);
+  }, [incidentsFeedLive, loadIncidents]);
 
   useEffect(() => {
     processedLiveEventRef.current.clear();
@@ -583,7 +597,7 @@ export default function IncidentsPage() {
 
     const intervalId = window.setInterval(() => {
       loadAgentData(firstIncident.id, { silent: true });
-    }, 2000);
+    }, AGENT_DATA_POLL_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
   }, [selectedRun, agentRuns.length, latestAgentRunStatus, loadAgentData]);
