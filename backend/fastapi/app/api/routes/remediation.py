@@ -156,6 +156,9 @@ def approve_retraining_for_incident(
         raise HTTPException(status_code=404, detail="ML model not found for remediation.")
 
     failure_types = _extract_failure_types(incident.description)
+    if not failure_types and incident.failure_type:
+        failure_types = [incident.failure_type]
+
     policy = decide_remediation(
         {
             "severity": incident.severity,
@@ -580,5 +583,5 @@ def _validate_retraining_preconditions(
             model_record=model_record,
             target_column=target_column,
         )
-    except ValueError as exc:
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
