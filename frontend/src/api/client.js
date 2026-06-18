@@ -24,7 +24,7 @@ export function hasAccessToken() {
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  timeout: 60000,
+  timeout: 20000,
 });
 
 let refreshPromise = null;
