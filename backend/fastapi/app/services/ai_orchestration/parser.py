@@ -31,9 +31,9 @@ KEYWORD_RULES = {
 
 def parse_root_cause_response(text: str) -> Dict[str, Any]:
     payload = _extract_json_payload(text)
-    failure_types = _normalize_failure_types(payload.get("failure_types", []))
-
-    if not failure_types:
+    if "failure_types" in payload:
+        failure_types = _normalize_failure_types(payload["failure_types"])
+    else:
         failure_types = classify_failure_types(text)
 
     severity = _normalize_severity(payload.get("severity")) or infer_severity(text)
