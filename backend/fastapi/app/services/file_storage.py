@@ -82,6 +82,9 @@ def exists(uri: str | None) -> bool:
         return False
 
     if is_blob_uri(uri):
+        if not settings.AZURE_APP_STORAGE_CONNECTION_STRING:
+            return False
+
         container_name, blob_name = _parse_azure_uri(uri)
         if container_name != settings.AZURE_APP_STORAGE_CONTAINER:
             raise ValueError(f"Unexpected artifact container: {container_name}")
