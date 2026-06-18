@@ -162,6 +162,18 @@ def main() -> None:
             signature=signature,
         )
 
+        from mlflow import MlflowClient
+        client = MlflowClient(tracking_uri=args.tracking_uri)
+        latest_versions = client.get_latest_versions(args.model_name)
+        if latest_versions:
+            latest_version = latest_versions[0].version
+            client.set_registered_model_alias(
+                name=args.model_name,
+                alias="champion",
+                version=latest_version
+            )
+            print(f"Assigned alias 'champion' to version {latest_version} of registered model '{args.model_name}'")
+
         print("Registered local MLflow model successfully.")
         print(f"model_name={args.model_name}")
         print(f"tracking_uri={args.tracking_uri}")
