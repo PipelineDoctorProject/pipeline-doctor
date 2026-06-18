@@ -51,9 +51,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         db = SessionLocal()
+        request.state.db = db
 
         try:
-
             user = (
                 db.query(User)
                 .filter(User.id == payload["user_id"])
@@ -75,7 +75,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     request.state.schema = tenant.schema_name
                     set_schema(db, tenant.schema_name)
 
+            return await call_next(request)
         finally:
+            request.state.db = None
             db.close()
-
-        return await call_next(request)
