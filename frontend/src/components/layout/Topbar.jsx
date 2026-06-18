@@ -20,7 +20,7 @@ import { getModels } from "../../store/modelStore";
 import useSelectedModelStore from "../../store/selectedModelStore";
 
 const NOTIFICATION_LIMIT = 8;
-const POLL_INTERVAL_MS = 30000;
+const POLL_INTERVAL_MS = 5000;
 
 function isResolved(status) {
   return ["resolved", "closed", "deployed", "promoted"].includes(
