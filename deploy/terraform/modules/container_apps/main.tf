@@ -35,7 +35,7 @@ locals {
   api_secret_names = toset(nonsensitive(keys(local.api_secret_environment_variables)))
   api_environment_variables = merge(
     {
-      DB_MAX_OVERFLOW = "4"
+      DB_MAX_OVERFLOW = "8"
       DB_POOL_TIMEOUT = "30"
       FRONTEND_URL     = local.frontend_public_url
     },
