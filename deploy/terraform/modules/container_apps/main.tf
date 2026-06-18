@@ -491,7 +491,7 @@ resource "azurerm_container_app" "mlflow" {
       memory = var.mlflow_memory
 
       command = ["/bin/sh"]
-      args    = ["-c", "if [ \"$${MLFLOW_ARTIFACT_ROOT:-/tmp/mlruns}\" = \"/tmp/mlruns\" ]; then mkdir -p /tmp/mlruns; fi; mlflow server --backend-store-uri \"$${MLFLOW_BACKEND_STORE_URI:-sqlite:////tmp/mlflow.db}\" --default-artifact-root \"$${MLFLOW_ARTIFACT_ROOT:-/tmp/mlruns}\" --workers 1 --host 0.0.0.0 --port 5000"]
+      args    = ["-c", "if [ \"$${MLFLOW_ARTIFACT_ROOT:-/tmp/mlruns}\" = \"/tmp/mlruns\" ]; then mkdir -p /tmp/mlruns; fi; mlflow server --backend-store-uri \"$${MLFLOW_BACKEND_STORE_URI:-sqlite:////tmp/mlflow.db}\" --default-artifact-root \"$${MLFLOW_ARTIFACT_ROOT:-/tmp/mlruns}\" --workers 1 --host 0.0.0.0 --port 5000 --allowed-hosts \"*\""]
 
       dynamic "env" {
         for_each = local.mlflow_environment_variables
