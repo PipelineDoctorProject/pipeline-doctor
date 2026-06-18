@@ -17,7 +17,7 @@ import {
   getBaselines,
   getPendingSchemaEvents,
   rejectSchemaChange,
-} from "../../store/baselineStorre";
+} from "../../store/baselineStore";
 
 const statusStyles = {
   active: "border-emerald-200 bg-emerald-50 text-emerald-700",

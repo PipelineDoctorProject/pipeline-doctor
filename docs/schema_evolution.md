@@ -236,7 +236,7 @@ For unsupervised clustering, a newly approved numeric feature may be considered 
 - `backend/fastapi/app/models/schema_change_event.py`
 - `backend/fastapi/app/utils/schema_utils.py`
 - `frontend/src/pages/schema/Schema.jsx`
-- `frontend/src/store/baselineStorre.js`
+- `frontend/src/store/baselineStore.js`
 - `backend/fastapi/app/services/quality/validator.py`
 
 ---
