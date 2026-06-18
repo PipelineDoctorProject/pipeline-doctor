@@ -44,37 +44,36 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not token:
             return await call_next(request)
 
+        try:
+            payload = decode_token(token)
+        except Exception as exc:
+            print("AUTH ERROR:", exc)
+            return await call_next(request)
+
         db = SessionLocal()
 
         try:
 
-            try:
-                payload = decode_token(token)
-            except Exception as exc:
-                print("AUTH ERROR:", exc)
-                payload = None
+            user = (
+                db.query(User)
+                .filter(User.id == payload["user_id"])
+                .first()
+            )
 
-            if payload:
-                user = (
-                    db.query(User)
-                    .filter(User.id == payload["user_id"])
+            if user:
+                request.state.user = user
+
+                from app.models.tenant import Tenant
+
+                tenant = (
+                    db.query(Tenant)
+                    .filter(Tenant.id == user.tenant_id)
                     .first()
                 )
 
-                if user:
-                    request.state.user = user
-
-                    from app.models.tenant import Tenant
-
-                    tenant = (
-                        db.query(Tenant)
-                        .filter(Tenant.id == user.tenant_id)
-                        .first()
-                    )
-
-                    if tenant and tenant.schema_name:
-                        request.state.schema = tenant.schema_name
-                        set_schema(db, tenant.schema_name)
+                if tenant and tenant.schema_name:
+                    request.state.schema = tenant.schema_name
+                    set_schema(db, tenant.schema_name)
 
         finally:
             db.close()
