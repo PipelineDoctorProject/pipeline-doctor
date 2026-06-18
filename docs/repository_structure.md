@@ -70,4 +70,4 @@ lives in `deploy/nginx/frontend.conf`.
 
 - Add CI checks for linting, migrations, backend tests, frontend build, and Docker image build.
 - Consider squashing old exploratory migrations before a first public production release.
-- Rename typo-prone files such as `baselineStorre.js` after updating imports.
+- Rename typo-prone files such as `baselineStore.js` after updating imports.
