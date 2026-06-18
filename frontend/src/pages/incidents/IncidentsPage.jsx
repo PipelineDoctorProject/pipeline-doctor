@@ -380,7 +380,9 @@ export default function IncidentsPage() {
         setIncidents(nextIncidents);
       } catch (err) {
         console.log(err);
-        toast.error("Failed to load incidents");
+        if (!silent) {
+          toast.error("Failed to load incidents");
+        }
       } finally {
         if (!silent) {
           setLoading(false);
