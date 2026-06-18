@@ -53,9 +53,16 @@ def celery_health_check():
     finally:
         client.close()
 
-    inspector = celery.control.inspect(timeout=INSPECT_TIMEOUT_SECONDS)
-    workers = inspector.ping() or {}
-    queues_by_worker = inspector.active_queues() or {}
+    worker_error = None
+    workers = {}
+    queues_by_worker = {}
+
+    try:
+        inspector = celery.control.inspect(timeout=INSPECT_TIMEOUT_SECONDS)
+        workers = inspector.ping() or {}
+        queues_by_worker = inspector.active_queues() or {}
+    except Exception as exc:
+        worker_error = str(exc)
 
     worker_names = sorted(workers.keys())
     queue_names = sorted({
@@ -88,6 +95,7 @@ def celery_health_check():
             "required_queues": required_queues,
             "missing_queues": missing_queues,
             "inspect_timeout_seconds": INSPECT_TIMEOUT_SECONDS,
+            "error": worker_error,
             "ping": workers,
         },
         "beat": {
