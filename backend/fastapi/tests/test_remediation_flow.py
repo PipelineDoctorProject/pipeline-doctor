@@ -427,6 +427,45 @@ class RemediationFlowTests(unittest.TestCase):
                     target_column="label",
                 )
 
+    def test_collect_retraining_context_graceful_storage_exception(self):
+        from app.services.remediation.retraining_service import collect_retraining_context
+        incident, model, run = self._seed_incident(expected_features=["feature_a", "feature_b"])
+        
+        with patch("app.services.file_storage.exists", side_effect=RuntimeError("Storage connection failed")):
+            context = collect_retraining_context(self.db, run, model)
+            
+        self.assertFalse(context["cleaned_data_available"])
+        self.assertTrue(any("Storage connection failed" in warning for warning in context["readiness_warnings"]))
+
+    def test_derive_remediation_policy_fallback_to_failure_type(self):
+        from app.api.routes.incidents import _derive_remediation_policy
+        incident, _, _ = self._seed_incident(expected_features=["feature_a", "feature_b"])
+        incident.description = "Simple description string"
+        incident.failure_type = "data_drift"
+        
+        policy = _derive_remediation_policy(incident, rca_report=None, final_report=None)
+        
+        self.assertIsNotNone(policy)
+        self.assertEqual(policy["action_type"], "retrain_model")
+        self.assertTrue(policy["allowed_to_execute"])
+
+    def test_approve_retraining_fallback_to_failure_type(self):
+        incident, _, _ = self._seed_incident(expected_features=["feature_a", "feature_b"])
+        incident.description = "Simple description string"
+        incident.failure_type = "data_drift"
+        incident.severity = "high"
+        self.db.commit()
+
+        with patch("app.api.routes.remediation.run_remediation_task.delay", return_value=None):
+            response = approve_retraining_for_incident(
+                incident_id=incident.id,
+                target_column="label",
+                db=self.db,
+                current_user=self.admin_user,
+            )
+
+        self.assertEqual(response["status"], "queued")
+
     def _seed_incident(self, expected_features, dataframe=None, failure_types=None):
         model = MLModel(
             tenant_id=self.tenant.id,

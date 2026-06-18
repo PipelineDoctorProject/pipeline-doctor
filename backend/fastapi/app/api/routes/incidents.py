@@ -460,6 +460,9 @@ def _derive_remediation_policy(
     stored_remediation = _parse_remediation(rca_report)
     failure_types = _extract_failure_types(rca_report, final_report)
 
+    if not failure_types and incident.failure_type:
+        failure_types = [incident.failure_type]
+
     if not failure_types:
         return stored_remediation
 
