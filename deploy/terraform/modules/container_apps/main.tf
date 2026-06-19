@@ -32,11 +32,11 @@ locals {
   api_secret_names = toset(nonsensitive(keys(local.api_secret_environment_variables)))
   api_environment_variables = merge(
     {
-      DB_MAX_OVERFLOW      = "8"
-      DB_POOL_TIMEOUT      = "30"
-      FRONTEND_URL         = local.frontend_public_url
-      MLFLOW_TRACKING_URI  = local.mlflow_tracking_uri
-      APP_STORAGE_BACKEND  = "azure_blob"
+      DB_MAX_OVERFLOW             = "8"
+      DB_POOL_TIMEOUT             = "30"
+      FRONTEND_URL                = local.frontend_public_url
+      MLFLOW_TRACKING_URI         = local.mlflow_tracking_uri
+      APP_STORAGE_BACKEND         = "azure_blob"
       AZURE_APP_STORAGE_CONTAINER = azurerm_storage_container.app.name
     },
     var.api_environment_variables
