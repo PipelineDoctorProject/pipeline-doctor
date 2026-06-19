@@ -113,6 +113,8 @@ The system extracts:
 
 The parser also guards against under-reporting by comparing parsed severity with detected signal severity and keeping the worse one.
 
+If the `failure_types` key is missing from the parsed reasoning payload, the parser falls back to deterministic keyword-based text classification. This fallback classifies the run based on keyword patterns, but is skipped if `failure_types` is explicitly present (even if empty `[]`), ensuring that clean runs are not misclassified as having failures.
+
 ### Reporting
 
 The system creates the final RCA payload and persists it to the incident during the doctor task's reporting step. It also seeds the versioned production report that can later be updated by remediation events.

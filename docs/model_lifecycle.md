@@ -189,13 +189,14 @@ The deployment pipeline should:
 
 Because `champion` is an MLflow alias, rollback can be alias-based:
 
-1. Identify previous champion version.
-2. Reassign `champion` to the previous version.
-3. Update serving system to load the previous champion.
-4. Add an incident/remediation log note.
-5. Re-run monitoring on the rollback batch.
+1. Open the **Connected ML Models** page in the OpsSight UI.
+2. Click the **View** button next to the model.
+3. In the Model Detail Modal, browse all registered versions fetched dynamically from the MLflow tracking registry.
+4. Locate the desired fallback version and click **Promote to Champion**.
+5. The system shifts the `@champion` alias in the MLflow registry and updates the active model version mapping in the local/Supabase database.
+6. The serving/monitoring runtime automatically routes traffic to this fallback champion.
 
-OpsSight should eventually expose rollback as an admin-only operation, but manual MLflow alias rollback is acceptable in local development.
+Manual alias re-assignment directly via the MLflow UI is also supported as a fallback option.
 
 ---
 

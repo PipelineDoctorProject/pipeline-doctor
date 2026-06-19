@@ -311,6 +311,25 @@ Typical steps:
 
 ---
 
+## Manual Model Version Promotion and Rollback
+
+In addition to retraining-driven candidate staging and deployment, OpsSight supports **Manual Model Version Rollbacks and Promotions** directly from the UI.
+
+### Overview
+
+From the **Connected ML Models** dashboard, administrators and MLOps engineers can view detailed information for any registered model by clicking the **View** button. This opens a modal that:
+1. Queries the model's MLflow tracking server for all registered versions.
+2. Displays the stage, active aliases (like `@champion`, `@staging`), and the original MLflow run ID of each version.
+3. Enables manual rollback or promotion by selecting a version and clicking **Promote to Champion**.
+
+### API Behavior
+* **Get Versions (`POST /ml-models/versions`)**: Retrieves version-level aliases using `getattr(version, "aliases", [])` from MLflow.
+* **Set Champion Alias (`POST /ml-models/{model_id}/set-alias`)**:
+  1. Invokes MLflow `set_registered_model_alias` to assign the `@champion` alias to the selected version.
+  2. Updates the OpsSight database record (`MLModel.version`, `MLModel.mlflow_run_id`, and `MLModel.mlflow_alias`) to point to the promoted version.
+
+---
+
 ## Related Docs
 
 - [model_lifecycle.md](./model_lifecycle.md)
