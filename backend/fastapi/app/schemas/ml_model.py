@@ -31,3 +31,10 @@ class DiscoverModelsRequest(BaseModel):
 class ModelVersionsRequest(BaseModel):
     tracking_uri: str
     model_name: str
+
+
+class SetModelAliasRequest(BaseModel):
+    version: str
+    run_id: str
+    alias: str = "champion"
+
