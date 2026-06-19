@@ -20,9 +20,6 @@ locals {
   external_redis_url                   = trimspace(try(var.api_secret_environment_variables["REDIS_URL"], ""))
   use_managed_redis                    = local.external_redis_url == ""
   managed_api_secret_environment_variables = {
-    MLFLOW_TRACKING_URI                 = local.mlflow_tracking_uri
-    APP_STORAGE_BACKEND                 = "azure_blob"
-    AZURE_APP_STORAGE_CONTAINER         = azurerm_storage_container.app.name
     AZURE_APP_STORAGE_CONNECTION_STRING = azurerm_storage_account.app.primary_connection_string
   }
   api_secret_environment_variables = merge(
@@ -35,9 +32,12 @@ locals {
   api_secret_names = toset(nonsensitive(keys(local.api_secret_environment_variables)))
   api_environment_variables = merge(
     {
-      DB_MAX_OVERFLOW = "8"
-      DB_POOL_TIMEOUT = "30"
-      FRONTEND_URL    = local.frontend_public_url
+      DB_MAX_OVERFLOW      = "8"
+      DB_POOL_TIMEOUT      = "30"
+      FRONTEND_URL         = local.frontend_public_url
+      MLFLOW_TRACKING_URI  = local.mlflow_tracking_uri
+      APP_STORAGE_BACKEND  = "azure_blob"
+      AZURE_APP_STORAGE_CONTAINER = azurerm_storage_container.app.name
     },
     var.api_environment_variables
   )
