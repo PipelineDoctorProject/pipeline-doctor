@@ -21,6 +21,7 @@ locals {
   use_managed_redis                    = local.external_redis_url == ""
   managed_api_secret_environment_variables = {
     AZURE_APP_STORAGE_CONNECTION_STRING = azurerm_storage_account.app.primary_connection_string
+    AZURE_STORAGE_CONNECTION_STRING     = azurerm_storage_account.mlflow.primary_connection_string
   }
   api_secret_environment_variables = merge(
     local.use_managed_redis ? {
