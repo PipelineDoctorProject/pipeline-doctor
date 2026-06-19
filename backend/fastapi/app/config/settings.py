@@ -68,6 +68,7 @@ MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 LOCAL_MLFLOW_URIS = {
     "http://127.0.0.1:5000",
     "http://localhost:5000",
+    "http://mlflow:5000",
 }
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 SLACK_CLIENT_ID = os.getenv("SLACK_CLIENT_ID")

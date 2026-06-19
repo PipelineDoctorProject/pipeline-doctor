@@ -194,7 +194,7 @@ def discover_models(
     try:
 
         client = MlflowClient(
-            tracking_uri=data.tracking_uri
+            tracking_uri=resolve_mlflow_tracking_uri(data.tracking_uri)
         )
 
         registered_models = list(
@@ -234,7 +234,7 @@ def get_model_versions(
     try:
 
         client = MlflowClient(
-            tracking_uri=data.tracking_uri
+            tracking_uri=resolve_mlflow_tracking_uri(data.tracking_uri)
         )
 
         versions = client.search_model_versions(

@@ -181,6 +181,7 @@ Recommended production rule:
 
 - `Stage candidate` updates only `staging`.
 - `Confirm deployment` updates `champion`.
+- Manual rollback or promotion in the UI shifts the `champion` alias directly to the selected version.
 
 ---
 
