@@ -141,9 +141,21 @@ def get_auth_cookie_settings() -> dict[str, object]:
 def resolve_mlflow_tracking_uri(configured_uri: str | None = None) -> str:
     # Existing DB rows often store localhost, which is wrong from inside Docker.
     if configured_uri and configured_uri not in LOCAL_MLFLOW_URIS:
-        return configured_uri
+        res = configured_uri
+    else:
+        if configured_uri in LOCAL_MLFLOW_URIS and MLFLOW_TRACKING_URI not in LOCAL_MLFLOW_URIS:
+            res = MLFLOW_TRACKING_URI
+        else:
+            res = configured_uri or MLFLOW_TRACKING_URI
 
-    if configured_uri in LOCAL_MLFLOW_URIS and MLFLOW_TRACKING_URI not in LOCAL_MLFLOW_URIS:
-        return MLFLOW_TRACKING_URI
+    # Internal routing optimization for Azure Container Apps
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(res)
+        if parsed.hostname and parsed.hostname.endswith(".azurecontainerapps.io"):
+            app_name = parsed.hostname.split(".")[0]
+            return f"http://{app_name}"
+    except Exception:
+        pass
 
-    return configured_uri or MLFLOW_TRACKING_URI
+    return res
