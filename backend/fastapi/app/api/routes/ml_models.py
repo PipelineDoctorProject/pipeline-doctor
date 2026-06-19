@@ -232,7 +232,6 @@ def get_model_versions(
     from mlflow.tracking import MlflowClient
 
     try:
-
         client = MlflowClient(
             tracking_uri=resolve_mlflow_tracking_uri(data.tracking_uri)
         )
@@ -241,15 +240,27 @@ def get_model_versions(
             f"name='{data.model_name}'"
         )
 
-        version_data = []
+        # Retrieve registered model to compile version-to-alias mapping
+        version_to_aliases = {}
+        try:
+            rm = client.get_registered_model(data.model_name)
+            if rm and hasattr(rm, "aliases") and rm.aliases:
+                for alias_name, ver in rm.aliases.items():
+                    version_to_aliases.setdefault(str(ver), []).append(alias_name)
+        except Exception:
+            pass
 
+        version_data = []
         for version in versions:
+            obj_aliases = getattr(version, "aliases", []) or []
+            v_aliases = version_to_aliases.get(str(version.version), [])
+            combined_aliases = list(set(list(obj_aliases) + v_aliases))
 
             version_data.append({
                 "version": version.version,
                 "stage": version.current_stage,
                 "run_id": version.run_id,
-                "aliases": getattr(version, "aliases", [])
+                "aliases": combined_aliases
             })
 
         return {
@@ -257,11 +268,11 @@ def get_model_versions(
         }
 
     except Exception as e:
-
         raise HTTPException(
             status_code=400,
             detail=str(e)
         )
+
 
 
 # =====================================================
