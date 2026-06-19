@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas scikit-learn mlflow azure-storage-blob
+          pip install pandas==2.3.3 scikit-learn==1.8.0 mlflow==3.11.1 azure-storage-blob==12.27.1
 
       - name: Azure login
         uses: azure/login@v2
