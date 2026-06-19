@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { getModels } from "../../store/modelStore";
+import ModelDetailModal from "./ModelDetailModal";
 
 const RegisterModelModal = lazy(() => import("./ModelRegister"));
 
@@ -60,6 +61,7 @@ function getRegistryStatus(model) {
 
 export default function ModelsPage() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(null);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -304,7 +306,10 @@ export default function ModelsPage() {
                         <RegistryIcon size={15} />
                         {registry.label}
                       </div>
-                      <button className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
+                      <button
+                        onClick={() => setSelectedModel(model)}
+                        className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                      >
                         <Activity size={14} />
                         View
                       </button>
@@ -334,6 +339,16 @@ export default function ModelsPage() {
             }}
           />
         </Suspense>
+      )}
+
+      {selectedModel && (
+        <ModelDetailModal
+          model={selectedModel}
+          onClose={() => {
+            setSelectedModel(null);
+            loadModels();
+          }}
+        />
       )}
     </>
   );
