@@ -297,7 +297,7 @@ variable "airflow_scheduler_memory" {
 variable "mlflow_external_enabled" {
   description = "Whether MLflow has a public ingress endpoint."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "mlflow_min_replicas" {
