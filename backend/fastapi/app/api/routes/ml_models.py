@@ -21,8 +21,10 @@ from app.schemas.ml_model import (
     MLModelCreate,
     MLModelResponse,
     DiscoverModelsRequest,
-    ModelVersionsRequest
+    ModelVersionsRequest,
+    SetModelAliasRequest
 )
+from app.services.access_control import require_accessible_model
 
 router = APIRouter(
     prefix="/ml-models",
@@ -246,7 +248,8 @@ def get_model_versions(
             version_data.append({
                 "version": version.version,
                 "stage": version.current_stage,
-                "run_id": version.run_id
+                "run_id": version.run_id,
+                "aliases": getattr(version, "aliases", [])
             })
 
         return {
@@ -258,4 +261,50 @@ def get_model_versions(
         raise HTTPException(
             status_code=400,
             detail=str(e)
+        )
+
+
+# =====================================================
+# UPDATE MODEL ALIAS / ROLLBACK
+# =====================================================
+@router.post("/{model_id}/set-alias")
+def set_model_alias(
+    model_id: int,
+    data: SetModelAliasRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user)
+):
+    from mlflow.tracking import MlflowClient
+
+    db_model = require_accessible_model(db, model_id, current_user.tenant_id)
+
+    if not db_model.mlflow_model_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Model is not configured for MLflow registry."
+        )
+
+    try:
+        client = MlflowClient(
+            tracking_uri=resolve_mlflow_tracking_uri(db_model.mlflow_tracking_uri)
+        )
+        client.set_registered_model_alias(
+            name=db_model.mlflow_model_name,
+            alias=data.alias,
+            version=str(data.version)
+        )
+
+        db_model.version = str(data.version)
+        db_model.mlflow_run_id = data.run_id
+        db_model.mlflow_alias = data.alias
+        db.commit()
+        db.refresh(db_model)
+
+        return _serialize_model(db_model, include_live_registry_status=True)
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to update model alias: {e}"
         )

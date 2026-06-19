@@ -102,3 +102,25 @@ export const getModels = async () => {
     );
   }
 };
+
+
+// =====================================================
+// UPDATE MODEL ALIAS / ROLLBACK
+// =====================================================
+export const updateModelAlias = async (
+  modelId,
+  payload
+) => {
+  try {
+    const response = await api.post(
+      `/ml-models/${modelId}/set-alias`,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data ||
+      error
+    );
+  }
+};
