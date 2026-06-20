@@ -83,10 +83,17 @@ export default function ModelDetailModal({ model, onClose }) {
       await fetchVersions();
     } catch (err) {
       console.error(err);
-      const detail =
+      // 503 means MLflow is cold-starting — give a helpful, actionable message
+      const rawDetail =
         err?.detail ||
         err?.message ||
-        (typeof err === "string" ? err : "Failed to promote version to champion. The MLflow registry may be temporarily unreachable.");
+        (typeof err === "string" ? err : "");
+      const is503 =
+        rawDetail?.toLowerCase?.().includes("not reachable") ||
+        rawDetail?.toLowerCase?.().includes("starting up");
+      const detail = is503
+        ? "MLflow registry is starting up after an idle period. Please wait ~30 seconds and try again — it will be ready."
+        : rawDetail || "Failed to promote version to champion. The MLflow registry may be temporarily unreachable.";
       setError(detail);
     } finally {
       setPromotingVersion(null);
