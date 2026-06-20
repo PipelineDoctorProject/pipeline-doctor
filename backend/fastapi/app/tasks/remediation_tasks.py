@@ -65,10 +65,14 @@ def run_remediation_task(
         if not model_record:
             raise ValueError(f"Model {pipeline_run.model_id} was not found.")
 
+        failure_types = _extract_failure_types(incident.description)
+        if not failure_types and incident.failure_type:
+            failure_types = [incident.failure_type]
+
         policy = decide_remediation(
             {
                 "severity": incident.severity,
-                "failure_types": _extract_failure_types(incident.description),
+                "failure_types": failure_types,
             }
         )
         if not policy.get("allowed_to_execute") or policy.get("manual_only"):
@@ -256,7 +260,21 @@ def _extract_failure_types(description: str) -> list[str]:
     if not isinstance(payload, dict):
         return []
 
-    return payload.get("failure_types") or []
+    candidates = [
+        payload,
+        payload.get("report"),
+        payload.get("final_report"),
+    ]
+
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+
+        failure_types = candidate.get("failure_types")
+        if isinstance(failure_types, list):
+            return [str(item) for item in failure_types if item]
+
+    return []
 
 
 def _is_cancel_requested(db, remediation_run_id: int) -> bool:
