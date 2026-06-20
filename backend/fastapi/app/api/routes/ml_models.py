@@ -256,11 +256,23 @@ def get_model_versions(
             v_aliases = version_to_aliases.get(str(version.version), [])
             combined_aliases = list(set(list(obj_aliases) + v_aliases))
 
+            artifacts_exist = True
+            if version.run_id:
+                try:
+                    artifacts = client.list_artifacts(version.run_id)
+                    if not artifacts:
+                        artifacts_exist = False
+                except Exception:
+                    artifacts_exist = False
+            else:
+                artifacts_exist = False
+
             version_data.append({
                 "version": version.version,
                 "stage": version.current_stage,
                 "run_id": version.run_id,
-                "aliases": combined_aliases
+                "aliases": combined_aliases,
+                "artifacts_exist": artifacts_exist
             })
 
         return {
