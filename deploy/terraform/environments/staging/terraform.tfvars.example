@@ -14,6 +14,7 @@ mlflow_storage_account_name     = "opssightstagingmlflow"
 mlflow_storage_container_name   = "mlflow"
 app_storage_account_name        = "opssightstagingapp"
 app_storage_container_name      = "app-artifacts"
+mlflow_min_replicas             = 1
 
 api_environment_variables = {
   APP_ENV = "staging"
