@@ -258,64 +258,64 @@ def get_model_versions(
 
             artifacts_exist = True
             try:
-                # Get the download URI for this model version
-                download_uri = client.get_model_version_download_uri(data.model_name, str(version.version))
-                
-                # Resolve runs:/ schema to its absolute storage URI
-                resolved_uri = download_uri
-                if download_uri.startswith("runs:/") and version.run_id:
-                    try:
-                        run = client.get_run(version.run_id)
-                        base_uri = run.info.artifact_uri.rstrip("/")
-                        parts = download_uri.split("/")
-                        path = "/".join(parts[2:])
-                        if path:
-                            resolved_uri = f"{base_uri}/{path}"
+                # Determine the version source to pick the right check strategy.
+                # - "models:/m-xxx" sources are registry model copies → blobs live in Azure
+                #   under the models/ prefix and can be checked directly.
+                # - "runs:/RUN_ID/..." sources are run-artifact references. The Celery
+                #   retraining worker logs artifacts to the container's local mlartifacts
+                #   directory, not to Azure Blob Storage. Listing blobs for these will
+                #   always return 0, causing a false "Artifacts Missing" warning.
+                #   Instead, trust that MLflow's successful registration means artifacts exist.
+                version_source = getattr(version, "source", "") or ""
+
+                if version_source.startswith("runs:/"):
+                    # Run-based registration: trust the MLflow registration status.
+                    # If MLflow accepted the version, the model file exists on the server.
+                    version_status = str(getattr(version, "status", "") or "").upper()
+                    artifacts_exist = version_status != "FAILED_REGISTRATION"
+                else:
+                    # Registry model copy (models:/m-xxx or wasbs:// direct source):
+                    # verify the blobs are physically present in Azure Storage.
+                    download_uri = client.get_model_version_download_uri(data.model_name, str(version.version))
+                    resolved_uri = download_uri
+
+                    if resolved_uri.startswith("wasbs://") or resolved_uri.startswith("wasb://"):
+                        import os
+                        from urllib.parse import urlparse
+                        from azure.storage.blob import BlobServiceClient
+
+                        connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+                        if connection_string:
+                            parsed = urlparse(resolved_uri)
+                            container = parsed.username or parsed.netloc.split("@")[0]
+                            path_prefix = parsed.path.lstrip("/")
+
+                            service_client = BlobServiceClient.from_connection_string(connection_string)
+                            container_client = service_client.get_container_client(container)
+
+                            blobs = container_client.list_blobs(name_starts_with=path_prefix)
+                            has_blobs = False
+                            for _ in blobs:
+                                has_blobs = True
+                                break
+                            if not has_blobs:
+                                artifacts_exist = False
                         else:
-                            resolved_uri = base_uri
-                    except Exception as run_err:
-                        import logging
-                        logging.getLogger(__name__).warning(f"Failed to resolve run artifact URI for version {version.version}: {run_err}")
-                
-                # Check storage existence directly
-                if resolved_uri.startswith("wasbs://") or resolved_uri.startswith("wasb://"):
-                    import os
-                    from urllib.parse import urlparse
-                    from azure.storage.blob import BlobServiceClient
-                    
-                    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-                    if connection_string:
-                        parsed = urlparse(resolved_uri)
-                        container = parsed.username or parsed.netloc.split("@")[0]
-                        path_prefix = parsed.path.lstrip("/")
-                        
-                        service_client = BlobServiceClient.from_connection_string(connection_string)
-                        container_client = service_client.get_container_client(container)
-                        
-                        # Check if any blobs exist under this prefix
-                        blobs = container_client.list_blobs(name_starts_with=path_prefix)
-                        has_blobs = False
-                        for _ in blobs:
-                            has_blobs = True
-                            break
-                        if not has_blobs:
-                            artifacts_exist = False
+                            # No connection string — fall back to MLflow artifact listing
+                            if version.run_id:
+                                artifacts = client.list_artifacts(version.run_id)
+                                if not artifacts:
+                                    artifacts_exist = False
+                            else:
+                                artifacts_exist = False
                     else:
-                        # Fallback for local development if connection string is missing
+                        # Non-Azure URI (file:// or local dev path)
                         if version.run_id:
                             artifacts = client.list_artifacts(version.run_id)
                             if not artifacts:
                                 artifacts_exist = False
                         else:
                             artifacts_exist = False
-                else:
-                    # Non-Azure URI (e.g. file:// or local path in development)
-                    if version.run_id:
-                        artifacts = client.list_artifacts(version.run_id)
-                        if not artifacts:
-                            artifacts_exist = False
-                    else:
-                        artifacts_exist = False
             except Exception as e:
                 import logging
                 logging.getLogger(__name__).exception(f"Artifact check failed for version {version.version}: {e}")
