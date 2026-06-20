@@ -351,8 +351,11 @@ def set_model_alias(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
+    import os
+    import logging
     from mlflow.tracking import MlflowClient
 
+    logger = logging.getLogger(__name__)
     db_model = require_accessible_model(db, model_id, current_user.tenant_id)
 
     if not db_model.mlflow_model_name:
@@ -362,9 +365,16 @@ def set_model_alias(
         )
 
     try:
-        client = MlflowClient(
-            tracking_uri=resolve_mlflow_tracking_uri(db_model.mlflow_tracking_uri)
+        # Set a request timeout so the call doesn't hang indefinitely
+        os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "30")
+        os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "2")
+
+        tracking_uri = resolve_mlflow_tracking_uri(db_model.mlflow_tracking_uri)
+        logger.info(
+            f"Setting alias '{data.alias}' to version {data.version} "
+            f"for model '{db_model.mlflow_model_name}' via {tracking_uri}"
         )
+        client = MlflowClient(tracking_uri=tracking_uri)
         client.set_registered_model_alias(
             name=db_model.mlflow_model_name,
             alias=data.alias,
@@ -381,7 +391,10 @@ def set_model_alias(
 
     except Exception as e:
         db.rollback()
+        error_msg = str(e)
+        logger.exception(f"set-alias failed for model {model_id}, version {data.version}: {error_msg}")
         raise HTTPException(
             status_code=400,
-            detail=f"Failed to update model alias: {e}"
+            detail=f"Failed to update model alias: {error_msg}"
         )
+
