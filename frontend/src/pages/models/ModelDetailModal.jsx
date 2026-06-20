@@ -63,7 +63,11 @@ export default function ModelDetailModal({ model, onClose }) {
       await fetchVersions();
     } catch (err) {
       console.error(err);
-      setError(err?.detail || "Failed to promote version to champion.");
+      const detail =
+        err?.detail ||
+        err?.message ||
+        (typeof err === "string" ? err : "Failed to promote version to champion. The MLflow registry may be temporarily unreachable.");
+      setError(detail);
     } finally {
       setPromotingVersion(null);
     }
