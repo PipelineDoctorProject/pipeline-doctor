@@ -1,3 +1,7 @@
+import os
+import logging
+import time
+
 from fastapi import (
     APIRouter,
     HTTPException,
@@ -26,10 +30,53 @@ from app.schemas.ml_model import (
 )
 from app.services.access_control import require_accessible_model
 
+# ── Apply MLflow HTTP timeouts at module load time so they are in effect for
+#    every MlflowClient created anywhere in this process.  setdefault means a
+#    caller-supplied env var still wins, but the hard-coded defaults prevent
+#    requests from hanging when Azure Container Apps cold-starts.
+os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "20")
+os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "1")
+os.environ.setdefault("MLFLOW_HTTP_REQUEST_BACKOFF_FACTOR", "1")
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/ml-models",
     tags=["ML Models"]
 )
+
+
+def _get_mlflow_client(tracking_uri: str):
+    """
+    Return an MlflowClient configured with short timeouts and a single retry.
+    The env-var approach is the canonical MLflow way to set HTTP options because
+    the Python client reads them at import time and per-request.
+    """
+    from mlflow.tracking import MlflowClient
+    return MlflowClient(tracking_uri=tracking_uri)
+
+
+def _wake_mlflow(tracking_uri: str, attempts: int = 3, delay: float = 5.0) -> bool:
+    """
+    Attempt a cheap HEAD / GET request to wake the MLflow container before
+    running any heavy API calls.  Returns True once the server responds.
+    """
+    import urllib.request
+    import urllib.error
+    import socket
+
+    health_url = tracking_uri.rstrip("/") + "/health"
+    for i in range(attempts):
+        try:
+            req = urllib.request.Request(health_url, method="GET")
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                if resp.status < 500:
+                    return True
+        except (urllib.error.URLError, socket.timeout, OSError):
+            if i < attempts - 1:
+                logger.info(f"MLflow not yet ready (attempt {i+1}/{attempts}), waiting {delay}s…")
+                time.sleep(delay)
+    return False
 
 
 def _default_registry_status(model: MLModel):
@@ -46,15 +93,12 @@ def _default_registry_status(model: MLModel):
 
 
 def _mlflow_registry_status(model: MLModel):
-    from mlflow.tracking import MlflowClient
-
     if not model.mlflow_model_name:
         return _default_registry_status(model)
 
     try:
-        client = MlflowClient(
-            tracking_uri=resolve_mlflow_tracking_uri(model.mlflow_tracking_uri)
-        )
+        tracking_uri = resolve_mlflow_tracking_uri(model.mlflow_tracking_uri)
+        client = _get_mlflow_client(tracking_uri)
 
         if model.version:
             version = client.get_model_version(
@@ -189,13 +233,9 @@ def discover_models(
     data: DiscoverModelsRequest,
     current_user=Depends(require_tenant_user)
 ):
-    from mlflow.tracking import MlflowClient
-
     try:
-
-        client = MlflowClient(
-            tracking_uri=resolve_mlflow_tracking_uri(data.tracking_uri)
-        )
+        tracking_uri = resolve_mlflow_tracking_uri(data.tracking_uri)
+        client = _get_mlflow_client(tracking_uri)
 
         registered_models = list(
             client.search_registered_models()
@@ -229,12 +269,9 @@ def get_model_versions(
     data: ModelVersionsRequest,
     current_user=Depends(require_tenant_user)
 ):
-    from mlflow.tracking import MlflowClient
-
     try:
-        client = MlflowClient(
-            tracking_uri=resolve_mlflow_tracking_uri(data.tracking_uri)
-        )
+        tracking_uri = resolve_mlflow_tracking_uri(data.tracking_uri)
+        client = _get_mlflow_client(tracking_uri)
 
         versions = client.search_model_versions(
             f"name='{data.model_name}'"
@@ -280,7 +317,6 @@ def get_model_versions(
                     resolved_uri = download_uri
 
                     if resolved_uri.startswith("wasbs://") or resolved_uri.startswith("wasb://"):
-                        import os
                         from urllib.parse import urlparse
                         from azure.storage.blob import BlobServiceClient
 
@@ -317,8 +353,7 @@ def get_model_versions(
                         else:
                             artifacts_exist = False
             except Exception as e:
-                import logging
-                logging.getLogger(__name__).exception(f"Artifact check failed for version {version.version}: {e}")
+                logger.exception(f"Artifact check failed for version {version.version}: {e}")
                 artifacts_exist = False
 
             version_data.append({
@@ -351,11 +386,6 @@ def set_model_alias(
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
-    import os
-    import logging
-    from mlflow.tracking import MlflowClient
-
-    logger = logging.getLogger(__name__)
     db_model = require_accessible_model(db, model_id, current_user.tenant_id)
 
     if not db_model.mlflow_model_name:
@@ -364,17 +394,32 @@ def set_model_alias(
             detail="Model is not configured for MLflow registry."
         )
 
-    try:
-        # Set a request timeout so the call doesn't hang indefinitely
-        os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "30")
-        os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "2")
+    tracking_uri = resolve_mlflow_tracking_uri(db_model.mlflow_tracking_uri)
 
-        tracking_uri = resolve_mlflow_tracking_uri(db_model.mlflow_tracking_uri)
+    # Wake the MLflow container before making the alias call.
+    # This handles Azure Container Apps cold-start: the container may be sleeping
+    # after an idle period.  We warm it up with lightweight health-check requests
+    # before attempting the heavier set_registered_model_alias call.
+    logger.info(
+        f"Waking MLflow at {tracking_uri} before setting alias "
+        f"'{data.alias}' → version {data.version} for '{db_model.mlflow_model_name}'"
+    )
+    mlflow_ready = _wake_mlflow(tracking_uri)
+    if not mlflow_ready:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "MLflow registry is not reachable. The service may be starting up. "
+                "Please wait 30 seconds and try again."
+            )
+        )
+
+    try:
+        client = _get_mlflow_client(tracking_uri)
         logger.info(
             f"Setting alias '{data.alias}' to version {data.version} "
             f"for model '{db_model.mlflow_model_name}' via {tracking_uri}"
         )
-        client = MlflowClient(tracking_uri=tracking_uri)
         client.set_registered_model_alias(
             name=db_model.mlflow_model_name,
             alias=data.alias,
@@ -389,6 +434,8 @@ def set_model_alias(
 
         return _serialize_model(db_model, include_live_registry_status=True)
 
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         error_msg = str(e)
@@ -397,4 +444,3 @@ def set_model_alias(
             status_code=400,
             detail=f"Failed to update model alias: {error_msg}"
         )
-
