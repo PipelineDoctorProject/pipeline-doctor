@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   AlertCircle,
   Award,
@@ -7,6 +7,7 @@ import {
   Database,
   GitBranch,
   Loader2,
+  RefreshCw,
   ServerCog,
   X,
 } from "lucide-react";
@@ -16,19 +17,21 @@ export default function ModelDetailModal({ model, onClose }) {
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retrying, setRetrying] = useState(false);
   const [promotingVersion, setPromotingVersion] = useState(null);
   const [actionSuccess, setActionSuccess] = useState("");
+  const retryCountRef = useRef(0);
 
   const trackingUri = model.mlflow_tracking_uri;
   const modelName = model.mlflow_model_name;
 
-  const fetchVersions = useCallback(async () => {
+  const fetchVersions = useCallback(async ({ isAutoRetry = false } = {}) => {
     if (!modelName) {
       setLoading(false);
       return;
     }
     try {
-      setLoading(true);
+      if (!isAutoRetry) setLoading(true);
       setError("");
       const response = await getModelVersions(trackingUri, modelName);
       // Sort versions descending by version number
@@ -36,11 +39,28 @@ export default function ModelDetailModal({ model, onClose }) {
         return Number(b.version) - Number(a.version);
       });
       setVersions(sorted);
+      retryCountRef.current = 0;
     } catch (err) {
       console.error(err);
-      setError(err?.detail || "Failed to fetch model versions from registry.");
+      const errMsg =
+        err?.detail ||
+        err?.message ||
+        "Failed to fetch model versions from registry.";
+
+      // Auto-retry up to 2 times (MLflow container may be cold-starting)
+      if (retryCountRef.current < 2) {
+        retryCountRef.current += 1;
+        setRetrying(true);
+        setTimeout(() => {
+          setRetrying(false);
+          fetchVersions({ isAutoRetry: true });
+        }, 3000);
+      } else {
+        setError(errMsg);
+        retryCountRef.current = 0;
+      }
     } finally {
-      setLoading(false);
+      if (!isAutoRetry) setLoading(false);
     }
   }, [modelName, trackingUri]);
 
@@ -115,13 +135,29 @@ export default function ModelDetailModal({ model, onClose }) {
           
           {/* Left panel: Version History */}
           <div className="px-6 py-6 overflow-y-auto max-h-[60vh] min-h-[350px]">
-            {error && (
+            {(error || retrying) && (
               <div className="mb-5 flex items-start gap-3 rounded-md border border-red-200 bg-red-50 p-4 text-[13px] text-red-700">
                 <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold">Registry Error</h4>
-                  <p className="mt-1 leading-5">{error}</p>
+                <div className="flex-1">
+                  <h4 className="font-semibold">
+                    {retrying ? "Registry Unreachable — Retrying..." : "Registry Error"}
+                  </h4>
+                  <p className="mt-1 leading-5">
+                    {retrying
+                      ? "The MLflow registry may be starting up. Retrying automatically..."
+                      : error}
+                  </p>
                 </div>
+                {retrying ? (
+                  <Loader2 size={16} className="animate-spin shrink-0 mt-0.5" />
+                ) : (
+                  <button
+                    onClick={() => { retryCountRef.current = 0; fetchVersions(); }}
+                    className="shrink-0 flex items-center gap-1 rounded border border-red-300 bg-red-100 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-200 transition"
+                  >
+                    <RefreshCw size={11} /> Retry
+                  </button>
+                )}
               </div>
             )}
 
