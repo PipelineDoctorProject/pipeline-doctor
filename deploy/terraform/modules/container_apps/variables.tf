@@ -301,9 +301,9 @@ variable "mlflow_external_enabled" {
 }
 
 variable "mlflow_min_replicas" {
-  description = "Minimum MLflow replicas."
+  description = "Minimum MLflow replicas. Keep at 1 to avoid cold-start timeouts."
   type        = number
-  default     = 0
+  default     = 1
 }
 
 variable "mlflow_max_replicas" {
