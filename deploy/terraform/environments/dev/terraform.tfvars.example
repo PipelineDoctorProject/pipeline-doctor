@@ -15,6 +15,7 @@ mlflow_storage_container_name   = "mlflow"
 app_storage_account_name        = "opssightdevapp"
 app_storage_container_name      = "app-artifacts"
 mlflow_tracking_uri             = "https://opssight-mlflow-dev.whitepond-1da7645f.centralus.azurecontainerapps.io"
+mlflow_min_replicas             = 1
 
 api_environment_variables = {
   APP_ENV = "development"
