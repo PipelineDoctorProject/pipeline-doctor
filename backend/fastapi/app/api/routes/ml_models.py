@@ -257,14 +257,68 @@ def get_model_versions(
             combined_aliases = list(set(list(obj_aliases) + v_aliases))
 
             artifacts_exist = True
-            if version.run_id:
-                try:
-                    artifacts = client.list_artifacts(version.run_id)
-                    if not artifacts:
+            try:
+                # Get the download URI for this model version
+                download_uri = client.get_model_version_download_uri(data.model_name, str(version.version))
+                
+                # Resolve runs:/ schema to its absolute storage URI
+                resolved_uri = download_uri
+                if download_uri.startswith("runs:/") and version.run_id:
+                    try:
+                        run = client.get_run(version.run_id)
+                        base_uri = run.info.artifact_uri.rstrip("/")
+                        parts = download_uri.split("/")
+                        path = "/".join(parts[2:])
+                        if path:
+                            resolved_uri = f"{base_uri}/{path}"
+                        else:
+                            resolved_uri = base_uri
+                    except Exception as run_err:
+                        import logging
+                        logging.getLogger(__name__).warning(f"Failed to resolve run artifact URI for version {version.version}: {run_err}")
+                
+                # Check storage existence directly
+                if resolved_uri.startswith("wasbs://") or resolved_uri.startswith("wasb://"):
+                    import os
+                    from urllib.parse import urlparse
+                    from azure.storage.blob import BlobServiceClient
+                    
+                    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+                    if connection_string:
+                        parsed = urlparse(resolved_uri)
+                        container = parsed.username or parsed.netloc.split("@")[0]
+                        path_prefix = parsed.path.lstrip("/")
+                        
+                        service_client = BlobServiceClient.from_connection_string(connection_string)
+                        container_client = service_client.get_container_client(container)
+                        
+                        # Check if any blobs exist under this prefix
+                        blobs = container_client.list_blobs(name_starts_with=path_prefix)
+                        has_blobs = False
+                        for _ in blobs:
+                            has_blobs = True
+                            break
+                        if not has_blobs:
+                            artifacts_exist = False
+                    else:
+                        # Fallback for local development if connection string is missing
+                        if version.run_id:
+                            artifacts = client.list_artifacts(version.run_id)
+                            if not artifacts:
+                                artifacts_exist = False
+                        else:
+                            artifacts_exist = False
+                else:
+                    # Non-Azure URI (e.g. file:// or local path in development)
+                    if version.run_id:
+                        artifacts = client.list_artifacts(version.run_id)
+                        if not artifacts:
+                            artifacts_exist = False
+                    else:
                         artifacts_exist = False
-                except Exception:
-                    artifacts_exist = False
-            else:
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).exception(f"Artifact check failed for version {version.version}: {e}")
                 artifacts_exist = False
 
             version_data.append({
