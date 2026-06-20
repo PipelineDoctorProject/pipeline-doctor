@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 import jwt
 import requests
 from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -66,6 +67,90 @@ def _normalize_workspace_name(value: str | None) -> str:
     if not value:
         return ""
     return "".join(character.lower() for character in value if character.isalnum())
+
+
+def _tenant_slack_workspace_rows(db: Session, slack_team_id: str) -> list[dict[str, Any]]:
+    tenants = db.execute(
+        text(
+            """
+            SELECT id, schema_name
+            FROM public.tenants
+            WHERE schema_name IS NOT NULL
+            """
+        )
+    ).mappings().all()
+
+    rows: list[dict[str, Any]] = []
+    for tenant in tenants:
+        schema_name = tenant["schema_name"]
+        if not schema_name or not schema_name.isidentifier():
+            continue
+
+        table_name = f'"{schema_name}".slack_workspaces'
+        try:
+            table_exists = db.execute(
+                text("SELECT to_regclass(:table_name) IS NOT NULL"),
+                {"table_name": table_name},
+            ).scalar()
+            if not table_exists:
+                continue
+
+            workspace = db.execute(
+                text(
+                    f"""
+                    SELECT id, tenant_id, created_at
+                    FROM "{schema_name}".slack_workspaces
+                    WHERE slack_team_id = :slack_team_id
+                      AND is_active IS TRUE
+                    ORDER BY created_at ASC
+                    LIMIT 1
+                    """
+                ),
+                {"slack_team_id": slack_team_id},
+            ).mappings().first()
+        except SQLAlchemyError:
+            logger.exception("Failed to inspect Slack workspace ownership for tenant schema %s", schema_name)
+            continue
+
+        if workspace:
+            rows.append(
+                {
+                    "workspace_id": workspace["id"],
+                    "tenant_id": workspace["tenant_id"],
+                    "schema_name": schema_name,
+                    "created_at": workspace["created_at"],
+                }
+            )
+
+    return rows
+
+
+def _slack_workspace_owner_tenant_id(db: Session, slack_team_id: str) -> str | None:
+    rows = _tenant_slack_workspace_rows(db, slack_team_id)
+    if not rows:
+        return None
+
+    rows.sort(key=lambda row: (row["created_at"] or datetime.min, row["tenant_id"]))
+    return rows[0]["tenant_id"]
+
+
+def _ensure_slack_workspace_not_owned_elsewhere(
+    db: Session,
+    *,
+    slack_team_id: str,
+    tenant_id: str,
+) -> None:
+    owner_tenant_id = _slack_workspace_owner_tenant_id(db, slack_team_id)
+    if not owner_tenant_id or owner_tenant_id == tenant_id:
+        return
+
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "This Slack workspace is already connected to another OpsSight tenant. "
+            "Disconnect it there first, or choose the correct Slack workspace for this tenant."
+        ),
+    )
 
 
 def build_oauth_state(
@@ -220,6 +305,12 @@ def upsert_workspace_installation(
     if not slack_team_id or not bot_token:
         raise HTTPException(status_code=400, detail="Slack did not return a usable workspace installation.")
 
+    _ensure_slack_workspace_not_owned_elsewhere(
+        db,
+        slack_team_id=slack_team_id,
+        tenant_id=tenant_id,
+    )
+
     existing_workspace = (
         db.query(SlackWorkspace)
         .filter(SlackWorkspace.tenant_id == tenant_id)
@@ -255,7 +346,7 @@ def upsert_workspace_installation(
 
 
 def get_workspace_for_tenant(db: Session, tenant_id: str) -> SlackWorkspace | None:
-    return (
+    workspace = (
         db.query(SlackWorkspace)
         .filter(
             SlackWorkspace.tenant_id == tenant_id,
@@ -263,6 +354,19 @@ def get_workspace_for_tenant(db: Session, tenant_id: str) -> SlackWorkspace | No
         )
         .first()
     )
+    if not workspace:
+        return None
+
+    owner_tenant_id = _slack_workspace_owner_tenant_id(db, workspace.slack_team_id)
+    if owner_tenant_id and owner_tenant_id != tenant_id:
+        logger.warning(
+            "Ignoring Slack workspace %s for tenant %s because it is owned by another tenant",
+            workspace.slack_team_id,
+            tenant_id,
+        )
+        return None
+
+    return workspace
 
 
 def list_workspace_channels(workspace: SlackWorkspace) -> list[dict[str, Any]]:

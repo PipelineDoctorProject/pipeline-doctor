@@ -56,6 +56,7 @@ Common optional API runtime values:
 - `API_MAIL_FROM`
 - `API_SLACK_CLIENT_ID`
 - `API_SLACK_CLIENT_SECRET`
+- `API_SLACK_REDIRECT_URI`
 
 Keep Azure identifiers that are safe to print as environment variables. Keep credentials, client IDs, tenant IDs, subscription IDs, database URLs, Redis URLs, Slack secrets, JWT secrets, and SMTP secrets as GitHub Environment secrets or Azure Key Vault secrets.
 

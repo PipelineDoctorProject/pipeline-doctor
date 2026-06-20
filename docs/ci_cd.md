@@ -108,6 +108,7 @@ Optional API runtime values include:
 - `API_MAIL_FROM`
 - `API_SLACK_CLIENT_ID`
 - `API_SLACK_CLIENT_SECRET`
+- `API_SLACK_REDIRECT_URI`
 
 Do not store database passwords, Slack tokens, JWT secrets, or API keys in the repository. Use GitHub Environment secrets, Azure Key Vault, or Container App secrets.
 

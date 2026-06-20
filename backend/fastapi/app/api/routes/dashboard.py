@@ -15,7 +15,7 @@ from app.models.tenant import Tenant
 from app.models.ml_model import MLModel
 from app.models.pipeline_run import PipelineRun
 from app.models.incident import Incident
-from app.models.slack_workspace import SlackWorkspace
+from app.services.slack_service import get_workspace_for_tenant
 
 router = APIRouter(
     prefix="/dashboard",
@@ -57,11 +57,7 @@ def get_dashboard_context(
                 tenant.schema_name
                 if tenant else None
             ),
-            "slack_connected": bool(
-                db.query(SlackWorkspace)
-                .filter(SlackWorkspace.tenant_id == tenant.id)
-                .first()
-            ) if tenant else False,
+            "slack_connected": bool(get_workspace_for_tenant(db, tenant.id)) if tenant else False,
         },
 
         "stats": {

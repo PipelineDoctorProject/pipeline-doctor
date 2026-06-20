@@ -20,6 +20,8 @@ export default function SlackPage() {
   const [channelsLoading, setChannelsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [slackTeamId, setSlackTeamId] = useState("");
 
   const message = searchParams.get("message");
   const connected = searchParams.get("connected");
@@ -30,6 +32,8 @@ export default function SlackPage() {
       const data = await getSlackStatus();
       setStatus(data);
       setSelectedChannelId(data?.default_channel?.slack_channel_id || "");
+      setWorkspaceName((current) => current || data?.workspace?.slack_team_name || "");
+      setSlackTeamId((current) => current || data?.workspace?.slack_team_id || "");
     } catch (error) {
       toast.error(error?.response?.data?.detail || "Failed to load Slack status.");
     } finally {
@@ -79,9 +83,20 @@ export default function SlackPage() {
   );
 
   async function handleConnect() {
+    const expectedWorkspaceName = workspaceName.trim();
+    const expectedSlackTeamId = slackTeamId.trim();
+
+    if (!expectedWorkspaceName && !expectedSlackTeamId) {
+      toast.error("Enter the Slack workspace name or team ID before connecting.");
+      return;
+    }
+
     try {
       setConnecting(true);
-      const data = await getSlackConnectUrl();
+      const data = await getSlackConnectUrl({
+        workspaceName: expectedWorkspaceName || undefined,
+        slackTeamId: expectedSlackTeamId || undefined,
+      });
       window.location.href = data.connect_url;
     } catch (error) {
       toast.error(error?.response?.data?.detail || "Failed to start Slack connection.");
@@ -122,6 +137,34 @@ export default function SlackPage() {
       toast.error(error?.response?.data?.detail || "Failed to disconnect Slack.");
     }
   }
+
+  const workspaceHintFields = status?.can_manage ? (
+    <div className="grid gap-3 md:grid-cols-2">
+      <label className="block">
+        <span className="text-[12px] font-medium text-slate-500">Expected workspace name</span>
+        <input
+          value={workspaceName}
+          onChange={(event) => setWorkspaceName(event.target.value)}
+          placeholder="Target workspace"
+          autoComplete="off"
+          className="mt-1 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none transition focus:border-slate-400"
+        />
+      </label>
+      <label className="block">
+        <span className="text-[12px] font-medium text-slate-500">Slack team ID</span>
+        <input
+          value={slackTeamId}
+          onChange={(event) => setSlackTeamId(event.target.value)}
+          placeholder="T012ABCDEF"
+          autoComplete="off"
+          className="mt-1 h-11 w-full rounded-md border border-slate-200 bg-white px-3 font-mono text-[14px] text-slate-800 outline-none transition focus:border-slate-400"
+        />
+      </label>
+      <p className="text-[12px] leading-5 text-slate-500 md:col-span-2">
+        OpsSight will reject the connection if Slack returns a different workspace.
+      </p>
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-5">
@@ -187,6 +230,8 @@ export default function SlackPage() {
                     </p>
                   </div>
 
+                  {workspaceHintFields}
+
                   <div className="flex flex-wrap items-center gap-3">
                     <button
                       onClick={handleConnect}
@@ -230,22 +275,25 @@ export default function SlackPage() {
                   </div>
 
                   {status.can_manage ? (
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={handleConnect}
-                        disabled={connecting}
-                        className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        <Link2 size={15} />
-                        Reconnect Slack
-                      </button>
-                      <button
-                        onClick={handleDisconnect}
-                        className="inline-flex h-10 items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-4 text-[13px] font-semibold text-rose-700 transition hover:bg-rose-100"
-                      >
-                        <Unplug size={15} />
-                        Disconnect Slack
-                      </button>
+                    <div className="space-y-3">
+                      {workspaceHintFields}
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          onClick={handleConnect}
+                          disabled={connecting}
+                          className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          <Link2 size={15} />
+                          Reconnect Slack
+                        </button>
+                        <button
+                          onClick={handleDisconnect}
+                          className="inline-flex h-10 items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-4 text-[13px] font-semibold text-rose-700 transition hover:bg-rose-100"
+                        >
+                          <Unplug size={15} />
+                          Disconnect Slack
+                        </button>
+                      </div>
                     </div>
                   ) : null}
                 </div>

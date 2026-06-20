@@ -63,10 +63,13 @@ Example:
 The Slack page should show:
 
 - connected workspace status
+- expected workspace name or Slack team ID before OAuth starts
 - default channel
 - channel readiness
 - action-required warnings
 - disconnect/reconnect controls
+
+When admins manage multiple Slack workspaces, the expected workspace field prevents an accidental install into whichever Slack workspace is active in the browser. If the exact Slack team ID is known, pass it to Slack's `team` parameter so Slack can target that workspace during OAuth.
 
 The sidebar uses the Slack icon for the Slack integration page.
 
@@ -74,6 +77,8 @@ The sidebar uses the Slack icon for the Slack integration page.
 
 ## Production Expectations
 
+- Configure `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`, and `SLACK_REDIRECT_URI` in the backend runtime.
+- Register the same `SLACK_REDIRECT_URI` in the Slack app OAuth redirect URLs.
 - Store Slack tokens securely.
 - Never print full Slack payloads or tokens in terminal logs.
 - Send concise alerts with links back to OpsSight.

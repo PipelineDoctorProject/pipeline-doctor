@@ -31,6 +31,12 @@ param redisUrl string
 @description('Public frontend URL.')
 param frontendUrl string
 
+@description('Slack OAuth client ID.')
+param slackClientId string = ''
+
+@description('Slack OAuth redirect URI registered in the Slack app.')
+param slackRedirectUri string = ''
+
 @description('MLflow tracking URI reachable from backend containers.')
 param mlflowTrackingUri string
 
@@ -109,7 +115,9 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'REDIS_URL', secretRef: 'redis-url' }
             { name: 'FRONTEND_URL', value: frontendUrl }
             { name: 'MLFLOW_TRACKING_URI', value: mlflowTrackingUri }
+            { name: 'SLACK_CLIENT_ID', value: slackClientId }
             { name: 'SLACK_CLIENT_SECRET', secretRef: 'slack-client-secret' }
+            { name: 'SLACK_REDIRECT_URI', value: slackRedirectUri }
             { name: 'GROQ_API_KEY', secretRef: 'groq-api-key' }
           ]
           resources: {

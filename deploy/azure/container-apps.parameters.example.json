@@ -23,6 +23,15 @@
     "frontendUrl": {
       "value": "https://YOUR_FRONTEND_DOMAIN"
     },
+    "slackClientId": {
+      "value": "YOUR_SLACK_CLIENT_ID"
+    },
+    "slackRedirectUri": {
+      "value": "https://YOUR_API_DOMAIN/slack/callback"
+    },
+    "slackClientSecret": {
+      "value": "REPLACE_WITH_KEY_VAULT_OR_CI_SECRET"
+    },
     "mlflowTrackingUri": {
       "value": "https://YOUR_MLFLOW_DOMAIN"
     }

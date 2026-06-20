@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Query
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from app.db.session import get_db
 from app.config.settings import get_allowed_origins
 
 from app.api.routes import (
@@ -66,6 +68,19 @@ app.include_router(agent_trace.router)  # WS /ws/agent-trace/{run_id}
 app.include_router(remediation.router)
 app.include_router(slack.router)
 app.include_router(reports.router)
+
+
+@app.get("/")
+def root(
+    code: str | None = Query(default=None),
+    state: str | None = Query(default=None),
+    error: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    if code or state or error:
+        return slack.slack_callback(code=code, state=state, error=error, db=db)
+
+    return {"status": "ok"}
 
 
 
