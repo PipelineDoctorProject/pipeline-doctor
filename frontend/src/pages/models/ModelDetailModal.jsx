@@ -187,64 +187,72 @@ export default function ModelDetailModal({ model, onClose }) {
                                 {ver.run_id ? ver.run_id.slice(0, 12) + "..." : "-"}
                               </span>
                             </td>
-                            <td className="px-4 py-3">
-                              <div className="flex flex-wrap gap-1 items-center">
-                                {/* Aliases */}
-                                {(ver.aliases || []).map((alias) => {
-                                  const isAliasChamp = String(alias).toLowerCase() === "champion";
-                                  return (
-                                    <span
-                                      key={alias}
-                                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border ${
-                                        isAliasChamp
-                                          ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                          : "bg-blue-50 text-blue-700 border-blue-100"
-                                      }`}
-                                    >
-                                      {isAliasChamp && <Award size={10} />}
-                                      @{alias}
-                                    </span>
-                                  );
-                                })}
-
-                                {/* Stage */}
-                                {ver.stage && ver.stage !== "None" && ver.stage !== "none" && (
-                                  <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                                    {ver.stage}
-                                  </span>
-                                )}
-
-                                {(!ver.aliases || ver.aliases.length === 0) && (!ver.stage || ver.stage === "None" || ver.stage === "none") && (
-                                  <span className="text-[12px] text-slate-400 italic">No alias / inactive</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {isChamp ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-100 px-2.5 py-1 text-[12px] font-semibold text-emerald-800 border border-emerald-200">
-                                  <Check size={13} />
-                                  Active Champion
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={() => handlePromote(ver)}
-                                  disabled={promotingVersion !== null}
-                                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {promotingVersion === ver.version ? (
-                                    <>
-                                      <Loader2 size={13} className="animate-spin text-slate-400" />
-                                      Promoting...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Award size={13} className="text-slate-400" />
-                                      Promote to Champion
-                                    </>
-                                  )}
-                                </button>
-                              )}
-                            </td>
+                             <td className="px-4 py-3">
+                               <div className="flex flex-wrap gap-1 items-center">
+                                 {/* Aliases */}
+                                 {(ver.aliases || []).map((alias) => {
+                                   const isAliasChamp = String(alias).toLowerCase() === "champion";
+                                   return (
+                                     <span
+                                       key={alias}
+                                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border ${
+                                         isAliasChamp
+                                           ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                           : "bg-blue-50 text-blue-700 border-blue-100"
+                                       }`}
+                                     >
+                                       {isAliasChamp && <Award size={10} />}
+                                       @{alias}
+                                     </span>
+                                   );
+                                 })}
+ 
+                                 {/* Stage */}
+                                 {ver.stage && ver.stage !== "None" && ver.stage !== "none" && (
+                                   <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
+                                     {ver.stage}
+                                   </span>
+                                 )}
+ 
+                                 {ver.artifacts_exist === false && (
+                                   <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 border border-rose-100">
+                                     <AlertCircle size={10} className="text-rose-500" />
+                                     Artifacts Missing
+                                   </span>
+                                 )}
+ 
+                                 {(!ver.aliases || ver.aliases.length === 0) && (!ver.stage || ver.stage === "None" || ver.stage === "none") && ver.artifacts_exist !== false && (
+                                   <span className="text-[12px] text-slate-400 italic">No alias / inactive</span>
+                                 )}
+                               </div>
+                             </td>
+                             <td className="px-4 py-3 text-right">
+                               {isChamp ? (
+                                 <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-100 px-2.5 py-1 text-[12px] font-semibold text-emerald-800 border border-emerald-200">
+                                   <Check size={13} />
+                                   Active Champion
+                                 </span>
+                               ) : (
+                                 <button
+                                   onClick={() => handlePromote(ver)}
+                                   disabled={promotingVersion !== null || ver.artifacts_exist === false}
+                                   title={ver.artifacts_exist === false ? "Cannot promote version: model artifacts are missing in storage." : ""}
+                                   className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                 >
+                                   {promotingVersion === ver.version ? (
+                                     <>
+                                       <Loader2 size={13} className="animate-spin text-slate-400" />
+                                       Promoting...
+                                     </>
+                                   ) : (
+                                     <>
+                                       <Award size={13} className="text-slate-400" />
+                                       Promote to Champion
+                                     </>
+                                   )}
+                                 </button>
+                               )}
+                             </td>
                           </tr>
                         );
                       })}
