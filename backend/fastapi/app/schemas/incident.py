@@ -22,19 +22,19 @@ class RemediationSummary(BaseModel):
 
 
 class FinalReportSummary(BaseModel):
-    report_title: str
-    incident_summary: str
-    root_cause_summary: str
-    evidence_summary: str
+    report_title: Optional[str] = None
+    incident_summary: Optional[str] = None
+    root_cause_summary: Optional[str] = None
+    evidence_summary: Optional[str] = None
     recommended_action: Optional[str] = None
-    action_taken: str
-    manual_action_required: bool
-    report_status: str
-    severity: str
-    timeline_summary: str
-    action_type: str
-    action_mode: str
-    requires_approval: bool
+    action_taken: Optional[str] = None
+    manual_action_required: Optional[bool] = None
+    report_status: Optional[str] = None
+    severity: Optional[str] = None
+    timeline_summary: Optional[str] = None
+    action_type: Optional[str] = None
+    action_mode: Optional[str] = None
+    requires_approval: Optional[bool] = None
     failure_types: list[str] = []
 
 
