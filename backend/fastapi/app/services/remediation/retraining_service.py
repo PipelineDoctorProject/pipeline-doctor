@@ -566,6 +566,30 @@ def _resolve_source_model_uris(model_record: MLModel) -> list[str]:
         for artifact_path in settings.REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS:
             uris.append(f"runs:/{run_id}/{artifact_path}")
 
+    # Fallback to other registered model versions in MLflow if primary fails
+    if model_name:
+        try:
+            from mlflow.tracking import MlflowClient
+            tracking_uri = resolve_mlflow_tracking_uri(model_record.mlflow_tracking_uri)
+            client = MlflowClient(tracking_uri=tracking_uri)
+            versions = client.search_model_versions(f"name='{model_name}'")
+            # Sort descending by version number
+            sorted_versions = sorted(versions, key=lambda v: int(v.version), reverse=True)
+            for v in sorted_versions:
+                v_num = str(v.version)
+                v_run_id = str(v.run_id)
+                # Avoid duplicates
+                v_uri = f"models:/{model_name}/{v_num}"
+                if v_uri not in uris:
+                    uris.append(v_uri)
+                for artifact_path in settings.REMEDIATION_MLFLOW_RUN_ARTIFACT_PATHS:
+                    r_uri = f"runs:/{v_run_id}/{artifact_path}"
+                    if r_uri not in uris:
+                        uris.append(r_uri)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Remediation fallback model resolution failed: {e}")
+
     if uris:
         return uris
 
