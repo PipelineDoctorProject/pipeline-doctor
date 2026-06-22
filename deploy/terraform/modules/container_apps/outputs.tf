@@ -87,3 +87,8 @@ output "app_storage_container_name" {
   description = "Application artifact Blob container name."
   value       = azurerm_storage_container.app.name
 }
+
+output "grafana_container_app_url" {
+  description = "Public Grafana Container App URL. Only set when enable_monitoring = true."
+  value       = var.enable_monitoring ? "https://${azurerm_container_app.grafana[0].ingress[0].fqdn}" : null
+}

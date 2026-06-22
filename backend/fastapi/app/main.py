@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.settings import get_allowed_origins
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.routes import (
     auth,
@@ -27,6 +28,12 @@ from app.api.routes import (
 from app.middleware.auth_middleware import AuthMiddleware
 
 app = FastAPI(title="PipelineDoctor API", version="1.0.0")
+
+# ==========================================
+# PROMETHEUS METRICS
+# ==========================================
+
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
 # ==========================================
 # MIDDLEWARE

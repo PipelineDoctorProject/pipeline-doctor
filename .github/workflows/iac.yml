@@ -120,6 +120,8 @@ jobs:
           MLFLOW_POSTGRESQL_ADMIN_PASSWORD: ${{ secrets.MLFLOW_POSTGRESQL_ADMIN_PASSWORD }}
           MLFLOW_BACKEND_STORE_URI: ${{ secrets.MLFLOW_BACKEND_STORE_URI }}
           MLFLOW_ARTIFACT_ROOT: ${{ vars.MLFLOW_ARTIFACT_ROOT || secrets.MLFLOW_ARTIFACT_ROOT }}
+          ENABLE_MONITORING: ${{ vars.ENABLE_MONITORING || 'false' }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
           required_missing=0
           for name in API_SECRET_KEY API_DB_NAME API_DB_USER API_DB_PASSWORD API_DB_HOST; do
@@ -185,6 +187,8 @@ jobs:
             --arg mlflow_postgresql_admin_password "${MLFLOW_POSTGRESQL_ADMIN_PASSWORD}" \
             --arg mlflow_backend_store_uri "${MLFLOW_BACKEND_STORE_URI}" \
             --arg mlflow_artifact_root "${MLFLOW_ARTIFACT_ROOT}" \
+            --arg enable_monitoring "${ENABLE_MONITORING}" \
+            --arg grafana_admin_password "${GRAFANA_ADMIN_PASSWORD}" \
             '{
               api_environment_variables: {
                 APP_ENV: $app_env,
@@ -235,7 +239,9 @@ jobs:
             + {mlflow_postgresql_admin_password: $mlflow_postgresql_admin_password}
             + (if $airflow_postgresql_admin_password != "" then {airflow_postgresql_admin_password: $airflow_postgresql_admin_password} else {} end)
             + (if $mlflow_backend_store_uri != "" then {mlflow_backend_store_uri: $mlflow_backend_store_uri} else {} end)
-            + (if $mlflow_artifact_root != "" then {mlflow_artifact_root: $mlflow_artifact_root} else {} end)' > runtime.auto.tfvars.json
+            + (if $mlflow_artifact_root != "" then {mlflow_artifact_root: $mlflow_artifact_root} else {} end)
+            + {enable_monitoring: ($enable_monitoring == "true")}
+            + (if $grafana_admin_password != "" then {grafana_admin_password: $grafana_admin_password} else {} end)' > runtime.auto.tfvars.json
 
       - name: Terraform init
         run: terraform init -input=false

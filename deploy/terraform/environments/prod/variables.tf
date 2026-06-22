@@ -198,3 +198,16 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "enable_monitoring" {
+  description = "Deploy Prometheus and Grafana Container Apps."
+  type        = bool
+  default     = false
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password. Set this via the TF_VAR_grafana_admin_password environment variable or a GitHub secret."
+  type        = string
+  sensitive   = true
+  default     = "change-me-in-production"
+}
