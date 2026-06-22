@@ -26,3 +26,4 @@ tabulate==0.10.0
 uvicorn==0.46.0
 websockets==16.0
 azure-identity
+prometheus-fastapi-instrumentator==7.0.2

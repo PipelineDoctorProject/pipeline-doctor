@@ -50,6 +50,8 @@ module "platform" {
   airflow_environment_variables        = var.airflow_environment_variables
   airflow_secret_environment_variables = var.airflow_secret_environment_variables
   airflow_postgresql_admin_password    = var.airflow_postgresql_admin_password
+  enable_monitoring                    = var.enable_monitoring
+  grafana_admin_password               = var.grafana_admin_password
 
   tags = merge(var.tags, {
     environment = "prod"
