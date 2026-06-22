@@ -77,6 +77,7 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 | [environment_modes.md](./environment_modes.md) | Development vs production runtime modes, env files, migrations, and worker queues |
 | [ci_cd.md](./ci_cd.md) | GitHub Actions CI/CD, Terraform, Ansible, secrets, and deployment workflow setup |
 | [production_deployment.md](./production_deployment.md) | Production deployment checklist for Airflow, MLflow, secrets, storage, and promotion |
+| [monitoring.md](./monitoring.md) | Prometheus and Grafana metrics, dashboards, local setup, and production topology |
 | [../deploy/azure/README.md](../deploy/azure/README.md) | Azure hosting topology, image build flow, Container Apps commands, and readiness gates |
 | [repository_structure.md](./repository_structure.md) | Source layout, generated artifacts, and production repo hygiene |
 | [overview.md](./overview.md) | High-level product and architecture overview |
@@ -84,6 +85,7 @@ Staging and deployment confirmation are intentionally separate. Staging means "r
 | [auth_and_tenant.md](./auth_and_tenant.md) | Tenant hardening workstream notes and acceptance criteria |
 | [automation_and_scheduler.md](./automation_and_scheduler.md) | Airflow, Celery, Redis, scheduling, and DAG config |
 | [data_quality.md](./data_quality.md) | Validation, cleaning, quarantine, and quality gate behavior |
+| [data_quality_workstream.md](./data_quality_workstream.md) | Design notes and runtime details for the data quality workstream |
 | [schema_evolution.md](./schema_evolution.md) | Pending schema changes, approval/rejection, and feature impact |
 | [drift_detection.md](./drift_detection.md) | PSI, KS, severity, and drift execution rules |
 | [incidents_and_realtime.md](./incidents_and_realtime.md) | Run-level incident grouping, WebSocket updates, and alert model |

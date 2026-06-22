@@ -17,8 +17,9 @@ OpsSight.ai is a production-style ML monitoring platform for validating incoming
 backend/fastapi/        FastAPI API, services, workers, models, migrations, and ML helpers
 frontend/               React/Vite application for dashboards, incidents, reports, Slack, and schemas
 airflow-setup/          Local Airflow DAGs and sample data for development monitoring runs
+deploy/monitoring/      Prometheus configurations and Grafana provisioning/dashboards
 docs/                   Architecture, workflows, API, remediation, reporting, and production notes
-docker-compose.yml      Local development stack for API, frontend, workers, Airflow, Redis, and MLflow
+docker-compose.yml      Local development stack including API, frontend, Celery, Airflow, Redis, MLflow, and Prometheus/Grafana
 .env.example            Safe template for local and production configuration
 ```
 
@@ -40,9 +41,9 @@ npm install
 npm run dev
 ```
 
-After startup, register or bootstrap a model, upload an approved baseline, then
-trigger `opssight_daily_pipeline` in Airflow with a model id/name and an input
-CSV path.
+After startup:
+* **Dashboard monitoring**: You can access **Grafana** at `http://localhost:3001` (login: `admin` / `admin`) and **Prometheus** at `http://localhost:9090` to observe metrics in real time.
+* **Testing pipelines**: Register or bootstrap a model, upload an approved baseline, then trigger `opssight_daily_pipeline` in Airflow with a model id/name and an input CSV path.
 
 ## Production Notes
 
@@ -71,6 +72,7 @@ platform secret manager instead of copying files onto servers.
 Start with [docs/README.md](docs/README.md), then use
 [docs/environment_modes.md](docs/environment_modes.md),
 [docs/repository_structure.md](docs/repository_structure.md),
+[docs/monitoring.md](docs/monitoring.md) (for Prometheus and Grafana details),
 [docs/remediation.md](docs/remediation.md), [docs/reports.md](docs/reports.md),
 [docs/slack.md](docs/slack.md), and
 [docs/schema_evolution.md](docs/schema_evolution.md) for the main production

@@ -239,6 +239,36 @@ Cache should be cleared when:
 
 ---
 
+## MLflow Cold-Start & Timeout Mitigations
+
+When MLflow is deployed as an Azure Container App in production, it can experience cold-start delays if the service has scaled down to 0 replicas due to inactivity. Loading a model or querying metadata during a cold-start can cause upstream API requests to hang and eventually time out.
+
+OpsSight implements several layers of defense to handle and mitigate this behavior:
+
+### 1. Global HTTP Timeouts and Retries
+We configure MLflow's internal HTTP request behavior globally at process start-up to avoid hanging threads.
+* **`MLFLOW_HTTP_REQUEST_TIMEOUT = 20`** (seconds): Requests fail quickly if the container doesn't respond in time.
+* **`MLFLOW_HTTP_REQUEST_MAX_RETRIES = 1`**: Restricts retry backoff to avoid cascading queue delays.
+* Set dynamically via environment variables in [**`backend/fastapi/app/api/routes/ml_models.py`**](file:///c:/Users/user1/Desktop/pipeline-doctor/backend/fastapi/app/api/routes/ml_models.py).
+
+### 2. Pre-flight Wake-up Check
+Before invoking heavy MLflow API calls (like downloading artifact files or loading a model into memory), the backend performs a lightweight pre-flight wake-up check:
+* It issues a fast `GET /health` request to wake up the MLflow Container App.
+* Attempts: Up to 3 times, waiting 5 seconds between attempts.
+* Implemented in the `_wake_mlflow` utility in [**`backend/fastapi/app/api/routes/ml_models.py`**](file:///c:/Users/user1/Desktop/pipeline-doctor/backend/fastapi/app/api/routes/ml_models.py).
+
+### 3. Infrastructure Level (Min Replicas)
+To prevent cold-starts entirely in active environments, the Terraform configuration enforces a minimum replica count of 1 for the MLflow Container App in all deployment environments.
+* Configured via the `mlflow_min_replicas = 1` variable in `terraform.tfvars` files.
+
+### 4. UI Level Graceful Recovery
+In the frontend, if a call to fetch model details from MLflow fails (e.g. returns a `503 Service Unavailable` or times out), the UI:
+* Displays a clear notice that the model server is warming up.
+* Automatically schedules an auto-retry to fetch the data.
+* Renders a manual **Retry** button inside the Model Detail Modal allowing users to manually re-trigger the call once the container has woken up.
+
+---
+
 ## Related Code
 
 - `backend/fastapi/app/services/quality/pipeline.py`
