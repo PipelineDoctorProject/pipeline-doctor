@@ -1,4 +1,4 @@
-location                             = "eastus"
+location                             = "centralus"
 resource_group_name                  = "opssight-prod-rg"
 container_registry_name              = "opssightprodacr"
 container_apps_environment_name      = "opssight-prod-env"
