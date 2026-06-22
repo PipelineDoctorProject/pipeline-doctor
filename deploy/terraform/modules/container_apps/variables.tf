@@ -467,3 +467,32 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# ===========================================================================
+# MONITORING
+# ===========================================================================
+
+variable "enable_monitoring" {
+  description = "Deploy Prometheus and Grafana Container Apps for metrics monitoring."
+  type        = bool
+  default     = false
+}
+
+variable "prometheus_container_app_name" {
+  description = "Prometheus Container App name. Defaults to opssight-prometheus-<env>."
+  type        = string
+  default     = null
+}
+
+variable "grafana_container_app_name" {
+  description = "Grafana Container App name. Defaults to opssight-grafana-<env>."
+  type        = string
+  default     = null
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password. Store this in a GitHub Environment secret."
+  type        = string
+  sensitive   = true
+  default     = "change-me-in-production"
+}

@@ -6,6 +6,8 @@ locals {
   mlflow_container_app_name            = coalesce(var.mlflow_container_app_name, "opssight-mlflow-${var.deployment_environment}")
   airflow_webserver_container_app_name = coalesce(var.airflow_webserver_container_app_name, "opssight-airflow-webserver-${var.deployment_environment}")
   airflow_scheduler_container_app_name = coalesce(var.airflow_scheduler_container_app_name, "opssight-airflow-scheduler-${var.deployment_environment}")
+  prometheus_container_app_name        = coalesce(var.prometheus_container_app_name, "opssight-prometheus-${var.deployment_environment}")
+  grafana_container_app_name           = coalesce(var.grafana_container_app_name, "opssight-grafana-${var.deployment_environment}")
   redis_cache_name                     = coalesce(var.redis_cache_name, "opssight-${var.deployment_environment}-redis")
   mlflow_postgresql_server_name        = coalesce(var.mlflow_postgresql_server_name, "opssight-${var.deployment_environment}-mlflow-pg")
   airflow_postgresql_server_name       = coalesce(var.airflow_postgresql_server_name, "opssight-${var.deployment_environment}-airflow-pg")
@@ -715,6 +717,128 @@ resource "azurerm_container_app" "airflow_scheduler" {
   secret {
     name  = "acr-password"
     value = azurerm_container_registry.this.admin_password
+  }
+
+  tags = var.tags
+}
+
+# ===========================================================================
+# MONITORING — Prometheus + Grafana
+# ===========================================================================
+
+resource "azurerm_container_app" "prometheus" {
+  count = var.enable_monitoring ? 1 : 0
+
+  name                         = local.prometheus_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.this.id
+  resource_group_name          = azurerm_resource_group.this.name
+  revision_mode                = "Single"
+
+  # Internal ingress only — Grafana reaches Prometheus inside the environment.
+  # Prometheus is NOT exposed to the public internet.
+  ingress {
+    external_enabled = false
+    target_port      = 9090
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "prometheus"
+      image  = "prom/prometheus:v2.53.0"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      args = [
+        "--config.file=/etc/prometheus/prometheus.yml",
+        "--storage.tsdb.retention.time=7d",
+      ]
+
+      env {
+        name  = "API_METRICS_URL"
+        value = "https://${azurerm_container_app.api.ingress[0].fqdn}"
+      }
+
+      volume_mounts {
+        name = "prometheus-config"
+        path = "/etc/prometheus"
+      }
+    }
+
+    volume {
+      name         = "prometheus-config"
+      storage_type = "EmptyDir"
+    }
+  }
+
+  tags = var.tags
+}
+
+resource "azurerm_container_app" "grafana" {
+  count = var.enable_monitoring ? 1 : 0
+
+  name                         = local.grafana_container_app_name
+  container_app_environment_id = azurerm_container_app_environment.this.id
+  resource_group_name          = azurerm_resource_group.this.name
+  revision_mode                = "Single"
+
+  ingress {
+    external_enabled = true
+    target_port      = 3000
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "grafana"
+      image  = "grafana/grafana:11.1.0"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name  = "GF_SECURITY_ADMIN_USER"
+        value = "admin"
+      }
+
+      env {
+        name        = "GF_SECURITY_ADMIN_PASSWORD"
+        secret_name = "grafana-admin-password"
+      }
+
+      env {
+        name  = "GF_USERS_ALLOW_SIGN_UP"
+        value = "false"
+      }
+
+      env {
+        name  = "GF_SERVER_ROOT_URL"
+        value = var.enable_monitoring ? "https://${azurerm_container_app.grafana[0].ingress[0].fqdn}" : ""
+      }
+
+      env {
+        name  = "GF_AUTH_ANONYMOUS_ENABLED"
+        value = "false"
+      }
+    }
+  }
+
+  secret {
+    name  = "grafana-admin-password"
+    value = var.grafana_admin_password
   }
 
   tags = var.tags

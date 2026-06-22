@@ -87,3 +87,8 @@ output "app_storage_container_name" {
   description = "Application artifact Blob container name."
   value       = module.platform.app_storage_container_name
 }
+
+output "grafana_container_app_url" {
+  description = "Public Grafana Container App URL."
+  value       = module.platform.grafana_container_app_url
+}
