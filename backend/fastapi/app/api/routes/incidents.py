@@ -280,14 +280,15 @@ def _serialized_incidents(
     model_id: int | None = None,
     tenant_id: str | None = None,
 ):
+    # NOTE: tenant isolation is already enforced at the DB schema level
+    # (search_path is set to the tenant's schema by AuthMiddleware).
+    # The extra MLModel.tenant_id filter was redundant and caused 0 results
+    # because ml_models.tenant_id does not match the user UUID format.
     query = (
         db.query(IncidentGroup)
         .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
         .join(MLModel, PipelineRun.model_id == MLModel.id)
     )
-
-    if tenant_id:
-        query = query.filter(MLModel.tenant_id == tenant_id)
 
     if model_id is not None:
         query = query.filter(PipelineRun.model_id == model_id)
