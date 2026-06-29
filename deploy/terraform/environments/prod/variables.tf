@@ -67,9 +67,9 @@ variable "mlflow_container_app_name" {
 }
 
 variable "enable_airflow" {
-  description = "Whether to deploy production Airflow."
+  description = "Whether to deploy production Airflow. Requires Azure PostgreSQL Flexible Server availability in the target region."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "airflow_webserver_container_app_name" {
