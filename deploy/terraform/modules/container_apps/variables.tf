@@ -391,8 +391,9 @@ variable "mlflow_postgresql_admin_login" {
 }
 
 variable "mlflow_postgresql_admin_password" {
-  description = "Administrator password for the MLflow Azure PostgreSQL Flexible Server."
+  description = "Administrator password for the MLflow Azure PostgreSQL Flexible Server. Not required when mlflow_backend_store_uri is provided."
   type        = string
+  default     = null
   sensitive   = true
 }
 

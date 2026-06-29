@@ -17,7 +17,7 @@ locals {
   app_storage_container_name           = coalesce(var.app_storage_container_name, "app-artifacts")
   frontend_public_url                  = coalesce(var.frontend_public_url, "https://${azurerm_container_app.frontend.ingress[0].fqdn}")
   mlflow_tracking_uri                  = coalesce(var.mlflow_tracking_uri, "https://${azurerm_container_app.mlflow.ingress[0].fqdn}")
-  managed_mlflow_backend_store_uri     = "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow.fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow.name}?sslmode=require"
+  managed_mlflow_backend_store_uri     = var.mlflow_backend_store_uri == null ? "postgresql+psycopg2://${var.mlflow_postgresql_admin_login}:${urlencode(var.mlflow_postgresql_admin_password)}@${azurerm_postgresql_flexible_server.mlflow[0].fqdn}:5432/${azurerm_postgresql_flexible_server_database.mlflow[0].name}?sslmode=require" : ""
   managed_mlflow_artifact_root         = "wasbs://${azurerm_storage_container.mlflow.name}@${azurerm_storage_account.mlflow.name}.blob.core.windows.net/"
   external_redis_url                   = trimspace(try(var.api_secret_environment_variables["REDIS_URL"], ""))
   use_managed_redis                    = local.external_redis_url == ""
@@ -134,6 +134,10 @@ resource "azurerm_redis_cache" "this" {
 }
 
 resource "azurerm_postgresql_flexible_server" "mlflow" {
+  # Skip creating a managed PostgreSQL when an external mlflow_backend_store_uri is provided.
+  # This allows using Supabase (or any external DB) on subscriptions with Azure PostgreSQL quota limits.
+  count = var.mlflow_backend_store_uri == null ? 1 : 0
+
   name                          = local.mlflow_postgresql_server_name
   resource_group_name           = azurerm_resource_group.this.name
   location                      = azurerm_resource_group.this.location
@@ -155,15 +159,19 @@ resource "azurerm_postgresql_flexible_server" "mlflow" {
 }
 
 resource "azurerm_postgresql_flexible_server_database" "mlflow" {
+  count = var.mlflow_backend_store_uri == null ? 1 : 0
+
   name      = var.mlflow_postgresql_database_name
-  server_id = azurerm_postgresql_flexible_server.mlflow.id
+  server_id = azurerm_postgresql_flexible_server.mlflow[0].id
   charset   = "UTF8"
   collation = "en_US.utf8"
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "mlflow_allow_azure" {
+  count = var.mlflow_backend_store_uri == null ? 1 : 0
+
   name             = "allow-azure-services"
-  server_id        = azurerm_postgresql_flexible_server.mlflow.id
+  server_id        = azurerm_postgresql_flexible_server.mlflow[0].id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
 }
