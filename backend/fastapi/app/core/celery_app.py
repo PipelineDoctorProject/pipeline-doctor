@@ -1,4 +1,5 @@
 import os
+import ssl
 
 from celery import Celery
 from celery.schedules import crontab
@@ -69,6 +70,16 @@ celery.conf.update(
         },
     },
 )
+
+# Redis Cloud uses rediss:// (TLS). The sync redis client does not honour
+# ?ssl_cert_reqs=none in the URL, so we must pass the SSL options explicitly
+# to both the broker and the result backend to avoid certificate errors.
+if REDIS_URL.startswith("rediss://"):
+    _ssl_opts = {"ssl_cert_reqs": ssl.CERT_NONE}
+    celery.conf.update(
+        broker_use_ssl=_ssl_opts,
+        redis_backend_use_ssl=_ssl_opts,
+    )
 
 
 if os.name == "nt":
