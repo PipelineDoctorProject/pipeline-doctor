@@ -75,7 +75,10 @@ celery.conf.update(
 # ?ssl_cert_reqs=none in the URL, so we must pass the SSL options explicitly
 # to both the broker and the result backend to avoid certificate errors.
 if REDIS_URL.startswith("rediss://"):
-    _ssl_opts = {"ssl_cert_reqs": ssl.CERT_NONE}
+    _ssl_opts = {
+        "ssl_cert_reqs": ssl.CERT_NONE,
+        "ssl_check_hostname": False,
+    }
     celery.conf.update(
         broker_use_ssl=_ssl_opts,
         redis_backend_use_ssl=_ssl_opts,

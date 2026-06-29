@@ -15,6 +15,7 @@ logger = get_task_logger(__name__)
     autoretry_for=(Exception,),
     retry_backoff=True,
     retry_kwargs={"max_retries": 3},
+    ignore_result=True,  # fire-and-forget: no result backend subscription needed
 )
 def send_otp_email_task(
     self,
@@ -34,6 +35,7 @@ def send_otp_email_task(
     autoretry_for=(Exception,),
     retry_backoff=True,
     retry_kwargs={"max_retries": 3},
+    ignore_result=True,
 )
 def send_invite_email_task(
     self,
@@ -54,6 +56,7 @@ def send_invite_email_task(
     autoretry_for=(Exception,),
     retry_backoff=True,
     retry_kwargs={"max_retries": 3},
+    ignore_result=True,
 )
 def send_incident_alert_email_task(
     self,
