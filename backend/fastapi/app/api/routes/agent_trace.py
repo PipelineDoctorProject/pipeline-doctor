@@ -1,5 +1,6 @@
 import asyncio
 import json
+import ssl
 
 import redis.asyncio as aioredis
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -13,6 +14,23 @@ router = APIRouter(tags=["WebSocket"])
 # ── Redis connection (async) ──────────────────────────────────────────────────
 # Matches the same broker URL used by Celery in celery_app.py
 INCIDENTS_CONNECTION_KEY = "__incidents__"
+
+
+def _make_async_redis(url: str) -> aioredis.Redis:
+    """Create an async Redis client.
+
+    For external Redis Cloud instances using rediss:// (TLS), we disable
+    certificate verification to avoid WRONG_VERSION_NUMBER SSL errors that
+    occur when redis.asyncio tries to verify the cert chain against an
+    external Redis Labs server. The ?ssl_cert_reqs=none URL parameter only
+    works for the sync redis.Redis client, not redis.asyncio.
+    """
+    ssl_ctx = None
+    if url.startswith("rediss://"):
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+    return aioredis.from_url(url, decode_responses=True, ssl_context=ssl_ctx)
 
 
 @router.websocket("/ws/agent-trace/{run_id}")
@@ -35,7 +53,7 @@ async def agent_trace_websocket(websocket: WebSocket, run_id: str):
     await manager.connect(run_id, websocket)
 
     # Subscribe to the Redis pub/sub channel for this run
-    redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+    redis_client = _make_async_redis(REDIS_URL)
     pubsub = redis_client.pubsub()
     channel = f"agent_trace:{run_id}"
     await pubsub.subscribe(channel)
@@ -87,7 +105,7 @@ async def agent_trace_websocket(websocket: WebSocket, run_id: str):
 async def incidents_websocket(websocket: WebSocket):
     await manager.connect(INCIDENTS_CONNECTION_KEY, websocket)
 
-    redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+    redis_client = _make_async_redis(REDIS_URL)
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(INCIDENTS_CHANNEL)
 
