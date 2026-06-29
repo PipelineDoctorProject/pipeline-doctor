@@ -130,8 +130,8 @@ jobs:
               required_missing=1
             fi
           done
-          if [ -z "${MLFLOW_POSTGRESQL_ADMIN_PASSWORD}" ]; then
-            echo "Missing required GitHub Environment secret: MLFLOW_POSTGRESQL_ADMIN_PASSWORD"
+          if [ -z "${MLFLOW_BACKEND_STORE_URI}" ] && [ -z "${MLFLOW_POSTGRESQL_ADMIN_PASSWORD}" ]; then
+            echo "Missing required GitHub Environment secret: MLFLOW_POSTGRESQL_ADMIN_PASSWORD (required when MLFLOW_BACKEND_STORE_URI is not set)"
             required_missing=1
           fi
           if [ "${AIRFLOW_ENABLED}" = "true" ]; then
@@ -236,7 +236,7 @@ jobs:
                 AIRFLOW_VAR_OPSSIGHT_MODEL_NAME: $airflow_var_opssight_model_name
               } | with_entries(select(.value != ""))
             }
-            + {mlflow_postgresql_admin_password: $mlflow_postgresql_admin_password}
+            + (if $mlflow_postgresql_admin_password != "" then {mlflow_postgresql_admin_password: $mlflow_postgresql_admin_password} else {} end)
             + (if $airflow_postgresql_admin_password != "" then {airflow_postgresql_admin_password: $airflow_postgresql_admin_password} else {} end)
             + (if $mlflow_backend_store_uri != "" then {mlflow_backend_store_uri: $mlflow_backend_store_uri} else {} end)
             + (if $mlflow_artifact_root != "" then {mlflow_artifact_root: $mlflow_artifact_root} else {} end)

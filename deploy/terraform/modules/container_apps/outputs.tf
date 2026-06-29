@@ -64,8 +64,8 @@ output "redis_cache_hostname" {
 }
 
 output "mlflow_postgresql_fqdn" {
-  description = "MLflow Azure PostgreSQL Flexible Server FQDN."
-  value       = azurerm_postgresql_flexible_server.mlflow.fqdn
+  description = "MLflow Azure PostgreSQL Flexible Server FQDN. Null when an external mlflow_backend_store_uri is provided."
+  value       = var.mlflow_backend_store_uri == null ? azurerm_postgresql_flexible_server.mlflow[0].fqdn : null
 }
 
 output "mlflow_storage_account_name" {
