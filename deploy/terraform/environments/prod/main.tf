@@ -10,7 +10,13 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      # Allow Terraform to delete resource groups even if they contain resources
+      # from partial/failed applies. This prevents manual cleanup between runs.
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 module "platform" {
