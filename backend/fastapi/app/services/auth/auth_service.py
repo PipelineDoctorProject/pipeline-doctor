@@ -6,6 +6,7 @@ from app.core.security import hash_password, verify_password
 from app.core.jwt import create_access_token, decode_token, create_refresh_token
 from app.utils.otp_utils import generate_otp
 from app.tasks.email_tasks import send_otp_email_task
+from app.utils.email_utils import send_otp_email
 from app.config.settings import get_auth_cookie_settings
 
 
@@ -31,7 +32,13 @@ def signup_user(db: Session, email: str, password: str):
     db.add(user)
     db.commit()
 
-    send_otp_email_task.delay(normalized_email, otp)
+    # Try to dispatch the OTP email via Celery (async).
+    # Fall back to synchronous SMTP if the Redis broker is unavailable,
+    # so signup never fails due to Celery/Redis SSL issues.
+    try:
+        send_otp_email_task.delay(normalized_email, otp)
+    except Exception:
+        send_otp_email(normalized_email, otp)
 
     return {"message": "OTP sent"}
 

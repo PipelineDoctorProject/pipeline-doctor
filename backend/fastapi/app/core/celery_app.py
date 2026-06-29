@@ -75,10 +75,14 @@ celery.conf.update(
 # ?ssl_cert_reqs=none in the URL, so we must pass the SSL options explicitly
 # to both the broker and the result backend to avoid certificate errors.
 if REDIS_URL.startswith("rediss://"):
-    _ssl_opts = {
-        "ssl_cert_reqs": ssl.CERT_NONE,
-        "ssl_check_hostname": False,
-    }
+    # Build an SSL context identical to the one used by the async Redis
+    # client (_make_async_redis in agent_trace.py). Passing ssl_context
+    # directly bypasses kombu's own SSL wiring, which does not correctly
+    # apply CERT_NONE via the dict-based broker_use_ssl on Python 3.12.
+    _ssl_ctx = ssl.create_default_context()
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = ssl.CERT_NONE
+    _ssl_opts = {"ssl_context": _ssl_ctx}
     celery.conf.update(
         broker_use_ssl=_ssl_opts,
         redis_backend_use_ssl=_ssl_opts,
