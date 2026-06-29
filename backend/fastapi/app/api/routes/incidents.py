@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 import json
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
@@ -288,6 +288,9 @@ def _serialized_incidents(
         db.query(IncidentGroup)
         .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
         .join(MLModel, PipelineRun.model_id == MLModel.id)
+        # Eagerly load group.incidents in ONE extra query (SELECT … WHERE group_id IN (…))
+        # instead of issuing a separate lazy-load per group (N+1 problem → 20s timeout).
+        .options(selectinload(IncidentGroup.incidents))
     )
 
     if model_id is not None:
