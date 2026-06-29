@@ -106,7 +106,7 @@ jobs:
           API_SLACK_CLIENT_ID: ${{ secrets.API_SLACK_CLIENT_ID || secrets.SLACK_CLIENT_ID }}
           API_SLACK_CLIENT_SECRET: ${{ secrets.API_SLACK_CLIENT_SECRET || secrets.SLACK_CLIENT_SECRET }}
           API_SLACK_REDIRECT_URI: ${{ vars.API_SLACK_REDIRECT_URI || secrets.API_SLACK_REDIRECT_URI || secrets.SLACK_REDIRECT_URI }}
-          AIRFLOW_ENABLED: ${{ vars.AIRFLOW_ENABLED || (inputs.environment == 'prod' && 'true' || 'false') }}
+          AIRFLOW_ENABLED: ${{ vars.AIRFLOW_ENABLED || 'false' }}
           AIRFLOW_ADMIN_USERNAME: ${{ vars.AIRFLOW_ADMIN_USERNAME || secrets.AIRFLOW_ADMIN_USERNAME || 'admin' }}
           AIRFLOW_ADMIN_PASSWORD: ${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
           AIRFLOW_ADMIN_EMAIL: ${{ vars.AIRFLOW_ADMIN_EMAIL || secrets.AIRFLOW_ADMIN_EMAIL || 'admin@example.com' }}
