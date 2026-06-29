@@ -1,7 +1,7 @@
 variable "location" {
   description = "Azure region."
   type        = string
-  default     = "eastus2"
+  default     = "westus2"
 }
 
 variable "resource_group_name" {
@@ -142,8 +142,9 @@ variable "api_secret_environment_variables" {
 }
 
 variable "mlflow_postgresql_admin_password" {
-  description = "Administrator password for the production MLflow PostgreSQL server."
+  description = "Administrator password for the production MLflow PostgreSQL server. Not required when mlflow_backend_store_uri is provided."
   type        = string
+  default     = null
   sensitive   = true
 }
 
