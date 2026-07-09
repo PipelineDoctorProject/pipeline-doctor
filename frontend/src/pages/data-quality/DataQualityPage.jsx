@@ -15,6 +15,7 @@ import {
 import { getDataQualityExplanation, getDataQualityFindings } from "../../store/dataQualityStore";
 import useSelectedModelStore from "../../store/selectedModelStore";
 import InsightExplanationCard from "../../components/common/InsightExplanationCard";
+import Pagination from "../../components/common/Pagination";
 
 function formatDate(value) {
   if (!value) return "Not available";
@@ -241,22 +242,32 @@ export default function DataQualityPage() {
   const [explanationLoading, setExplanationLoading] = useState(false);
   const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
 
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState({});
+  const pageSize = 10;
+
   // ==========================================
   // LOAD DATA QUALITY FINDINGS
   // ==========================================
   const loadFindings = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getDataQualityFindings(selectedModelId);
-      setFindings(data || []);
+      const skip = (page - 1) * pageSize;
+      const data = await getDataQualityFindings(selectedModelId, skip, pageSize);
+      setFindings(data?.items || []);
+      setTotalCount(data?.total_count || 0);
+      setStats(data?.stats || {});
     } catch (err) {
       console.log(err);
       setFindings([]);
+      setTotalCount(0);
+      setStats({});
       setExplanation(null);
     } finally {
       setLoading(false);
     }
-  }, [selectedModelId]);
+  }, [selectedModelId, page]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -331,7 +342,7 @@ export default function DataQualityPage() {
               Passed checks
               <CheckCircle2 size={16} />
             </div>
-            <p className="mt-2 text-[26px] font-semibold text-slate-950">{findings.filter(f => f.success).length}</p>
+            <p className="mt-2 text-[26px] font-semibold text-slate-950">{stats.passed_checks || 0}</p>
           </div>
         
           <div className="border-b border-slate-200 px-6 py-4 md:border-b-0 md:border-r">
@@ -339,7 +350,7 @@ export default function DataQualityPage() {
               Failed checks
               <XCircle size={16} />
             </div>
-            <p className="mt-2 text-[26px] font-semibold text-slate-950">{findings.filter(f => !f.success).length}</p>
+            <p className="mt-2 text-[26px] font-semibold text-slate-950">{stats.failed_checks || 0}</p>
           </div>
 
           <div className="px-6 py-4">
@@ -347,7 +358,7 @@ export default function DataQualityPage() {
               Total runs
               <FileSearch size={16} />
             </div>
-            <p className="mt-2 text-[26px] font-semibold text-slate-950">{groupedRuns.length}</p>
+            <p className="mt-2 text-[26px] font-semibold text-slate-950">{stats.total_runs || 0}</p>
           </div>
         </div>
       </section>
@@ -443,6 +454,16 @@ export default function DataQualityPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {!loading && groupedRuns.length > 0 && (
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={setPage}
+          loading={loading}
+        />
       )}
 
       {selectedRun && (

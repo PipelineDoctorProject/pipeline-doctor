@@ -25,12 +25,12 @@ def _make_async_redis(url: str) -> aioredis.Redis:
     external Redis Labs server. The ?ssl_cert_reqs=none URL parameter only
     works for the sync redis.Redis client, not redis.asyncio.
     """
-    ssl_ctx = None
     if url.startswith("rediss://"):
         ssl_ctx = ssl.create_default_context()
         ssl_ctx.check_hostname = False
         ssl_ctx.verify_mode = ssl.CERT_NONE
-    return aioredis.from_url(url, decode_responses=True, ssl_context=ssl_ctx)
+        return aioredis.from_url(url, decode_responses=True, ssl_context=ssl_ctx)
+    return aioredis.from_url(url, decode_responses=True)
 
 
 @router.websocket("/ws/agent-trace/{run_id}")

@@ -1,0 +1,38 @@
+location: westus2
+properties:
+  environmentId: /subscriptions/278d05e7-c375-41a0-9460-733a409c9295/resourceGroups/opssight-prod-rg/providers/Microsoft.App/managedEnvironments/opssight-prod-env
+  configuration:
+    ingress:
+      external: true
+      targetPort: 3000
+      transport: http
+      allowInsecure: false
+    activeRevisionsMode: single
+  template:
+    containers:
+      - name: grafana
+        image: grafana/grafana:11.1.0
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        env:
+          - name: GF_SECURITY_ADMIN_USER
+            value: admin
+          - name: GF_SECURITY_ADMIN_PASSWORD
+            value: OpsSight2026!
+          - name: GF_USERS_ALLOW_SIGN_UP
+            value: "false"
+          - name: GF_SERVER_ROOT_URL
+            value: "%(protocol)s://%(domain)s/"
+          - name: GF_ANALYTICS_REPORTING_ENABLED
+            value: "false"
+        volumeMounts:
+          - volumeName: grafana-data
+            mountPath: /var/lib/grafana
+    volumes:
+      - name: grafana-data
+        storageType: AzureFile
+        storageName: grafana-data
+    scale:
+      minReplicas: 1
+      maxReplicas: 1

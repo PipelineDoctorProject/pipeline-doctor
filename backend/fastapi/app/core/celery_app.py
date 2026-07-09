@@ -71,18 +71,34 @@ celery.conf.update(
     },
 )
 
-# Redis Cloud uses rediss:// (TLS). The sync redis client does not honour
-# ?ssl_cert_reqs=none in the URL, so we must pass the SSL options explicitly
-# to both the broker and the result backend to avoid certificate errors.
+# Redis Cloud uses rediss:// (TLS). kombu does not pass ssl_context
+# through to redis-py 7.x correctly. Strategy:
+# 1. Use individual SSL kwargs in broker_use_ssl (kombu understands these).
+# 2. Monkey-patch redis.connection.SSLConnection.__init__ to REPLACE the
+#    SSL context redis-py builds internally with ssl.create_default_context()
+#    — the same context we use for the async client which is known to work.
 if REDIS_URL.startswith("rediss://"):
-    # Build an SSL context identical to the one used by the async Redis
-    # client (_make_async_redis in agent_trace.py). Passing ssl_context
-    # directly bypasses kombu's own SSL wiring, which does not correctly
-    # apply CERT_NONE via the dict-based broker_use_ssl on Python 3.12.
     _ssl_ctx = ssl.create_default_context()
     _ssl_ctx.check_hostname = False
     _ssl_ctx.verify_mode = ssl.CERT_NONE
-    _ssl_opts = {"ssl_context": _ssl_ctx}
+
+    # Patch SSLConnection so every sync redis connection uses our context.
+    try:
+        from redis.connection import SSLConnection as _SSLCls
+        _orig_ssl_init = _SSLCls.__init__
+        _ctx_ref = _ssl_ctx
+
+        def _patched_ssl_init(self, *args, **kwargs):
+            _orig_ssl_init(self, *args, **kwargs)
+            # Replace whatever context redis-py built with ours.
+            self.ssl_context = _ctx_ref
+
+        _SSLCls.__init__ = _patched_ssl_init
+    except Exception:
+        pass  # If patching fails, fall back to broker_use_ssl kwargs below.
+
+    # Also tell kombu to enable SSL (individual kwargs are recognised).
+    _ssl_opts = {"ssl_cert_reqs": ssl.CERT_NONE, "ssl_check_hostname": False}
     celery.conf.update(
         broker_use_ssl=_ssl_opts,
         redis_backend_use_ssl=_ssl_opts,

@@ -1,11 +1,13 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func, distinct
 import uuid
 from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
 from app.models.data_quality import DataQualityFinding
 from app.models.baseline import Baseline
 from app.schemas.data_quality import DataQualityResponse
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.explanations import InsightExplanationResponse
 from app.services.quality.data_loader import load_dataset
 from app.services.ai_explanations import build_data_quality_explanation
@@ -15,7 +17,6 @@ from app.services.file_storage import store_upload
 router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
 
 UPLOAD_DIR = "uploads/incoming"
-
 
 async def save_upload(file: UploadFile) -> str:
     if not file.filename.endswith(".csv"):
@@ -75,7 +76,6 @@ def infer_model_from_active_baselines(db: Session, file_path: str):
         candidate for candidate in candidates[1:]
         if candidate["score"] == best["score"]
     ]
-
     if tied:
         raise HTTPException(
             status_code=409,
@@ -87,19 +87,52 @@ def infer_model_from_active_baselines(db: Session, file_path: str):
 
     return best
 
-@router.get("/", response_model=list[DataQualityResponse])
+
+@router.get("/", response_model=PaginatedResponse[DataQualityResponse])
 def list_data_quality_findings(
     model_id: int | None = Query(default=None),
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
     if model_id is not None:
         require_accessible_model(db, model_id, current_user.tenant_id)
 
-    query = db.query(DataQualityFinding)
+    runs_query = db.query(DataQualityFinding.pipeline_run_id).distinct()
     if model_id is not None:
-        query = query.filter(DataQualityFinding.model_id == model_id)
-    return query.order_by(DataQualityFinding.id.desc()).all()
+        runs_query = runs_query.filter(DataQualityFinding.model_id == model_id)
+        
+    total_count = runs_query.count()
+    
+    # Get paginated run ids
+    paginated_runs = runs_query.order_by(DataQualityFinding.pipeline_run_id.desc()).offset(skip).limit(limit).all()
+    run_ids = [r[0] for r in paginated_runs]
+    
+    items = []
+    if run_ids:
+        items = db.query(DataQualityFinding).filter(DataQualityFinding.pipeline_run_id.in_(run_ids)).order_by(DataQualityFinding.id.desc()).all()
+    
+    passed_checks = db.query(func.count(DataQualityFinding.id)).filter(DataQualityFinding.success == True)
+    failed_checks = db.query(func.count(DataQualityFinding.id)).filter(DataQualityFinding.success == False)
+    total_runs_query = db.query(func.count(distinct(DataQualityFinding.pipeline_run_id)))
+    
+    if model_id is not None:
+        passed_checks = passed_checks.filter(DataQualityFinding.model_id == model_id)
+        failed_checks = failed_checks.filter(DataQualityFinding.model_id == model_id)
+        total_runs_query = total_runs_query.filter(DataQualityFinding.model_id == model_id)
+        
+    stats = {
+        "passed_checks": passed_checks.scalar() or 0,
+        "failed_checks": failed_checks.scalar() or 0,
+        "total_runs": total_runs_query.scalar() or 0,
+    }
+    
+    return {
+        "items": items,
+        "total_count": total_count,
+        "stats": stats
+    }
 
 
 @router.post("/validate")

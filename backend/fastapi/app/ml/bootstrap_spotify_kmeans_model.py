@@ -8,6 +8,7 @@ import pandas as pd
 from mlflow.models.signature import infer_signature
 from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -98,22 +99,24 @@ def _build_pipeline(features: pd.DataFrame, n_clusters: int) -> Pipeline:
 
     for column in numeric_columns:
         features[column] = pd.to_numeric(features[column], errors="coerce")
-        features[column] = features[column].fillna(float(features[column].median()))
 
     for column in categorical_columns:
-        features[column] = features[column].astype("string").fillna("UNKNOWN")
+        features[column] = features[column].astype("string")
 
     transformers = []
     if numeric_columns:
-        transformers.append(("numeric", StandardScaler(), numeric_columns))
+        numeric_transformer = Pipeline(steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler())
+        ])
+        transformers.append(("numeric", numeric_transformer, numeric_columns))
+        
     if categorical_columns:
-        transformers.append(
-            (
-                "categorical",
-                OneHotEncoder(handle_unknown="ignore"),
-                categorical_columns,
-            )
-        )
+        categorical_transformer = Pipeline(steps=[
+            ("imputer", SimpleImputer(strategy="constant", fill_value="UNKNOWN")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore"))
+        ])
+        transformers.append(("categorical", categorical_transformer, categorical_columns))
 
     if not transformers:
         raise ValueError("No usable numeric or categorical features were found.")

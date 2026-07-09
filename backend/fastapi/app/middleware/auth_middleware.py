@@ -1,5 +1,6 @@
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.concurrency import run_in_threadpool
 
 from app.core.jwt import decode_token
 from app.db.session import SessionLocal
@@ -20,6 +21,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         request.state.user = None
         request.state.db = None
         request.state.schema = None
+
+        if request.scope["type"] != "http":
+            return await call_next(request)
 
         if request.method == "OPTIONS":
             return await call_next(request)
@@ -53,27 +57,27 @@ class AuthMiddleware(BaseHTTPMiddleware):
         db = SessionLocal()
         request.state.db = db
 
+        def get_user_and_tenant(db_session, user_id):
+            user = db_session.query(User).filter(User.id == user_id).first()
+            if not user:
+                return None, None
+            
+            from app.models.tenant import Tenant
+            tenant = db_session.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+            return user, tenant
+
         try:
-            user = (
-                db.query(User)
-                .filter(User.id == payload["user_id"])
-                .first()
-            )
+            user, tenant = await run_in_threadpool(get_user_and_tenant, db, payload["user_id"])
 
             if user:
                 request.state.user = user
-
-                from app.models.tenant import Tenant
-
-                tenant = (
-                    db.query(Tenant)
-                    .filter(Tenant.id == user.tenant_id)
-                    .first()
-                )
-
                 if tenant and tenant.schema_name:
                     request.state.schema = tenant.schema_name
-                    set_schema(db, tenant.schema_name)
+                    
+                    def apply_schema(db_sess, schema):
+                        set_schema(db_sess, schema)
+                        
+                    await run_in_threadpool(apply_schema, db, tenant.schema_name)
 
             return await call_next(request)
         finally:

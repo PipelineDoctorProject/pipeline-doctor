@@ -1,5 +1,6 @@
 import os
 import math
+import logging
 
 import mlflow
 import mlflow.pyfunc
@@ -28,6 +29,8 @@ from app.services.quality.storage import store_findings
 from app.services.file_storage import store_dataframe_csv
 from app.services.quality.transformer import DataTransformer
 from app.services.quality.validator import DataValidator
+
+logger = logging.getLogger(__name__)
 
 # MLflow Config
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
@@ -70,7 +73,7 @@ def get_mlflow_model(db: Session, model_id: int):
             )
             _model_cache[cache_key] = mlflow.pyfunc.load_model(uri)
         except Exception as exc:
-            print(f"Warning: Could not load MLflow model {cache_key}: {exc}")
+            logger.exception(f"Could not load MLflow model {cache_key}")
             _model_cache[cache_key] = None
 
     return _model_cache[cache_key], db_model
@@ -296,7 +299,7 @@ def _generate_predictions(
         print("Predictions generated and saved.")
         return {"status": "generated", "count": len(prediction_logs)}
     except Exception as exc:
-        print(f"Prediction generation failed: {exc}")
+        logger.exception("Prediction generation failed")
         db.rollback()
         return {"status": "failed", "reason": str(exc)}
 
@@ -330,7 +333,7 @@ def _queue_root_cause_analysis(
         }
     except Exception as exc:
         db.rollback()
-        print(f"Doctor agent RCA queue encountered an error: {exc}")
+        logger.exception("Doctor agent RCA queue encountered an error")
         return {
             "status": "failed",
             "message": str(exc),
@@ -480,10 +483,7 @@ def run_data_quality_pipeline(
                 drift_status = {"status": "completed", "result": drift_result}
             except Exception as exc:
                 db.rollback()
-                import traceback
-
-                print(f"Drift checks encountered an error: {exc}")
-                traceback.print_exc()
+                logger.exception("Drift checks encountered an error")
                 drift_status = {"status": "failed", "reason": str(exc)}
         else:
             update_pipeline_run_status(db, run_id, "failed")
@@ -525,8 +525,9 @@ def run_data_quality_pipeline(
         return to_python_types(response)
     except Exception:
         db.rollback()
+        logger.exception(f"Data quality pipeline failed for run {run_id}")
         try:
             update_pipeline_run_status(db, run_id, "failed")
         except Exception as status_exc:
-            print(f"Could not mark run {run_id} as failed: {status_exc}")
+            logger.exception(f"Could not mark run {run_id} as failed")
         raise
