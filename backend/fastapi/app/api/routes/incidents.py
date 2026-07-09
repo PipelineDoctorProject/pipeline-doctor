@@ -291,6 +291,8 @@ def _serialized_incidents(
     skip: int = 0,
     limit: int = 100,
 ):
+    from sqlalchemy import case, func
+
     query = (
         db.query(IncidentGroup)
         .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
@@ -298,10 +300,12 @@ def _serialized_incidents(
         .options(selectinload(IncidentGroup.incidents))
     )
 
+    if tenant_id is not None:
+        query = query.filter(MLModel.tenant_id == tenant_id)
+
     if model_id is not None:
         query = query.filter(PipelineRun.model_id == model_id)
 
-    total_count = query.count()
     groups = query.order_by(IncidentGroup.created_at.desc(), IncidentGroup.id.desc()).offset(skip).limit(limit).all()
 
     representative_incidents = []
@@ -343,15 +347,28 @@ def _serialized_incidents(
         for incident in representative_incidents
     ]
     
-    # Compute global stats
-    open_count = query.filter(IncidentGroup.status != "resolved").count()
-    resolved_count = query.filter(IncidentGroup.status == "resolved").count()
-    critical_count = query.filter(func.lower(IncidentGroup.severity) == "critical").count()
+    # Compute global stats efficiently in a single query
+    stats_query = db.query(
+        func.count(IncidentGroup.id).label("total"),
+        func.sum(case((IncidentGroup.status != "resolved", 1), else_=0)).label("open"),
+        func.sum(case((IncidentGroup.status == "resolved", 1), else_=0)).label("resolved"),
+        func.sum(case((func.lower(IncidentGroup.severity) == "critical", 1), else_=0)).label("critical")
+    ).select_from(IncidentGroup).join(PipelineRun).join(MLModel)
+    
+    if tenant_id is not None:
+        stats_query = stats_query.filter(MLModel.tenant_id == tenant_id)
+        
+    if model_id is not None:
+        stats_query = stats_query.filter(PipelineRun.model_id == model_id)
+        
+    stats_result = stats_query.first()
+    
+    total_count = stats_result.total if stats_result and stats_result.total else 0
     
     stats = {
-        "open": open_count,
-        "resolved": resolved_count,
-        "critical": critical_count
+        "open": int(stats_result.open) if stats_result and stats_result.open else 0,
+        "resolved": int(stats_result.resolved) if stats_result and stats_result.resolved else 0,
+        "critical": int(stats_result.critical) if stats_result and stats_result.critical else 0
     }
     
     return {
