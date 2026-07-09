@@ -27,3 +27,6 @@ uvicorn==0.46.0
 websockets==16.0
 azure-identity
 prometheus-fastapi-instrumentator==7.0.2
+pytest>=7.4.0
+pytest-cov>=4.1.0
+httpx>=0.25.0

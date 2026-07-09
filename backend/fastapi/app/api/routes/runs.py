@@ -5,11 +5,32 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.dependencies.auth import require_tenant_user
 from app.models.pipeline_run import PipelineRun
+from app.schemas.pagination import PaginatedRunsResponse
 from app.schemas.run import RunCreate, RunResponse, PipeLineCreate, PipeLineResponse
 from app.services import file_storage
 
 router = APIRouter(prefix="/runs", tags=["Runs"])
 
+@router.get("/", response_model=PaginatedRunsResponse[RunResponse])
+def list_runs(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user),
+):
+    """List pipeline runs for the current tenant's models."""
+    query = (
+        db.query(PipelineRun)
+        .join(PipelineRun.model)
+        .filter(PipelineRun.model.has(tenant_id=current_user.tenant_id))
+    )
+    total_count = query.count()
+    runs = query.order_by(PipelineRun.id.asc()).offset(skip).limit(limit).all()
+    
+    return {
+        "runs": runs,
+        "total_count": total_count
+    }
 
 @router.get("/{run_id}/download-cleaned")
 def download_cleaned_data(
@@ -34,45 +55,3 @@ def download_cleaned_data(
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="cleaned_run_{run_id}.csv"'},
     )
-
-
-
-# @router.post("/", response_model=RunResponse)
-# def create_run_api(data: RunCreate, db: Session = Depends(get_db)):
-#     run = PipelineRun(
-#         model_id=1,
-#         status=data.status,
-#         drift_score=data.drift_score,
-#         started_at=datetime.utcnow(),
-#     )
-
-#     db.add(run)
-#     db.commit()
-#     db.refresh(run)
-
-#     return {
-#         "id": run.id,
-#         "status": run.status,
-#         "drift_score": run.drift_score,
-#         "created_at": run.started_at,
-#     }
-
-
-@router.get("/", response_model=list[RunResponse])
-def list_runs_api(
-    db: Session = Depends(get_db),
-    current_user=Depends(require_tenant_user),
-):
-    runs = db.query(PipelineRun).order_by(PipelineRun.id.desc()).all()
-    return runs
-    
-# @router.post('/start', response_model=PipeLineResponse)
-# def fake_pipeline_create(data: PipeLineCreate, db: Session = Depends(get_db)):
-#     run = run_pipeline(db, data.model_id, mode=data.mode)
-
-#     return {
-#         "id": run.id,
-#         "model_id": run.model_id,
-#         "status": run.status,
-#         "started_at": run.started_at
-#     }

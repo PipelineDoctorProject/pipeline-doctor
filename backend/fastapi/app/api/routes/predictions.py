@@ -9,5 +9,10 @@ router = APIRouter(prefix="/predictions", tags=["Predictions"])
 
 
 @router.get("/")
-def list_predictions(db: Session = Depends(get_db),current_user=Depends(require_tenant_user)):
-    return db.query(PredictionLog).order_by(PredictionLog.id.desc()).limit(100).all()
+def list_predictions(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_tenant_user)
+):
+    return db.query(PredictionLog).order_by(PredictionLog.id.desc()).offset(skip).limit(limit).all()

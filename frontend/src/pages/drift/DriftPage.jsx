@@ -20,6 +20,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import useSelectedModelStore from "../../store/selectedModelStore";
 import InsightExplanationCard from "../../components/common/InsightExplanationCard";
+import Pagination from "../../components/common/Pagination";
 
 const severityStyles = {
   critical: "border-red-200 bg-red-50 text-red-700",
@@ -355,6 +356,12 @@ export default function DriftPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [selectedRunId, setSelectedRunId] = useState(runParam);
+  
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState({});
+  const pageSize = 10;
+  
   const [explanation, setExplanation] = useState(null);
   const [explanationLoading, setExplanationLoading] = useState(false);
   const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
@@ -362,18 +369,23 @@ export default function DriftPage() {
   const loadFindings = useCallback(async () => {
     try {
       setLoading(true);
+      const skip = (page - 1) * pageSize;
       const data = runParam
-        ? await getDriftFindingsByRun(runParam)
-        : await getDriftFindings(selectedModelId);
-      setFindings(data || []);
+        ? await getDriftFindingsByRun(runParam, skip, pageSize)
+        : await getDriftFindings(selectedModelId, skip, pageSize);
+      setFindings(data?.items || []);
+      setTotalCount(data?.total_count || 0);
+      setStats(data?.stats || {});
     } catch (err) {
       console.log(err);
       setFindings([]);
+      setTotalCount(0);
+      setStats({});
       setExplanation(null);
     } finally {
       setLoading(false);
     }
-  }, [runParam, selectedModelId]);
+  }, [runParam, selectedModelId, page]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -399,22 +411,9 @@ export default function DriftPage() {
     );
   }, [findings, query]);
 
-  const driftCount = findings.filter((finding) => finding.drift_detected).length;
-  const averageScore =
-    findings.length === 0
-      ? 0
-      : findings.reduce(
-          (sum, finding) => sum + Number(finding.drift_score || 0),
-          0,
-        ) / findings.length;
-
-  const severityCounts = findings.reduce((counts, finding) => {
-    const severity = String(finding.severity || "unknown").toLowerCase();
-    return {
-      ...counts,
-      [severity]: (counts[severity] || 0) + 1,
-    };
-  }, {});
+  const driftCount = stats.drift_detected || 0;
+  const averageScore = stats.average_score || 0;
+  const severityCounts = stats.severity_counts || {};
 
   const groupedRuns = useMemo(
     () => groupFindingsByRun(filteredFindings),
@@ -658,6 +657,18 @@ export default function DriftPage() {
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {filteredFindings.length > 0 && !query && (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={setPage}
+              loading={loading}
+            />
           </div>
         )}
       </section>

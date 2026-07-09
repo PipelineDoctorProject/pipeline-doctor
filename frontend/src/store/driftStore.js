@@ -1,15 +1,17 @@
 import api from "../api/client";
 
-export const getDriftFindings = async (modelId) => {
-  const response = await api.get("/drift-findings/", {
-    params: modelId && modelId !== "all" ? { model_id: modelId } : {},
-  });
+export const getDriftFindings = async (modelId, skip = 0, limit = 10) => {
+  const params = { skip, limit };
+  if (modelId && modelId !== "all") {
+    params.model_id = modelId;
+  }
+  const response = await api.get("/drift-findings/", { params });
   return response.data;
 };
 
-export const getDriftFindingsByRun = async (runId) => {
+export const getDriftFindingsByRun = async (runId, skip = 0, limit = 10) => {
   const response = await api.get("/drift-findings/", {
-    params: { run_id: runId },
+    params: { run_id: runId, skip, limit },
   });
   return response.data;
 };

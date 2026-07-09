@@ -84,12 +84,12 @@ export const registerModel = async (
   }
 };
 
-export const getModels = async () => {
+export const getModels = async (skip = 0, limit = 10) => {
 
   try {
 
     const response = await api.get(
-      "/ml-models/"
+      `/ml-models/?skip=${skip}&limit=${limit}`
     );
 
     return response.data;

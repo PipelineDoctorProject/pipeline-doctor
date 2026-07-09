@@ -169,7 +169,8 @@ export default function Topbar() {
         getSlackStatus().catch(() => null),
       ]);
 
-      setIncidents(Array.isArray(incidentData) ? incidentData : []);
+      const items = Array.isArray(incidentData) ? incidentData : (incidentData?.items || []);
+      setIncidents(items);
       setSlackStatus(nextSlackStatus);
     } catch (error) {
       console.log(error);
@@ -189,7 +190,7 @@ export default function Topbar() {
     getModels()
       .then((data) => {
         if (!isMounted) return;
-        const nextModels = data || [];
+        const nextModels = data?.items || [];
         setModels(nextModels);
 
         if (

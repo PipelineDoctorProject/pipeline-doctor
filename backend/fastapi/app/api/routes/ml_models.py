@@ -10,6 +10,7 @@ from fastapi import (
 )
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func, distinct
 
 from typing import List
 
@@ -34,9 +35,9 @@ from app.services.access_control import require_accessible_model
 #    every MlflowClient created anywhere in this process.  setdefault means a
 #    caller-supplied env var still wins, but the hard-coded defaults prevent
 #    requests from hanging when Azure Container Apps cold-starts.
-os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "20")
-os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "1")
-os.environ.setdefault("MLFLOW_HTTP_REQUEST_BACKOFF_FACTOR", "1")
+os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "3")
+os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "0")
+os.environ.setdefault("MLFLOW_HTTP_REQUEST_BACKOFF_FACTOR", "0")
 
 logger = logging.getLogger(__name__)
 
@@ -146,22 +147,35 @@ def _serialize_model(model: MLModel, include_live_registry_status: bool = False)
 # =====================================================
 # LIST MODELS
 # =====================================================
-@router.get("/", response_model=List[MLModelResponse])
+@router.get("/")
 def list_models(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
-    models = (
-        db.query(MLModel)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    query = db.query(MLModel)
+    total_count = query.count()
+    models = query.offset(skip).limit(limit).all()
 
     # Keep the list endpoint fast and independent from live MLflow availability.
-    return [_serialize_model(model) for model in models]
+    items = [_serialize_model(model) for model in models]
+    
+    # Compute global stats
+    registered_versions = query.filter(MLModel.version.isnot(None)).count()
+    frameworks_count = db.query(func.count(distinct(MLModel.framework))).select_from(query.subquery()).scalar() or 0
+    
+    stats = {
+        "total_models": total_count,
+        "registered_versions": registered_versions,
+        "frameworks": frameworks_count
+    }
+    
+    return {
+        "items": items,
+        "total_count": total_count,
+        "stats": stats
+    }
 
 
 # =====================================================

@@ -1,0 +1,35 @@
+location: westus2
+properties:
+  environmentId: /subscriptions/278d05e7-c375-41a0-9460-733a409c9295/resourceGroups/opssight-prod-rg/providers/Microsoft.App/managedEnvironments/opssight-prod-env
+  configuration:
+    ingress:
+      external: false
+      targetPort: 9090
+      transport: http
+    activeRevisionsMode: single
+  template:
+    containers:
+      - name: prometheus
+        image: prom/prometheus:v2.53.0
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        args:
+          - --config.file=/etc/prometheus/prometheus.yml
+          - --storage.tsdb.retention.time=7d
+          - --web.enable-lifecycle
+        volumeMounts:
+          - volumeName: prom-config
+            mountPath: /etc/prometheus
+          - volumeName: prom-data
+            mountPath: /prometheus
+    volumes:
+      - name: prom-config
+        storageType: AzureFile
+        storageName: prom-config
+      - name: prom-data
+        storageType: AzureFile
+        storageName: prom-data
+    scale:
+      minReplicas: 1
+      maxReplicas: 1

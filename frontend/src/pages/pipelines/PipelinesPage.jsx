@@ -11,6 +11,7 @@ import {
   Workflow,
   XCircle,
 } from "lucide-react";
+
 import { Link, useSearchParams } from "react-router-dom";
 import { getPipelineRuns } from "../../store/pipelineStore";
 import { getAccessToken } from "../../api/client";
@@ -18,6 +19,9 @@ import { apiUrl } from "../../config/runtime";
 
 export default function PipelinesPage() {
   const [runs, setRuns] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
   const [searchParams] = useSearchParams();
@@ -26,23 +30,25 @@ export default function PipelinesPage() {
   // ==========================================
   // LOAD PIPELINE RUNS
   // ==========================================
-  const loadRuns = async () => {
+  const loadRuns = async (pageNumber = page) => {
     try {
       setLoading(true);
-      const data = await getPipelineRuns();
-      setRuns(data || []);
+      const skip = (pageNumber - 1) * pageSize;
+      const data = await getPipelineRuns(skip, pageSize);
+      setRuns(data?.runs || []);
+      setTotalCount(data?.total_count || 0);
     } catch (err) {
       console.log(err);
       setRuns([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadRuns();
-  }, []);
+    loadRuns(page);
+  }, [page]);
 
   // ==========================================
   // DOWNLOAD CLEANED DATA
@@ -140,7 +146,7 @@ export default function PipelinesPage() {
             </p>
           </div>
           <button
-            onClick={loadRuns}
+            onClick={() => loadRuns(page)}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-[13px] font-semibold text-white transition hover:bg-slate-800"
           >
             <Workflow size={16} />
@@ -311,6 +317,33 @@ export default function PipelinesPage() {
               ))}
             </tbody>
           </table>
+          
+          {/* PAGINATION CONTROLS */}
+          <div className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-3">
+            <div className="text-sm text-slate-500">
+              Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to{" "}
+              <span className="font-medium">
+                {Math.min(page * pageSize, totalCount)}
+              </span>{" "}
+              of <span className="font-medium">{totalCount}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page * pageSize >= totalCount}
+                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

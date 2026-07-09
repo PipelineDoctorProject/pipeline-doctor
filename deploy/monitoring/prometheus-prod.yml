@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # FastAPI application metrics (production API via HTTPS)
+  - job_name: opssight_api
+    scheme: https
+    static_configs:
+      - targets: ["opssight-api-prod.lemonfield-937c3e65.westus2.azurecontainerapps.io"]
+    metrics_path: /metrics
+    tls_config:
+      insecure_skip_verify: false
+
+  # Health check — used as an uptime/availability probe
+  - job_name: opssight_health
+    scheme: https
+    static_configs:
+      - targets: ["opssight-api-prod.lemonfield-937c3e65.westus2.azurecontainerapps.io"]
+    metrics_path: /health
+    tls_config:
+      insecure_skip_verify: false
