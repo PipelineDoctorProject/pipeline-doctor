@@ -22,6 +22,7 @@ import useIncidentsWebSocket from "../../hooks/useIncidentsWebSocket";
 import AgentTraceStepper from "../../components/agents/AgentTraceStepper";
 import IncidentReasoningCard from "../../components/agents/IncidentReasoningCard";
 import IncidentRemediationPanel from "../../components/incidents/IncidentRemediationPanel";
+import Pagination from "../../components/common/Pagination";
 
 const INCIDENT_LIST_LIVE_POLL_INTERVAL_MS = 60000;
 const INCIDENT_LIST_FALLBACK_POLL_INTERVAL_MS = 20000;
@@ -324,6 +325,11 @@ export default function IncidentsPage() {
   const [selectedRunId, setSelectedRunId] = useState(runParam);
   const selectedModelId = useSelectedModelStore((state) => state.selectedModelId);
 
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState({});
+  const pageSize = 10;
+
   const [agentRuns, setAgentRuns] = useState([]);
   const [agentSteps, setAgentSteps] = useState([]);
   const [agentLoading, setAgentLoading] = useState(false);
@@ -353,8 +359,11 @@ export default function IncidentsPage() {
           setLoading(true);
         }
 
-        const data = await getIncidents(selectedModelId);
-        const nextIncidents = data || [];
+        const skip = (page - 1) * pageSize;
+        const data = await getIncidents(selectedModelId, skip, pageSize);
+        const nextIncidents = data?.items || [];
+        setTotalCount(data?.total_count || 0);
+        setStats(data?.stats || {});
         const previousSnapshot = incidentSnapshotRef.current;
 
         if (announceDelta && hasBootstrappedIncidentsRef.current) {
@@ -390,6 +399,8 @@ export default function IncidentsPage() {
         if (!silent) {
           toast.error("Failed to load incidents");
         }
+        setTotalCount(0);
+        setStats({});
       } finally {
         loadingIncidentsRef.current = false;
         if (!silent) {
@@ -397,7 +408,7 @@ export default function IncidentsPage() {
         }
       }
     },
-    [selectedModelId],
+    [selectedModelId, page],
   );
 
   const loadAgentData = useCallback(
@@ -503,11 +514,9 @@ export default function IncidentsPage() {
     );
   }, [incidents, query]);
 
-  const openCount = incidents.filter((incident) => !isResolved(incident.status)).length;
-  const criticalCount = incidents.filter(
-    (incident) => String(incident.severity || "").toLowerCase() === "critical",
-  ).length;
-  const resolvedCount = incidents.filter((incident) => isResolved(incident.status)).length;
+  const openCount = stats.open || 0;
+  const criticalCount = stats.critical || 0;
+  const resolvedCount = stats.resolved || 0;
   const groupedRuns = useMemo(
     () => groupIncidentsByRun(filteredIncidents),
     [filteredIncidents],
@@ -778,6 +787,18 @@ export default function IncidentsPage() {
                 </article>
               );
             })}
+          </div>
+        )}
+
+        {filteredIncidents.length > 0 && !query && (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={setPage}
+              loading={loading}
+            />
           </div>
         )}
       </section>

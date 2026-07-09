@@ -19,6 +19,7 @@ import {
 
 import { getModels } from "../../store/modelStore";
 import ModelDetailModal from "./ModelDetailModal";
+import Pagination from "../../components/common/Pagination";
 
 const RegisterModelModal = lazy(() => import("./ModelRegister"));
 
@@ -67,15 +68,25 @@ export default function ModelsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [query, setQuery] = useState("");
 
-  async function loadModels() {
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState({});
+  const pageSize = 10;
+
+  async function loadModels(pageNumber = page) {
     try {
       setLoading(true);
       setErrorMessage("");
-      const data = await getModels();
-      setModels(data || []);
+      const skip = (pageNumber - 1) * pageSize;
+      const data = await getModels(skip, pageSize);
+      setModels(data?.items || []);
+      setTotalCount(data?.total_count || 0);
+      setStats(data?.stats || {});
     } catch (err) {
       console.log(err);
       setModels([]);
+      setTotalCount(0);
+      setStats({});
       setErrorMessage(
         err?.detail ||
         err?.message ||
@@ -87,9 +98,8 @@ export default function ModelsPage() {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadModels();
-  }, []);
+    loadModels(page);
+  }, [page]);
 
   const filteredModels = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -111,8 +121,9 @@ export default function ModelsPage() {
     );
   }, [models, query]);
 
-  const frameworks = new Set(models.map((model) => model.framework).filter(Boolean));
-  const registeredVersions = models.filter((model) => model.version).length;
+  const frameworks = stats.frameworks || 0;
+  const registeredVersions = stats.registered_versions || 0;
+  const totalModels = stats.total_models || 0;
 
   return (
     <>
@@ -134,8 +145,8 @@ export default function ModelsPage() {
 
             <div className="flex items-center gap-3">
               <button
-                onClick={loadModels}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={() => loadModels(page)}
+                className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
               >
                 <RefreshCw size={15} />
                 Refresh
@@ -158,7 +169,7 @@ export default function ModelsPage() {
                 <Database size={16} />
               </div>
               <div className="mt-2 text-[26px] font-semibold text-slate-950">
-                {models.length}
+                {totalModels}
               </div>
             </div>
 
@@ -178,7 +189,7 @@ export default function ModelsPage() {
                 <ServerCog size={16} />
               </div>
               <div className="mt-2 text-[26px] font-semibold text-slate-950">
-                {frameworks.size}
+                {frameworks}
               </div>
             </div>
           </div>
@@ -317,6 +328,18 @@ export default function ModelsPage() {
                   </article>
                 );
               })}
+            </div>
+          )}
+            
+          {filteredModels.length > 0 && !query && (
+            <div className="mt-4">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                onPageChange={setPage}
+                loading={loading}
+              />
             </div>
           )}
         </section>

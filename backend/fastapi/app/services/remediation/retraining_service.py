@@ -413,33 +413,11 @@ def _normalize_feature_list(features: Any) -> list[str]:
 
 
 def _prepare_feature_frame(df: pd.DataFrame, feature_columns: list[str]) -> pd.DataFrame:
-    features = df[feature_columns].copy()
-    for column in feature_columns:
-        if ptypes.is_bool_dtype(features[column]) or ptypes.is_numeric_dtype(features[column]):
-            numeric_series = pd.to_numeric(features[column], errors="coerce")
-            if numeric_series.notna().any():
-                median_value = float(numeric_series.median())
-                features[column] = numeric_series.fillna(median_value)
-                continue
-
-        features[column] = features[column].astype("string").fillna("UNKNOWN")
-
-    encoded = pd.get_dummies(features, dummy_na=False)
-    return encoded.fillna(0)
+    return df[feature_columns].copy()
 
 
 def _prepare_raw_feature_frame(df: pd.DataFrame, feature_columns: list[str]) -> pd.DataFrame:
-    features = df[feature_columns].copy()
-    for column in feature_columns:
-        if ptypes.is_bool_dtype(features[column]) or ptypes.is_numeric_dtype(features[column]):
-            numeric_series = pd.to_numeric(features[column], errors="coerce")
-            if numeric_series.notna().any():
-                features[column] = numeric_series.fillna(float(numeric_series.median()))
-                continue
-
-        features[column] = features[column].astype("string").fillna("UNKNOWN")
-
-    return features
+    return df[feature_columns].copy()
 
 
 def _prepare_unsupervised_clustering_plan(

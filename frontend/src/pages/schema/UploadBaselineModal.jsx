@@ -36,7 +36,7 @@ export default function UploadBaselineModal({
     try {
       const data = await getModels();
 
-      setModels(data || []);
+      setModels(data?.items || []);
     } catch (err) {
       console.log(err);
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 import json
 
 from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func
 
 from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
@@ -59,9 +60,11 @@ def create_incident(
     return incident
 
 
-@router.get("/", response_model=list[IncidentResponse])
+@router.get("/")
 def list_incidents(
     model_id: int | None = Query(default=None),
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
@@ -72,12 +75,16 @@ def list_incidents(
         db,
         model_id=model_id,
         tenant_id=current_user.tenant_id,
+        skip=skip,
+        limit=limit,
     )
 
 
 @router.get("/filtered")
 def filter_incidents(
     model_id: int | None = Query(default=None),
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
@@ -88,6 +95,8 @@ def filter_incidents(
         db,
         model_id=model_id,
         tenant_id=current_user.tenant_id,
+        skip=skip,
+        limit=limit,
     )
 
 
@@ -279,24 +288,21 @@ def _serialized_incidents(
     db: Session,
     model_id: int | None = None,
     tenant_id: str | None = None,
+    skip: int = 0,
+    limit: int = 100,
 ):
-    # NOTE: tenant isolation is already enforced at the DB schema level
-    # (search_path is set to the tenant's schema by AuthMiddleware).
-    # The extra MLModel.tenant_id filter was redundant and caused 0 results
-    # because ml_models.tenant_id does not match the user UUID format.
     query = (
         db.query(IncidentGroup)
         .join(PipelineRun, IncidentGroup.run_id == PipelineRun.id)
         .join(MLModel, PipelineRun.model_id == MLModel.id)
-        # Eagerly load group.incidents in ONE extra query (SELECT … WHERE group_id IN (…))
-        # instead of issuing a separate lazy-load per group (N+1 problem → 20s timeout).
         .options(selectinload(IncidentGroup.incidents))
     )
 
     if model_id is not None:
         query = query.filter(PipelineRun.model_id == model_id)
 
-    groups = query.order_by(IncidentGroup.created_at.desc(), IncidentGroup.id.desc()).all()
+    total_count = query.count()
+    groups = query.order_by(IncidentGroup.created_at.desc(), IncidentGroup.id.desc()).offset(skip).limit(limit).all()
 
     representative_incidents = []
     for group in groups:
@@ -329,22 +335,36 @@ def _serialized_incidents(
             .all()
         }
 
-    return [
+    items = [
         _serialize_incident(
             incident,
             drift_by_id.get(incident.finding_id)
         )
         for incident in representative_incidents
     ]
+    
+    # Compute global stats
+    open_count = query.filter(IncidentGroup.status != "resolved").count()
+    resolved_count = query.filter(IncidentGroup.status == "resolved").count()
+    critical_count = query.filter(func.lower(IncidentGroup.severity) == "critical").count()
+    
+    stats = {
+        "open": open_count,
+        "resolved": resolved_count,
+        "critical": critical_count
+    }
+    
+    return {
+        "items": items,
+        "total_count": total_count,
+        "stats": stats
+    }
 
 
 def _parse_rca_report(description: str):
-
     try:
         payload = json.loads(description or "")
-
         return payload if isinstance(payload, dict) else None
-
     except json.JSONDecodeError:
         return None
 
@@ -353,10 +373,8 @@ def _human_description(
     incident: Incident,
     rca_report: dict | None
 ):
-
     if not rca_report:
         return incident.description
-
     return rca_report.get("summary") or incident.description
 
 

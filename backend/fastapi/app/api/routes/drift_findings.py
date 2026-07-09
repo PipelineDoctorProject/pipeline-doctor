@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.dependencies.auth import require_tenant_user
 from app.db.session import get_db
 from app.models.drift_finding import DriftFinding
@@ -13,28 +14,67 @@ from app.services.access_control import require_accessible_model
 router = APIRouter(prefix="/drift-findings", tags=["Drift Findings"])
 
 
-@router.get("/", response_model=list[DriftResponse])
+@router.get("/")
 def list_drift_findings(
     model_id: int | None = Query(default=None),
     run_id: int | None = Query(default=None),
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(require_tenant_user)
 ):
     if model_id is not None:
         require_accessible_model(db, model_id, current_user.tenant_id)
 
+    runs_query = db.query(DriftFinding.run_id).distinct()
+    if run_id is not None:
+        runs_query = runs_query.filter(DriftFinding.run_id == run_id)
+        
+    if model_id is not None:
+        runs_query = (
+            runs_query
+            .join(PipelineRun, DriftFinding.run_id == PipelineRun.id)
+            .filter(PipelineRun.model_id == model_id)
+        )
+        
+    total_count = runs_query.count()
+    run_ids_result = runs_query.order_by(DriftFinding.run_id.desc()).offset(skip).limit(limit).all()
+    run_ids = [r[0] for r in run_ids_result]
+    
+    findings = []
+    if run_ids:
+        findings = db.query(DriftFinding).filter(DriftFinding.run_id.in_(run_ids)).order_by(DriftFinding.id.desc()).all()
+        
+    items = [_serialize_drift_finding(finding) for finding in findings]
+    
+    # Recreate the base query for finding-level stats
     query = db.query(DriftFinding)
     if run_id is not None:
         query = query.filter(DriftFinding.run_id == run_id)
-
     if model_id is not None:
         query = (
             query
             .join(PipelineRun, DriftFinding.run_id == PipelineRun.id)
             .filter(PipelineRun.model_id == model_id)
         )
-    findings = query.order_by(DriftFinding.id.desc()).all()
-    return [_serialize_drift_finding(finding) for finding in findings]
+
+    # Compute global stats
+    drift_detected_count = query.filter(DriftFinding.drift_detected == True).count()
+    average_score = db.query(func.avg(DriftFinding.drift_score)).select_from(query.subquery()).scalar() or 0
+    severity_counts_query = db.query(DriftFinding.severity, func.count(DriftFinding.id)).select_from(query.subquery()).group_by(DriftFinding.severity).all()
+    severity_counts = {sev: count for sev, count in severity_counts_query if sev}
+    
+    stats = {
+        "drift_detected": drift_detected_count,
+        "average_score": float(average_score),
+        "severity_counts": severity_counts
+    }
+    
+    return {
+        "items": items,
+        "total_count": total_count,
+        "stats": stats
+    }
 
 
 @router.post("/backfill/{run_id}")

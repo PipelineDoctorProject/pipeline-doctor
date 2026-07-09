@@ -78,7 +78,7 @@ Use this carefully. In local development, first call `GET /dashboard/me` to find
 
 ### `GET /ml-models/`
 
-List tenant-visible models.
+List tenant-visible models. Includes a `stats` object with global dataset-wide metric counts (total models, registered versions, frameworks).
 
 ### `POST /ml-models/`
 
@@ -106,7 +106,7 @@ Download the accepted cleaned CSV for a run.
 
 ### `GET /data-quality/`
 
-List stored data-quality findings.
+List stored data-quality findings. Paginated by `pipeline_run_id` to ensure complete run-level grouping in the frontend. Includes a `stats` object with global dataset-wide metric counts.
 
 Optional query params:
 
@@ -143,7 +143,7 @@ Explain stored failed data-quality findings.
 
 ### `GET /drift-findings/`
 
-List stored drift findings.
+List stored drift findings. Paginated by `run_id` to ensure complete run-level grouping in the frontend. Includes a `stats` object with global dataset-wide metric counts (drift detected, average score, severity counts).
 
 Optional query params:
 
@@ -164,7 +164,7 @@ Explain stored drift findings.
 
 ### `GET /incidents/`
 
-List grouped top-level incidents, one representative alert per run-level group.
+List grouped top-level incidents, one representative alert per run-level group. Includes a `stats` object with global dataset-wide metric counts (open, critical, resolved).
 
 Optional query params:
 

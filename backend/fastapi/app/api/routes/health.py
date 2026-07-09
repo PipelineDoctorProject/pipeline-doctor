@@ -110,3 +110,24 @@ def celery_health_check():
             "trace_events_source": "Redis pub/sub via FastAPI WebSocket bridge",
         },
     }
+
+@router.get("/db-stats")
+def db_stats():
+    from app.db.session import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    try:
+        stats = {}
+        for schema in ["public", "tenant_1", "tenant_3"]:
+            try:
+                dq = db.execute(text(f"SELECT COUNT(*) FROM {schema}.data_quality_findings")).scalar()
+                pr = db.execute(text(f"SELECT COUNT(*) FROM {schema}.pipeline_runs")).scalar()
+                inc = db.execute(text(f"SELECT COUNT(*) FROM {schema}.incidents")).scalar()
+                drift = db.execute(text(f"SELECT COUNT(*) FROM {schema}.drift_findings")).scalar()
+                mod = db.execute(text(f"SELECT COUNT(*) FROM {schema}.ml_models")).scalar()
+                stats[schema] = {"data_quality": dq, "pipeline_runs": pr, "incidents": inc, "drift": drift, "ml_models": mod}
+            except Exception as e:
+                stats[schema] = {"error": str(e)}
+        return stats
+    finally:
+        db.close()
