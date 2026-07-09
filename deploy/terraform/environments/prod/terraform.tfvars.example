@@ -20,6 +20,7 @@ mlflow_storage_container_name        = "mlflow"
 app_storage_account_name             = "opssightprodapp"
 app_storage_container_name           = "app-artifacts"
 mlflow_min_replicas                  = 1
+enable_monitoring                    = true
 
 api_environment_variables = {
   APP_ENV = "production"
