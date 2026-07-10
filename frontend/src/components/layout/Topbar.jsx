@@ -225,6 +225,9 @@ export default function Topbar() {
 
   useEffect(() => {
     loadNotificationData();
+  }, [loadNotificationData]);
+
+  useEffect(() => {
     const intervalId = window.setInterval(
       loadNotificationData,
       incidentsFeedLive ? LIVE_POLL_INTERVAL_MS : FALLBACK_POLL_INTERVAL_MS,
