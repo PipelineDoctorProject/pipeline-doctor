@@ -125,7 +125,7 @@ async def incidents_websocket(websocket: WebSocket):
             if message and message.get("type") == "message":
                 try:
                     data = json.loads(message["data"])
-                    await manager.broadcast(INCIDENTS_CONNECTION_KEY, data)
+                    await websocket.send_json(data)
                 except (json.JSONDecodeError, Exception):
                     pass
 
